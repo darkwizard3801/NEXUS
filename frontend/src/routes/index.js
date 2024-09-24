@@ -25,6 +25,8 @@ import ContactUs from '../pages/ContactUs'
 import ContactMessages from '../pages/contact-messages'
 import BannerRequest from '../pages/BannerRequest'
 import Banners from '../pages/Banners'
+import MyOrders from '../pages/MyOrders'
+import UserPanel from '../pages/UserPanel'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -102,6 +104,7 @@ const router = createBrowserRouter([
                 path : 'contact',
                 element : <ContactUs/>
             },
+            
 
 
 
@@ -147,9 +150,20 @@ const router = createBrowserRouter([
                 ]
 
 
+            },
+            {
+            path:"user-panel",
+            element:<UserPanel/>,
+
+            children:[
+                {
+                    path : 'orders',
+                    element : <MyOrders/>
+                },
+               
+            ]
+
             }
-
-
 
 
 

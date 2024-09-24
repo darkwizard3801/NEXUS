@@ -1,13 +1,14 @@
 import React, { useContext, useState } from 'react';
 import loginIcons from '../assest/signin.gif';
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebookF } from "react-icons/fa";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate,Navigate } from 'react-router-dom';
 import SummaryApi from '../common';
 import { toast } from 'react-toastify';
 import Context from '../context';
+import { useSelector } from 'react-redux';
 
 const Login = () => {
-
+    const user = useSelector(state => state.user.user);
     const [showPassword, setShowPassword] = useState(false);
     const [data, setData] = useState({
         email: "",
@@ -15,6 +16,9 @@ const Login = () => {
     });
     const navigate = useNavigate();
     const { fetchUserDetails } = useContext(Context);
+    if (user?._id) {
+        return <Navigate to="/" replace />;
+      }
 
     const handleOnChange = (e) => {
         const { name, value } = e.target;
@@ -61,7 +65,11 @@ const Login = () => {
                         navigate("/");
                         fetchUserDetails();
                     } else if (userRole === "Customer") {
-                        navigate("/");
+                        navigate("/",{ replace: true });
+                         // Reload the page after 500 mili seconds
+                        setTimeout(() => {
+                        window.location.reload();
+                        }, 500);
                     } else {
                         toast.error("Invalid role");
                     }

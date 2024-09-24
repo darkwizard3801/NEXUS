@@ -34,12 +34,18 @@ const HorizontalCardProduct = ({ category, heading }) => {
   }, [category]);
 
   const scrollRight = () => {
-    scrollElement.current.scrollLeft += 300;
-  };
+    scrollElement.current.scrollTo({
+        left: scrollElement.current.scrollLeft + 300,
+        behavior: 'smooth' // Smooth scrolling
+    });
+}
 
-  const scrollLeft = () => {
-    scrollElement.current.scrollLeft -= 300;
-  };
+const scrollLeft = () => {
+    scrollElement.current.scrollTo({
+        left: scrollElement.current.scrollLeft - 300,
+        behavior: 'smooth' // Smooth scrolling
+    });
+}
 
   return (
     <div className='container mx-auto px-4 my-6 relative'>

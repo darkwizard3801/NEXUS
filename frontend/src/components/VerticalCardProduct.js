@@ -37,10 +37,17 @@ const VerticalCardProduct = ({ category, heading }) => {
     }, [])
 
     const scrollRight = () => {
-        scrollElement.current.scrollLeft += 300
+        scrollElement.current.scrollTo({
+            left: scrollElement.current.scrollLeft + 300,
+            behavior: 'smooth' // Smooth scrolling
+        });
     }
+    
     const scrollLeft = () => {
-        scrollElement.current.scrollLeft -= 300
+        scrollElement.current.scrollTo({
+            left: scrollElement.current.scrollLeft - 300,
+            behavior: 'smooth' // Smooth scrolling
+        });
     }
 
     return (
