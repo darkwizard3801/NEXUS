@@ -92,48 +92,63 @@ const AdminProductCard = ({ data, fetchdata }) => {
   };
 
   return (
-    <div className={`bg-white p-4 rounded ${isDisabled ? 'opacity-50' : ''}`}>
-      <div className='w-40'>
-        <div className='w-32 h-32 flex justify-center items-center'>
-          <img src={data?.productImage[0]} className='mx-auto object-fill h-full' alt={data.productName} />
+    <div
+      className={`bg-white shadow-md rounded-lg p-3 transition-transform duration-300 ${isDisabled ? 'opacity-50' : ''}`}
+      style={{ width: '100%', maxWidth: '220px' }} // Adjust maxWidth for responsiveness
+    >
+      <div className="flex flex-col items-center">
+        {/* Product Image */}
+        <div className='w-full h-36 flex justify-center items-center bg-gray-100 rounded-lg mb-2 overflow-hidden'>
+          <img
+            src={data?.productImage[0]}
+            className='object-cover h-full w-full transition-transform duration-300 hover:scale-110' // Add zoom effect on hover
+            alt={data.productName}
+          />
         </div>
-        <h1 className='text-ellipsis line-clamp-2'>{data.productName}</h1>
 
-        <div>
-          <p className='font-semibold'>
-            {displayINRCurrency(data.price)}
-          </p>
-          <p className='font-semibold'>
-            <strong>Added by:</strong> {username || 'Loading...'}
-          </p>
+        {/* Product Name */}
+        <h1 className='text-center text-sm font-medium text-gray-700 truncate mb-1'>{data.productName}</h1>
 
-          <div className='flex items-center gap-3 py-3'>
-            <div
-              className={`p-2 bg-green-100 hover:bg-green-600 rounded-full hover:text-white cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
-              onClick={() => !isDisabled && setEditProduct(true)}
-            >
-              <MdModeEditOutline />
-            </div>
+        {/* Product Price */}
+        <p className='text-center font-semibold text-md text-green-600 mb-1'>
+          {displayINRCurrency(data.price)}
+        </p>
 
-            {isDisabled ? (
-              <div
-                className='p-2 bg-blue-100 hover:bg-blue-600 rounded-full hover:text-white cursor-pointer'
-                onClick={handleEnable}
-              >
-               <FaRecycle />
-              </div>
-            ) : (
-              <div
-                className='p-2 bg-red-100 hover:bg-red-600 rounded-full hover:text-white cursor-pointer'
-                onClick={handleDisable}
-              >
-                <MdDelete />
-              </div>
-            )}
+        {/* Added by Username */}
+        <p className='text-center text-gray-600 mb-2'>
+          <strong>Added by:</strong> {username || 'Loading...'}
+        </p>
+
+        {/* Action Buttons */}
+        <div className='flex items-center justify-center gap-3'>
+          {/* Edit Button */}
+          <div
+            className={`p-2 bg-green-100 hover:bg-green-600 rounded-full hover:text-white cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
+            onClick={() => !isDisabled && setEditProduct(true)}
+          >
+            <MdModeEditOutline size={20} />
           </div>
+
+          {/* Disable / Enable Button */}
+          {isDisabled ? (
+            <div
+              className='p-2 bg-blue-100 hover:bg-blue-600 rounded-full hover:text-white cursor-pointer'
+              onClick={handleEnable}
+            >
+              <FaRecycle size={20} />
+            </div>
+          ) : (
+            <div
+              className='p-2 bg-red-100 hover:bg-red-600 rounded-full hover:text-white cursor-pointer'
+              onClick={handleDisable}
+            >
+                <MdDelete size={20} />
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Edit Product Modal */}
       {editProduct && !isDisabled && (
         <AdminEditProduct productData={data} onClose={() => setEditProduct(false)} fetchdata={fetchdata} />
       )}

@@ -90,6 +90,10 @@ const SummaryApi = {
         url : `${backendDomin}/api/contact-messages`,
         method : 'get'
     },
+    categories: {
+        url: `${backendDomin}/api/categories`,
+        method: 'GET',
+      },
 
 
 

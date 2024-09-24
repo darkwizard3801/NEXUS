@@ -105,10 +105,7 @@ const VendorProductCard = ({ data, fetchdata }) => {
         </div>
 
         {editProduct && !isDisabled && (
-          <VendorEditProduct
-            productData={data}
-            onClose={() => setEditProduct(false)}
-            fetchdata={fetchdata}
+          <VendorEditProduct productData={data} onClose={() => setEditProduct(false)} fetchdata={fetchdata}
           />
         )}
       </div>

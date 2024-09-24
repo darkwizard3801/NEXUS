@@ -34,7 +34,7 @@ const { handleBannerRequest } = require('../controller/user/bannerController')
 
 // const { updateUserRole } = require('../controller/userController');
 
-
+const { getProductsByCategory, getAllCategories } = require('../controller/product/categoryController');
 
 
 
@@ -80,6 +80,9 @@ router.patch('/enable/:id', enableProduct);
 router.get("/get-categoryProduct",getCategoryProduct)
 router.post("/category-product",getCategoryWiseProduct)
 router.post("/product-details",getProductDetails)
+
+router.get('/products-get', getProductsByCategory);
+router.get('/categories', getAllCategories);
 
 
 
