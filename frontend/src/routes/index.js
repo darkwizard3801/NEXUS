@@ -28,6 +28,7 @@ import Banners from '../pages/Banners'
 import MyOrders from '../pages/MyOrders'
 import UserPanel from '../pages/UserPanel'
 import AboutUs from '../pages/AboutUs'
+import CatergoryAdd from '../pages/CatergoryAdd'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -134,6 +135,10 @@ const router = createBrowserRouter([
                     {
                         path : "banner-admin",
                         element : <Banners/>
+                    },
+                    {
+                        path : "category-add",
+                        element : <CatergoryAdd/>
                     },
                     
                 ]

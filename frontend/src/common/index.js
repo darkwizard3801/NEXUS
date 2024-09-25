@@ -90,9 +90,17 @@ const SummaryApi = {
         url : `${backendDomin}/api/contact-messages`,
         method : 'get'
     },
-    categories: {
+    categoryPro: {
         url: `${backendDomin}/api/categories`,
-        method: 'GET',
+        method: 'get',
+      },
+      categoryAdd: {
+        url: `${backendDomin}/api/category-add`,
+        method: 'post',
+      },
+      toglecat: {
+        url: `${backendDomin}/api/togle-cat`,
+        method: 'put',
       },
 
 

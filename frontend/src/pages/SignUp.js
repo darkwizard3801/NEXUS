@@ -24,9 +24,10 @@ const SignUp = () => {
 
   // Email validation function
   const validateEmail = (email) => {
-    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.(in|co\.in|com|org|edu|biz|gov|net)$/;
     return re.test(String(email).toLowerCase());
   };
+  
 
   // Password validation function
   const validatePassword = (password) => {
@@ -242,8 +243,8 @@ const SignUp = () => {
                   <div className='bg-slate-100 p-2 rounded-2xl flex'>
                     <select name="role" value={data.role} onChange={handleOnChange} className='w-full h-full outline-none bg-transparent'>
                       <option value="">Select Role</option>
-                      <option value="vendor">Vendor</option>
-                      <option value="customer">Customer</option>
+                      <option value="Vendor">Vendor</option>
+                      <option value="Customer">Customer</option>
                     </select>
                   </div>
                 </div>

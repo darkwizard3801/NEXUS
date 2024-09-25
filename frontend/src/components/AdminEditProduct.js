@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState,useEffect } from 'react'
 import { CgClose } from "react-icons/cg";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
@@ -29,8 +29,15 @@ const AdminEditProduct = ({
   })
   const [openFullScreenImage,setOpenFullScreenImage] = useState(false)
   const [fullScreenImage,setFullScreenImage] = useState("")
-
-
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  useEffect(() => {
+    const fetchData = async () => {
+     
+      await fetchCategoryProduct(); // Fetch categories on component mount
+    };
+    fetchData();
+  }, []);
   const handleOnChange = (e)=>{
       const { name, value} = e.target
 
@@ -98,6 +105,37 @@ const AdminEditProduct = ({
   
 
   }
+  const fetchCategoryProduct = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await fetch(SummaryApi.categoryPro.url, {
+        method: 'GET',
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const dataResponse = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Categories fetched:', dataResponse.data);
+
+      // Filter only enabled categories (disabled: false)
+      const enabledCategories = dataResponse.data.filter(category => category.disabled === false);
+      setCategories(enabledCategories);
+
+      if (dataResponse.success) {
+        console.log('Enabled categories:', enabledCategories);
+      }
+      //  else {
+      //   toast.error("Failed to fetch categories.");
+      // }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error("An error occurred while fetching categories.");
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
 
   return (
@@ -135,17 +173,29 @@ const AdminEditProduct = ({
           className='p-2 bg-slate-100 border rounded'
           required
         />
-        <label htmlFor='category' className='mt-3'>Category :</label>
-        <select required value={data.category} name='category' onChange={handleOnChange} className='p-2 bg-slate-100 border rounded'>
-          <option value={""}>Select Category</option>
-          {
-            productCategory.map((el, index) => {
-              return (
-                <option value={el.value} key={el.value + index}>{el.label}</option>
+       <label htmlFor='category' className='mt-3'>Category :</label>
+          <select
+            required
+            value={data.category}
+            name='category'
+            onChange={handleOnChange}
+            className='p-2 bg-slate-100 border rounded'
+          >
+            <option value="" disabled>Select Category</option>
+            {loadingCategories ? (
+              <option>Loading categories...</option>
+            ) : (
+              categories.length > 0 ? (
+                categories.map((category) => (
+                  <option key={category._id} value={category.category}>
+                    {category.label}
+                  </option>
+                ))
+              ) : (
+                <option>No categories available</option>
               )
-            })
-          }
-        </select>
+            )}
+          </select>
 
         <label htmlFor='productImage' className='mt-3'>Product Image :</label>
         <label htmlFor='uploadImageInput'>
@@ -153,7 +203,7 @@ const AdminEditProduct = ({
             <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
               <span className='text-4xl'><FaCloudUploadAlt /></span>
               <p className='text-sm'>Upload Product/Service Image</p>
-              <input type='file' id='uploadImageInput' className='hidden' onChange={handleUploadProduct}/>
+              <input type='file' id='uploadImageInput' className='hidden' accept='image/*' onChange={handleUploadProduct}/>
             </div>
           </div>
         </label>
