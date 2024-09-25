@@ -11,6 +11,7 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formStep, setFormStep] = useState(1);
+  const [errors, setErrors] = useState({});
   const [data, setData] = useState({
     email: "",
     password: "",
@@ -21,12 +22,42 @@ const SignUp = () => {
   });
   const navigate = useNavigate();
 
+  // Email validation function
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  // Password validation function
+  const validatePassword = (password) => {
+    return password.length >= 6; // You can add more criteria here (uppercase, number, etc.)
+  };
+
   const handleOnChange = (e) => {
     const { name, value } = e.target;
     setData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Perform live validation
+    if (name === "email" && !validateEmail(value)) {
+      setErrors((prev) => ({ ...prev, email: "Invalid email address" }));
+    } else if (name === "email") {
+      setErrors((prev) => ({ ...prev, email: null }));
+    }
+
+    if (name === "password" && !validatePassword(value)) {
+      setErrors((prev) => ({ ...prev, password: "Password must be at least 6 characters long" }));
+    } else if (name === "password") {
+      setErrors((prev) => ({ ...prev, password: null }));
+    }
+
+    if (name === "confirmPassword" && value !== data.password) {
+      setErrors((prev) => ({ ...prev, confirmPassword: "Passwords do not match" }));
+    } else if (name === "confirmPassword") {
+      setErrors((prev) => ({ ...prev, confirmPassword: null }));
+    }
   };
 
   const handleUploadPic = async (e) => {
@@ -38,18 +69,12 @@ const SignUp = () => {
     }));
   };
 
-  // Email validation function
-  const validateEmail = (email) => {
-    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-    return re.test(String(email).toLowerCase());
-  };
-
   const handleNextStep = () => {
     if (!validateEmail(data.email)) {
       toast.error("Invalid email address");
       return;
     }
-    if (data.password === data.confirmPassword) {
+    if (data.password === data.confirmPassword && validatePassword(data.password)) {
       setFormStep(2);
     } else {
       toast.error("Please check password and confirm password");
@@ -100,7 +125,14 @@ const SignUp = () => {
                 <div className='text-xs bg-opacity-80 bg-slate-200 pb-4 pt-2 cursor-pointer text-center absolute bottom-0 w-full'>
                   Upload Photo
                 </div>
-                <input type='file' className='hidden' onChange={handleUploadPic} />
+                <input 
+ y
+  type='file' 
+  className='hidden' 
+  onChange={handleUploadPic} 
+  accept="image/*" 
+/>
+
               </label>
             </form>
           </div>
@@ -135,6 +167,7 @@ const SignUp = () => {
                       className='w-full h-full outline-none bg-transparent'
                     />
                   </div>
+                  {errors.email && <p className='text-red-500 text-sm'>{errors.email}</p>}
                 </div>
                 <div>
                   <label>Password: </label>
@@ -152,6 +185,7 @@ const SignUp = () => {
                       {showPassword ? <FaEyeSlash /> : <FaEye />}
                     </div>
                   </div>
+                  {errors.password && <p className='text-red-500 text-sm'>{errors.password}</p>}
                 </div>
                 <div>
                   <label>Confirm Password: </label>
@@ -169,6 +203,7 @@ const SignUp = () => {
                       {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                     </div>
                   </div>
+                  {errors.confirmPassword && <p className='text-red-500 text-sm'>{errors.confirmPassword}</p>}
                 </div>
 
                 {/* Social Media Login Section */}
@@ -205,29 +240,24 @@ const SignUp = () => {
                 <div>
                   <label>Role:</label>
                   <div className='bg-slate-100 p-2 rounded-2xl flex'>
-                    <select name="role" value={data.role} onChange={handleOnChange} className='w-full h-full outline-none bg-transparent' required>
-                      <option value="" disabled>Select your role</option>
-                      <option value="Customer">Customer</option>
-                      <option value="Vendor">Vendor</option>
+                    <select name="role" value={data.role} onChange={handleOnChange} className='w-full h-full outline-none bg-transparent'>
+                      <option value="">Select Role</option>
+                      <option value="vendor">Vendor</option>
+                      <option value="customer">Customer</option>
                     </select>
                   </div>
                 </div>
-                <button type='submit' className='bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block mt-6'>
+                <button type='submit' className='bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block'>
                   Sign Up
                 </button>
               </>
             )}
           </form>
-
-          {formStep === 1 && (
-            <p className='my-5'>
-              Already have an account? <Link to={"/login"} className=' text-red-600 hover:text-red-700 hover:underline'>Login</Link>
-            </p>
-          )}
         </div>
       </div>
+      <ToastContainer position='bottom-center' />
     </section>
   );
 };
 
-export default SignUp; 
+export default SignUp;

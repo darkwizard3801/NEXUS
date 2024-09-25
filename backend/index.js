@@ -134,7 +134,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
                 : user.role === "Customer" 
                 ? `${process.env.FRONTEND_URL}/` 
                 : user.role === "Admin" 
-                ? `${process.env.FRONTEND_URL}/admin-page` 
+                ? `${process.env.FRONTEND_URL}/` 
                 : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
 
             res.redirect(redirectUrl); // Redirect to appropriate page
