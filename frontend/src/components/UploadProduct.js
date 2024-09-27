@@ -90,8 +90,8 @@ const UploadProduct = ({ onClose, fetchData }) => {
     setData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleUploadProduct = async (e) => {
-    const file = e.target.files[0];
+const handleUploadProduct = async (e) => {
+const file = e.target.files[0];
     if (file) {
       const uploadImageCloudinary = await uploadImage(file);
       setData((prev) => ({

@@ -30,7 +30,7 @@ const updateAddToCartProduct = require('../controller/user/updateAddToCartProduc
 const deleteAddToCartProduct = require('../controller/user/deleteAddToCartProduct')
 
 const { handleContactForm, getAllContactMessages } = require('../controller/user/contactController');
-const { handleBannerRequest } = require('../controller/user/bannerController')
+const { handleBannerRequest,fetchBanners,toggleBannerStatus,updateBannerStatus } = require('../controller/user/bannerController')
 
 // const { updateUserRole } = require('../controller/userController');
 
@@ -111,6 +111,10 @@ router.post("/delete-cart-product",authToken,deleteAddToCartProduct)
 
 router.post('/contact', handleContactForm);
 router.post('/banner-request', handleBannerRequest);
+router.get('/banner-view', fetchBanners);
+router.put('/togle-banner/:bannerId', toggleBannerStatus);
+router.put('/updateBannerStatus/:id', updateBannerStatus);
+
 router.get('/contact-messages', getAllContactMessages);
 
 

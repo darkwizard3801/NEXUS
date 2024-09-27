@@ -86,6 +86,19 @@ const SummaryApi = {
         url : `${backendDomin}/api/banner-request`,
         method : 'post'
     },
+    Banner_view : {
+        url : `${backendDomin}/api/banner-view`,
+        method : 'get'
+    },
+    Banner_tog : {
+        url : `${backendDomin}/api/togle-banner`,
+        method : 'put'
+    },
+    Banner_status : {
+        url : `${backendDomin}/api/updateBannerStatus`,
+        method : 'put'
+    },
+   
     getmessages : {
         url : `${backendDomin}/api/contact-messages`,
         method : 'get'
