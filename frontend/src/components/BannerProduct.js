@@ -1,40 +1,57 @@
 import React, { useEffect, useState } from 'react';
-import image1 from '../assest/banner/img1.jpg';
-import image2 from '../assest/banner/img2.jpg';
-import image3 from '../assest/banner/img3.jpg';
-import image4 from '../assest/banner/img4.jpg';
-import image5 from '../assest/banner/img5.jpg';
-
-import image1Mobile from '../assest/banner/img1_mobile.jpg';
-import image2Mobile from '../assest/banner/img2_mobile.webp';
-import image3Mobile from '../assest/banner/img3_mobile.jpg';
-import image4Mobile from '../assest/banner/img4_mobile.jpg';
-import image5Mobile from '../assest/banner/img5_mobile.png';
-
-import { FaAngleRight } from "react-icons/fa6";
-import { FaAngleLeft } from "react-icons/fa6";
+import { FaAngleRight, FaAngleLeft } from "react-icons/fa6";
+import { toast } from 'react-toastify';
+import SummaryApi from '../common';
 
 const BannerProduct = () => {
+  const [banners, setBanners] = useState([]);
   const [currentImage, setCurrentImage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const desktopImages = [
-    image1,
-    image2,
-    image3,
-    image4,
-    image5
-  ];
+  // Fetch banners from the database
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const response = await fetch(SummaryApi.Banner_view.url, {
+          method: SummaryApi.Banner_view.method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-  const mobileImages = [
-    image1Mobile,
-    image2Mobile,
-    image3Mobile,
-    image4Mobile,
-    image5Mobile
-  ];
+        if (!response.ok) {
+          throw new Error('Failed to fetch banners');
+        }
+
+        const data = await response.json();
+        
+        // Filter banners where the status is 'approved'
+        const approvedBanners = data.banners.filter(banner => banner.status === 'approved');
+        setBanners(approvedBanners); // Set the filtered approved banners
+        // toast.success('Banners loaded successfully!');
+      } catch (error) {
+        setError(error.message);
+        // toast.error('Error loading banners');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBanners();
+  }, []);
+
+  // Automatic transition for banner images
+  useEffect(() => {
+    const interval = setInterval(() => {
+      nextImage();
+    }, 3000); // Change image every 5 seconds
+
+    return () => clearInterval(interval); // Clear interval on component unmount
+  }, [currentImage, banners.length]);
 
   const nextImage = () => {
-    if (desktopImages.length - 1 > currentImage) {
+    if (banners.length - 1 > currentImage) {
       setCurrentImage(prev => prev + 1);
     } else {
       setCurrentImage(0); // Reset to first image
@@ -44,19 +61,13 @@ const BannerProduct = () => {
   const prevImage = () => {
     if (currentImage !== 0) {
       setCurrentImage(prev => prev - 1);
+    } else {
+      setCurrentImage(banners.length - 1); // Go to last image
     }
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      nextImage();
-    }, 5000); // Adjust interval as needed
-
-    return () => clearInterval(interval);
-  }, [currentImage]);
-
   const renderDots = () => {
-    return desktopImages.map((_, index) => (
+    return banners.map((_, index) => (
       <span
         key={index}
         className={`h-2 w-2 rounded-full mx-1 cursor-pointer transition-all duration-300 ease-in-out
@@ -66,9 +77,18 @@ const BannerProduct = () => {
     ));
   };
 
+  if (loading) {
+    return <p>Loading banners...</p>;
+  }
+
+  if (error) {
+    return <p>Error: {error}</p>;
+  }
+
   return (
     <div className='container mx-auto px-4 rounded-xl overflow-hidden'>
       <div className='h-56 md:h-96 w-full bg-slate-200 relative'>
+        {/* Buttons for manual image control */}
         <div className='absolute z-10 h-full w-full flex items-center hidden md:flex justify-between'>
           <button onClick={prevImage} className='bg-white shadow-md rounded-full p-1'>
             <FaAngleLeft />
@@ -78,33 +98,21 @@ const BannerProduct = () => {
           </button>
         </div>
 
-        {/* Desktop and tablet version */}
-        <div className='hidden md:flex h-full w-full overflow-hidden'>
-          {desktopImages.map((imageURL, index) => (
+        {/* Banner images rendering with transition */}
+        <div className='relative h-full w-full overflow-hidden'>
+          {banners.map((banner, index) => (
             <div
-              className='w-full h-full min-w-full min-h-full transition-all'
-              key={imageURL}
-              style={{ transform: `translateX(-${currentImage * 100}%)` }}
+              key={banner.id}
+              className={`absolute top-0 left-0 w-full h-full transition-opacity duration-1000 ease-in-out
+                ${currentImage === index ? 'opacity-100' : 'opacity-0'}`}
+              style={{ transition: 'opacity 1s ease-in-out' }}
             >
-              <img src={imageURL} className='w-full h-full' />
+              <img src={banner.image} alt={banner.description} className='w-full h-full object-cover' />
             </div>
           ))}
         </div>
 
-        {/* Mobile version */}
-        <div className='flex h-full w-full overflow-hidden md:hidden'>
-          {mobileImages.map((imageURL, index) => (
-            <div
-              className='w-full h-full min-w-full min-h-full transition-all'
-              key={imageURL}
-              style={{ transform: `translateX(-${currentImage * 100}%)` }}
-            >
-              <img src={imageURL} className='w-full h-full object-cover' />
-            </div>
-          ))}
-        </div>
-
-        {/* Dots container (positioned absolutely at the bottom) */}
+        {/* Dots container */}
         <div className='absolute bottom-2 flex justify-center w-full'>
           {renderDots()}
         </div>

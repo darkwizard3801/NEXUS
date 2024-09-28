@@ -27,10 +27,10 @@ const Banners = () => {
         const data = await response.json();
         const activeBanners = data.banners.filter(banner => banner.isActive === true);
         setBanners(activeBanners); // Set the filtered active banners
-        toast.success('Banners loaded successfully!');
+        // toast.success('Banners loaded successfully!');
       } catch (error) {
         setError(error.message);
-        toast.error('Error loading banners');
+        // toast.error('Error loading banners');
       } finally {
         setLoading(false);
       }
@@ -42,7 +42,7 @@ const Banners = () => {
   const toggleDropdown = (id) => {
     setDropdownStatus((prev) => ({
       ...prev,
-      [id]: !prev[id], // Toggle the dropdown visibility for the clicked banner
+      [id]: !prev[id] ? !prev[id]:true, // Toggle the dropdown visibility for the clicked banner
     }));
   };
 

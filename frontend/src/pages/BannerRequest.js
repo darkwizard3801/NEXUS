@@ -277,7 +277,7 @@ const BannerRequest = () => {
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Description
+            No.of Days & Description 
           </label>
           <textarea
             value={data.description}
@@ -287,6 +287,7 @@ const BannerRequest = () => {
             className="mt-1 block w-full border border-gray-300 rounded-md p-2"
             rows="3"
             required
+            placeholder="enter the number of days you want  the banner to be displayed and enter any special request for the banner "
           />
         </div>
 
