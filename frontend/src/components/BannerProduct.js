@@ -68,6 +68,7 @@ const BannerProduct = () => {
 
   const renderDots = () => {
     return banners.map((_, index) => (
+      
       <span
         key={index}
         className={`h-2 w-2 rounded-full mx-1 cursor-pointer transition-all duration-300 ease-in-out
@@ -99,15 +100,15 @@ const BannerProduct = () => {
         </div>
 
         {/* Banner images rendering with transition */}
-        <div className='relative h-full w-full overflow-hidden'>
+        <div className='relative h-full w-full overflow-hidden  flex justify-center items-center'>
           {banners.map((banner, index) => (
             <div
-              key={banner.id}
+              key={banner.id || index}
               className={`absolute top-0 left-0 w-full h-full transition-opacity duration-1000 ease-in-out
                 ${currentImage === index ? 'opacity-100' : 'opacity-0'}`}
               style={{ transition: 'opacity 1s ease-in-out' }}
             >
-              <img src={banner.image} alt={banner.description} className='w-full h-full object-cover' />
+              <img src={banner.image} alt={banner.description} className='w-full h-96 object-cover' />
             </div>
           ))}
         </div>

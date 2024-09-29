@@ -80,11 +80,11 @@ const CategoryProduct = () => {
       setSortBy(value)
 
       if(value === 'asc'){
-        setData(preve => preve.sort((a,b)=>a.sellingPrice - b.sellingPrice))
+        setData(preve => preve.sort((a,b)=>a.price - b.price))
       }
 
       if(value === 'dsc'){
-        setData(preve => preve.sort((a,b)=>b.sellingPrice - a.sellingPrice))
+        setData(preve => preve.sort((a,b)=>b.price - a.price))
       }
     }
 
@@ -106,12 +106,12 @@ const CategoryProduct = () => {
                     <form className='text-sm flex flex-col gap-2 py-2'>
                         <div className='flex items-center gap-3'>
                           <input type='radio' name='sortBy' checked={sortBy === 'asc'} onChange={handleOnChangeSortBy} value={"asc"}/>
-                          <label>Price - Low to High</label>
+                          <label>price - Low to High</label>
                         </div>
 
                         <div className='flex items-center gap-3'>
                           <input type='radio' name='sortBy' checked={sortBy === 'dsc'} onChange={handleOnChangeSortBy} value={"dsc"}/>
-                          <label>Price - High to Low</label>
+                          <label>price - High to Low</label>
                         </div>
                     </form>
                 </div>

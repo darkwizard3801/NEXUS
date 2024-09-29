@@ -43,8 +43,8 @@ const UserPanel = () => {
 
                     <nav className='grid p-4'>
                         {/* <Link to={"all-users"} className='px-2 py-1 hover:bg-slate-100'>All Users</Link> */}
-                        <Link to={"orders"} className='px-2 py-1 hover:bg-slate-100'>Profile</Link>
                         <Link to={"orders"} className='px-2 py-1 hover:bg-slate-100'>My Orders</Link>
+                        <Link to={"my-profile"} className='px-2 py-1 hover:bg-slate-100'>Profile</Link>
                     </nav>
 
                  

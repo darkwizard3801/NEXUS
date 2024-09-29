@@ -18,7 +18,7 @@ const Home2 = () => {
   }, []);
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto py-1">
       <BannerProduct />
       <div className="py-10">
         <CategoryList />

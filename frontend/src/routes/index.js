@@ -29,6 +29,8 @@ import MyOrders from '../pages/MyOrders'
 import UserPanel from '../pages/UserPanel'
 import AboutUs from '../pages/AboutUs'
 import CatergoryAdd from '../pages/CatergoryAdd'
+import MyProfile from '../pages/MyProfile'
+import SearchProduct from '../pages/SearchProduct'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -110,6 +112,11 @@ const router = createBrowserRouter([
                 path : 'about',
                 element : <AboutUs/>
             },
+            {
+                path : "search",
+                element : <SearchProduct/>
+            },
+           
             
 
 
@@ -140,6 +147,11 @@ const router = createBrowserRouter([
                         path : "category-add",
                         element : <CatergoryAdd/>
                     },
+                    {
+                        path : 'my-profile',
+                        element : <MyProfile/>
+                    },
+                   
                     
                 ]
 
@@ -156,7 +168,11 @@ const router = createBrowserRouter([
                     {
                         path : "banner-req",
                         element : <BannerRequest/>
-                    }
+                    },
+                    {
+                        path : 'my-profile',
+                        element : <MyProfile/>
+                    },
                 ]
 
 
@@ -169,6 +185,10 @@ const router = createBrowserRouter([
                 {
                     path : 'orders',
                     element : <MyOrders/>
+                },
+                {
+                    path : 'my-profile',
+                    element : <MyProfile/>
                 },
                
             ]

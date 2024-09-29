@@ -16,6 +16,7 @@ const CategoryList = () => {
                 throw new Error('Failed to fetch categories'); // Throw an error if the response is not ok
             }
             const dataResponse = await response.json();
+            console.log("data resopnse",dataResponse)
             setCategoryProduct(dataResponse.data || []); // Ensure data is always an array
         } catch (err) {
             setError(err.message); // Set the error message

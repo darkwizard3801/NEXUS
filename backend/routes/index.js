@@ -5,7 +5,7 @@ const router = express.Router()
 
 const userSignUpController = require("../controller/user/userSignUp")
 const userSignInController = require('../controller/user/userSignIn')
-const userDetailsController = require('../controller/user/userDetails')
+const {userDetailsController,updateUserDetailsController} = require('../controller/user/userDetails')
 const authToken = require('../middleware/authToken')
 const userLogout = require('../controller/user/userLogout')
 // const { updateUserRole } = require('../controller/userController');
@@ -36,6 +36,8 @@ const { handleBannerRequest,fetchBanners,toggleBannerStatus,updateBannerStatus }
 
 const { getAllCategories, addCategory,toggleCategory } = require('../controller/product/categoryController');
 
+const searchProduct = require('../controller/product/searchProduct')
+const filterProductController = require('../controller/product/filterProduct')
 
 
 
@@ -58,7 +60,8 @@ router.post('/reset-password', resetPassword);
 router.post('/verify-otp', verifyOtp);
 router.post('/resend-otp', resendOtp);
 router.get('/fetch-user/:email', getUserByEmail);
-
+// router.post('/sendVerificationLink', sendVerificationLink);
+router.put('/UpdateProfile',authToken, updateUserDetailsController);
 
 
 
@@ -82,6 +85,7 @@ router.post("/category-product",getCategoryWiseProduct)
 router.post("/product-details",getProductDetails)
 
 router.get('/categories', getAllCategories);
+router.post("/filter-product",filterProductController)
 
 // Route to add a new category
 router.post('/category-add', addCategory);
@@ -94,6 +98,7 @@ router.put('/togle-cat/:id', toggleCategory);
 router.post("/upload-product",authToken,UploadProductController)
 router.get("/get-product",getProductController)
 router.post("/update-product",authToken,updateProductController)
+router.get("/search",searchProduct)
 
 
 //add to cart

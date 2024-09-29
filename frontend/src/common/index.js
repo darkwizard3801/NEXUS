@@ -25,6 +25,10 @@ const SummaryApi = {
         url : `${backendDomin}/api/all-user`,
         method : 'get'
     },
+    update_user : {
+        url : `${backendDomin}/api/UpdateProfile`,
+        method : 'put'
+    },
     updateUser : {
         url : `${backendDomin}/api/update-user`,
         method : "post"
@@ -107,14 +111,22 @@ const SummaryApi = {
         url: `${backendDomin}/api/categories`,
         method: 'get',
       },
-      categoryAdd: {
+    categoryAdd: {
         url: `${backendDomin}/api/category-add`,
         method: 'post',
       },
-      toglecat: {
+    toglecat: {
         url: `${backendDomin}/api/togle-cat`,
         method: 'put',
       },
+    searchProduct : {
+        url : `${backendDomin}/api/search`,
+        method : 'get'
+    },
+    filterProduct : {
+        url : `${backendDomin}/api/filter-product`,
+        method : 'post'
+    }
 
 
 

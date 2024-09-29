@@ -1,6 +1,6 @@
 import React, { useContext, useState,useEffect } from 'react';
 import Logo from './Logo';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { IoSearch } from "react-icons/io5";
 import { FaRegCircleUser } from "react-icons/fa6";
 import { FaShoppingCart } from "react-icons/fa";
@@ -16,6 +16,10 @@ const Header = () => {
   const navigate = useNavigate();
   const [menuDisplay, setMenuDisplay] = useState(false);
   const context = useContext(Context);
+  const searchInput = useLocation()
+  const [search,setSearch] = useState(searchInput?.search?.split("=")[1])
+  // const URLSearch = new URLSearchParams(searchInput?.search)
+  // const searchQuery = URLSearch.getAll("q")
 
   const handleLogout = async () => {
     const fetchData = await fetch(SummaryApi.logout_user.url, {
@@ -38,6 +42,16 @@ const Header = () => {
       toast.error(data.message);
     }
   };
+  const handleSearch = (e)=>{
+    const { value } = e.target
+    setSearch(value)
+
+    if(value){
+      navigate(`/search?q=${value}`)
+    }else{
+      navigate("/search")
+    }
+  }
 
   return (
     <header className='h-16 shadow-md bg-white fixed w-full z-40'>
@@ -47,11 +61,11 @@ const Header = () => {
         </Link>
 
         <div className='hidden lg:flex items-center w-full justify-between max-w-sm border rounded-full focus-within:shadow pl-2'>
-          <input type='text' placeholder='search product here...' className='w-full outline-none' />
-          <div className='text-lg min-w-[50px] h-8 bg-red-600 flex items-center justify-center rounded-r-full text-white'>
-            <IoSearch />
-          </div>
-        </div>
+                <input type='text' placeholder='search product here...' className='w-full outline-none' onChange={handleSearch} value={search} />
+                <div className='text-lg min-w-[50px] h-8 bg-red-600 flex items-center justify-center rounded-r-full text-white'>
+                <IoSearch />
+                </div>
+            </div>
 
         <div className='flex items-center gap-7'>
           <div className='relative flex justify-center'>
