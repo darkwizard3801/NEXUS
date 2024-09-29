@@ -31,6 +31,7 @@ import AboutUs from '../pages/AboutUs'
 import CatergoryAdd from '../pages/CatergoryAdd'
 import MyProfile from '../pages/MyProfile'
 import SearchProduct from '../pages/SearchProduct'
+import CreateEvent from '../pages/CreateEvent'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -115,6 +116,10 @@ const router = createBrowserRouter([
             {
                 path : "search",
                 element : <SearchProduct/>
+            },
+            {
+                path : "create-event",
+                element : <CreateEvent/>
             },
            
             

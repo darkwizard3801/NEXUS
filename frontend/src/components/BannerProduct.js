@@ -27,7 +27,7 @@ const BannerProduct = () => {
         const data = await response.json();
         
         // Filter banners where the status is 'approved'
-        const approvedBanners = data.banners.filter(banner => banner.status === 'approved');
+        const approvedBanners = data.banners.filter(banner => banner.status === 'approved' && banner.position === 'top');
         setBanners(approvedBanners); // Set the filtered approved banners
         // toast.success('Banners loaded successfully!');
       } catch (error) {
@@ -90,7 +90,7 @@ const BannerProduct = () => {
     <div className='container mx-auto px-4 rounded-xl overflow-hidden'>
       <div className='h-56 md:h-96 w-full bg-slate-200 relative'>
         {/* Buttons for manual image control */}
-        <div className='absolute z-10 h-full w-full flex items-center hidden md:flex justify-between'>
+        <div className='absolute z-10 h-full w-full  items-center hidden md:flex justify-between'>
           <button onClick={prevImage} className='bg-white shadow-md rounded-full p-1'>
             <FaAngleLeft />
           </button>
@@ -100,7 +100,7 @@ const BannerProduct = () => {
         </div>
 
         {/* Banner images rendering with transition */}
-        <div className='relative h-full w-full overflow-hidden  flex justify-center items-center'>
+        <div className='relative h-[40rem] w-full overflow-hidden  flex justify-center items-center '>
           {banners.map((banner, index) => (
             <div
               key={banner.id || index}

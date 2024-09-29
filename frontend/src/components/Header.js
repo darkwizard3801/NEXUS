@@ -1,30 +1,30 @@
-import React, { useContext, useState,useEffect } from 'react';
-import Logo from './Logo';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useContext, useState } from "react";
+import Logo from "./Logo";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { IoSearch } from "react-icons/io5";
 import { FaRegCircleUser } from "react-icons/fa6";
 import { FaShoppingCart } from "react-icons/fa";
-import { useDispatch, useSelector } from 'react-redux';
-import SummaryApi from '../common';
-import { toast } from 'react-toastify';
-import { setUserDetails } from '../store/userSlice';
-import Context from '../context';
+import { useDispatch, useSelector } from "react-redux";
+import SummaryApi from "../common";
+import { toast } from "react-toastify";
+import { setUserDetails } from "../store/userSlice";
+import Context from "../context";
 
 const Header = () => {
-  const user = useSelector(state => state.user.user);
+  const user = useSelector((state) => state.user.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [menuDisplay, setMenuDisplay] = useState(false);
   const context = useContext(Context);
-  const searchInput = useLocation()
-  const [search,setSearch] = useState(searchInput?.search?.split("=")[1])
-  // const URLSearch = new URLSearchParams(searchInput?.search)
-  // const searchQuery = URLSearch.getAll("q")
+  const searchInput = useLocation();
+  const URLSearch = new URLSearchParams(searchInput?.search);
+  const searchQuery = URLSearch.getAll("q");
+  const [search, setSearch] = useState(searchQuery);
 
   const handleLogout = async () => {
     const fetchData = await fetch(SummaryApi.logout_user.url, {
       method: SummaryApi.logout_user.method,
-      credentials: 'include'
+      credentials: "include",
     });
 
     const data = await fetchData.json();
@@ -33,25 +33,28 @@ const Header = () => {
       toast.success(data.message);
       dispatch(setUserDetails(null));
       navigate("/", { replace: true });
-       // Use 'replace' to avoid going back to the previous page
     }
-    
-      
 
     if (data.error) {
       toast.error(data.message);
     }
   };
-  const handleSearch = (e)=>{
-    const { value } = e.target
-    setSearch(value)
 
-    if(value){
-      navigate(`/search?q=${value}`)
-    }else{
-      navigate("/search")
+  const handleSearch = (e) => {
+    const { value } = e.target;
+    setSearch(value);
+
+    if (value) {
+      navigate(`/search?q=${value}`);
+    } else {
+      navigate("/search");
     }
-  }
+  };
+
+  // Navigate to the create-event page
+  const goToCreateEvent = () => {
+    navigate("/create-event");
+  };
 
   return (
     <header className='h-16 shadow-md bg-white fixed w-full z-40'>
@@ -60,20 +63,55 @@ const Header = () => {
           <Logo w={190} h={70} />
         </Link>
 
-        <div className='hidden lg:flex items-center w-full justify-between max-w-sm border rounded-full focus-within:shadow pl-2'>
-                <input type='text' placeholder='search product here...' className='w-full outline-none' onChange={handleSearch} value={search} />
-                <div className='text-lg min-w-[50px] h-8 bg-red-600 flex items-center justify-center rounded-r-full text-white'>
-                <IoSearch />
-                </div>
-            </div>
+        {/* Search Bar */}
+        {/* Desktop Search Bar */}
+        <div className='hidden md:flex items-center border rounded-full focus-within:shadow pl-2 w-1/3'>
+          <input
+            type='text'
+            placeholder='Search product here...'
+            className='w-full outline-none p-2'
+            onChange={handleSearch}
+            value={search}
+          />
+          <div className='text-lg min-w-[60px] h-10 bg-black flex items-center justify-center rounded-r-full text-white'>
+            <IoSearch />
+          </div>
+        </div>
 
-        <div className='flex items-center gap-7'>
+        {/* Mobile Search Bar */}
+        <div className='md:hidden flex items-center border rounded-full focus-within:shadow pl-2 w-full'>
+          <input
+            type='text'
+            placeholder='Search...'
+            className='w-full outline-none p-2'
+            onChange={handleSearch}
+            value={search}
+          />
+          <div className='text-lg min-w-[55px] bg-black h-10  flex items-center justify-center rounded-r-full text-white'>
+            <IoSearch />
+          </div>
+        </div>
+
+        {/* Button for Customer to create an event */}
+        {user?.role === "Customer" && (
+          <button
+            onClick={goToCreateEvent}
+            className='hidden md:block ml-4 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition truncate'
+          >
+            Create Event
+          </button>
+        )}
+
+        <div className='flex items-center gap-6'>
           <div className='relative flex justify-center'>
             {user?._id && (
-              <div className='text-3xl cursor-pointer relative flex justify-center' onClick={() => setMenuDisplay(prev => !prev)}>
-                <div className="flex flex-col px-5">
-                  <p className="text-xs font-semibold capitalize">hello,</p>
-                  <p className="text-sm font-bold capitalize mt-1">{user?.name}</p>
+              <div
+                className='text-3xl cursor-pointer relative flex justify-center'
+                onClick={() => setMenuDisplay((prev) => !prev)}
+              >
+                <div className='flex flex-col px-5'>
+                  <p className='text-xs font-semibold capitalize'>hello,</p>
+                  <p className='text-sm font-bold capitalize mt-1'>{user?.name}</p>
                 </div>
                 {user?.profilePic ? (
                   <img src={user?.profilePic} className='w-10 h-10 rounded-full' alt={user?.name} />
@@ -87,13 +125,31 @@ const Header = () => {
               <div className='absolute bg-white bottom-0 top-11 h-fit p-2 shadow-lg rounded-2xl'>
                 <nav>
                   {user?.role === "Vendor" && (
-                    <Link to={"/vendor-panel/vendor-products"} className='whitespace-nowrap hidden md:block hover:bg-slate-100 p-2' onClick={() => setMenuDisplay(false)}>Vendor Panel</Link>
+                    <Link
+                      to={"/vendor-panel/vendor-products"}
+                      className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                      onClick={() => setMenuDisplay(false)}
+                    >
+                      Vendor Panel
+                    </Link>
                   )}
                   {user?.role === "Admin" && (
-                    <Link to={"/admin-panel/all-products"} className='whitespace-nowrap hidden md:block hover:bg-slate-100 p-2' onClick={() => setMenuDisplay(false)}>Admin Panel</Link>
+                    <Link
+                      to={"/admin-panel/all-products"}
+                      className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                      onClick={() => setMenuDisplay(false)}
+                    >
+                      Admin Panel
+                    </Link>
                   )}
                   {user?.role === "Customer" && (
-                    <Link to={"/user-panel"} className='whitespace-nowrap hidden md:block hover:bg-slate-100 p-2' onClick={() => setMenuDisplay(false)}>My Account</Link>
+                    <Link
+                      to={"/user-panel"}
+                      className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                      onClick={() => setMenuDisplay(false)}
+                    >
+                      My Account
+                    </Link>
                   )}
                 </nav>
               </div>
@@ -111,9 +167,19 @@ const Header = () => {
 
           <div>
             {user?._id ? (
-              <button onClick={handleLogout} className='px-3 py-1 rounded-full text-white bg-red-600 hover:bg-red-700'>Logout</button>
+              <button
+                onClick={handleLogout}
+                className='px-3 py-1 rounded-full text-white bg-red-600 hover:bg-red-700'
+              >
+                Logout
+              </button>
             ) : (
-              <Link to={"/login"} className='px-3 py-1 rounded-full text-white bg-red-600 hover:bg-red-700'>Login</Link>
+              <Link
+                to={"/login"}
+                className='px-3 py-1 rounded-full text-white bg-green-600 hover:bg-green-700'
+              >
+                Login
+              </Link>
             )}
           </div>
         </div>

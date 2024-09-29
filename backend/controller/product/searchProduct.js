@@ -13,6 +13,9 @@ const searchProduct = async(req,res)=>{
                 },
                 {
                     category : regex
+                },
+                {
+                    brandName : regex
                 }
             ]
         })

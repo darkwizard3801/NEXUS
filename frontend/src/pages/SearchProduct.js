@@ -1,64 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import SummaryApi from '../common';
-import VerticalCard from '../components/VerticalCard';
-import productCategory from '../helpers/productCategory';
+import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import SummaryApi from '../common'
+import VerticalCard from '../components/VerticalCard'
 
 const SearchProduct = () => {
-    const query = useLocation();
-    const [data, setData] = useState([]);
-    const [filteredData, setFilteredData] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [selectCategory, setSelectCategory] = useState({});
-    const [sortBy, setSortBy] = useState('');
+    const query = useLocation()
+    const [data, setData] = useState([])
+    const [loading, setLoading] = useState(false)
+    const [sortBy, setSortBy] = useState('') // State for sorting
 
     const fetchProduct = async () => {
-        setLoading(true);
-        const response = await fetch(SummaryApi.searchProduct.url + query.search);
-        const dataResponse = await response.json();
-        setLoading(false);
+        setLoading(true)
+        const response = await fetch(SummaryApi.searchProduct.url + query.search)
+        const dataResponse = await response.json()
+        setLoading(false)
 
-        setData(dataResponse.data || []);
-        setFilteredData(dataResponse.data || []); // Initialize filtered data
-    };
-
-    useEffect(() => {
-        fetchProduct();
-    }, [query]);
-
-    const handleSelectCategory = (e) => {
-        const { value, checked } = e.target;
-
-        setSelectCategory((prev) => ({
-            ...prev,
-            [value]: checked
-        }));
-    };
-
-    const applyFilters = () => {
-        const selectedCategories = Object.keys(selectCategory).filter(category => selectCategory[category]);
-        const filtered = data.filter(product => {
-            const categoryMatch = selectedCategories.length ? selectedCategories.includes(product.category) : true;
-            return categoryMatch;
-        });
-        setFilteredData(filtered);
-    };
+        setData(dataResponse.data)
+    }
 
     useEffect(() => {
-        applyFilters();
-    }, [selectCategory, data]);
+        fetchProduct()
+    }, [query])
 
     const handleOnChangeSortBy = (e) => {
         const { value } = e.target;
         setSortBy(value);
 
-        if (value === 'asc') {
-            setFilteredData(prev => [...prev].sort((a, b) => a.price - b.price));
-        }
+        // Sort data based on selected value
+        const sortedData = [...data].sort((a, b) => {
+            if (value === 'asc') {
+                return a.price - b.price; // Low to High
+            } else if (value === 'dsc') {
+                return b.price - a.price; // High to Low
+            }
+            return 0; // No sorting
+        });
 
-        if (value === 'dsc') {
-            setFilteredData(prev => [...prev].sort((a, b) => b.price - a.price));
-        }
+        setData(sortedData); // Update the data state with sorted data
     };
 
     return (
@@ -72,40 +50,40 @@ const SearchProduct = () => {
                     <h3 className='text-base uppercase font-medium text-slate-500'>Sort by</h3>
                     <form className='text-sm flex flex-col gap-2'>
                         <div className='flex items-center gap-3'>
-                            <input type='radio' name='sortBy' checked={sortBy === 'asc'} onChange={handleOnChangeSortBy} value={"asc"} />
+                            <input 
+                                type='radio' 
+                                name='sortBy' 
+                                checked={sortBy === 'asc'} 
+                                onChange={handleOnChangeSortBy} 
+                                value={"asc"} 
+                            />
                             <label>Price - Low to High</label>
                         </div>
                         <div className='flex items-center gap-3'>
-                            <input type='radio' name='sortBy' checked={sortBy === 'dsc'} onChange={handleOnChangeSortBy} value={"dsc"} />
+                            <input 
+                                type='radio' 
+                                name='sortBy' 
+                                checked={sortBy === 'dsc'} 
+                                onChange={handleOnChangeSortBy} 
+                                value={"dsc"} 
+                            />
                             <label>Price - High to Low</label>
                         </div>
                     </form>
                 </div>
-
-                <div>
-                    <h3 className='text-base uppercase font-medium text-slate-500'>Category</h3>
-                    <form className='text-sm flex flex-col gap-2'>
-                        {productCategory.map((category, index) => (
-                            <div className='flex items-center gap-3' key={index}>
-                                <input type='checkbox' name={"category"} checked={selectCategory[category.value] || false} value={category.value} id={category.value} onChange={handleSelectCategory} />
-                                <label htmlFor={category.value}>{category.label}</label>
-                            </div>
-                        ))}
-                    </form>
-                </div>
             </div>
 
-            <p className='text-lg font-semibold my-3'>Search Results: {filteredData.length}</p>
+            <p className='text-lg font-semibold my-3'>Search Results: {data.length}</p>
 
-            {filteredData.length === 0 && !loading && (
+            {data.length === 0 && !loading && (
                 <p className='bg-white text-lg text-center p-4'>No Data Found....</p>
             )}
 
-            {filteredData.length !== 0 && !loading && (
-                <VerticalCard loading={loading} data={filteredData} />
+            {data.length !== 0 && !loading && (
+                <VerticalCard loading={loading} data={data} />
             )}
         </div>
-    );
-};
+    )
+}
 
-export default SearchProduct;
+export default SearchProduct

@@ -1,6 +1,8 @@
 import React from 'react';
-import { FaFacebook, FaTwitter, FaYoutube } from 'react-icons/fa';
+import { FaYoutube } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { FaSquareXTwitter } from "react-icons/fa6";
+import { RiInstagramFill } from "react-icons/ri";
 
 const Footer = () => {
   return (
@@ -76,10 +78,10 @@ const Footer = () => {
 
           <div className='flex space-x-4 mt-4 md:mt-0'>
             <Link to='/facebook' className='text-gray-400 hover:text-white'>
-              <FaFacebook size={20} />
+              <RiInstagramFill size={20} />
             </Link>
             <Link to='/twitter' className='text-gray-400 hover:text-white'>
-              <FaTwitter size={20} />
+              <FaSquareXTwitter size={20} />
             </Link>
             <Link to='/youtube' className='text-gray-400 hover:text-white'>
               <FaYoutube size={20} />
