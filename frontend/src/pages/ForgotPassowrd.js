@@ -49,7 +49,9 @@ const ForgotPassword = () => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setResettingPassword(true);
-
+    console.log('Reset password function called'); // Debugging line
+    // const payload = { email, otp };
+    // console.log('Payload to send:', payload);
     try {
       const response = await fetch('http://localhost:8080/api/verify-otp', {
         method: 'POST',
@@ -58,8 +60,11 @@ const ForgotPassword = () => {
         },
         body: JSON.stringify({ email, otp }),
       });
+      console.log('API response status:', response.status); // Log the response status
+      console.log('Payload sent to server:', { email, otp }); // Log the payload before sending
 
       const data = await response.json();
+      console.log("otp and email",data)
 
       if (!data.success) {
         toast.error(data.message || 'OTP verification failed');

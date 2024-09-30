@@ -32,6 +32,9 @@ import CatergoryAdd from '../pages/CatergoryAdd'
 import MyProfile from '../pages/MyProfile'
 import SearchProduct from '../pages/SearchProduct'
 import CreateEvent from '../pages/CreateEvent'
+import CoperateInfo from '../pages/CoperateInfo'
+import PrivacyPolicy from '../pages/PrivacyPolicy'
+import TermsAndConditions from '../pages/TermsAndConditions'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -121,6 +124,18 @@ const router = createBrowserRouter([
                 path : "create-event",
                 element : <CreateEvent/>
             },
+            {
+                path : "corporate-info",
+                element : <CoperateInfo/>
+            },
+            {
+                path : 'privacy-policy',
+                element : <PrivacyPolicy/>
+            },
+            {
+                path : 'terms-conditions',
+                element : <TermsAndConditions/>
+            },
            
             
 
@@ -156,6 +171,7 @@ const router = createBrowserRouter([
                         path : 'my-profile',
                         element : <MyProfile/>
                     },
+                    
                    
                     
                 ]

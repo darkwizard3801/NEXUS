@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  isOAuth: {
+    type: Boolean,
+    default: false // By default, users are not OAuth users
+},
   isVerified: {
     type: Boolean,
     default: false,
@@ -55,7 +59,7 @@ const userSchema = new mongoose.Schema({
   },
   street: {
     type: String,
-    required: true, // Uncomment if required
+    // required: true, // Uncomment if required
   },
   postOffice: {
     type: String,
@@ -73,6 +77,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     // required: true, // Uncomment if required
   },
+  resetOtp: {
+    type: String, // Field to store the OTP
+     // Do not select OTP by default
+},
+resetOtpExpire: {
+    type: Date // Field to store the expiration time of the OTP
+}
+    // required: true, // Uncomment if required
+
+  
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

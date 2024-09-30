@@ -71,6 +71,10 @@ exports.verifyOtp = async (req, res) => {
 
     try {
         const user = await User.findOne({ email });
+        
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'No user found with this email' });
+        }
 
         console.log('User found:', user);
         console.log('Provided OTP:', otp);
@@ -78,8 +82,13 @@ exports.verifyOtp = async (req, res) => {
         console.log('OTP Expiration:', user.resetOtpExpire);
         console.log('Current Time:', Date.now());
 
-        if (!user || user.resetOtp !== otp || Date.now() > user.resetOtpExpire) {
-            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        // Check if the OTP matches and is not expired
+        if (user.resetOtp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        if (Date.now() > user.resetOtpExpire) {
+            return res.status(400).json({ success: false, message: 'OTP has expired' });
         }
 
         return res.status(200).json({ success: true, message: 'OTP verified. You can reset your password now.' });
@@ -88,6 +97,7 @@ exports.verifyOtp = async (req, res) => {
         return res.status(500).json({ success: false, message: 'An error occurred. Please try again.' });
     }
 };
+
 
 // Controller for Reset Password
 exports.resetPassword = async (req, res) => {

@@ -17,7 +17,7 @@ const Footer = () => {
               <li><Link to='/portfolio' className='hover:underline text-gray-400'>Portfolio</Link></li>
               <li><Link to='/contact' className='hover:underline text-gray-400'>Contact Us</Link></li>
               <li><Link to='/about' className='hover:underline text-gray-400'>About Us</Link></li>
-              <li><Link to='/corporate' className='hover:underline text-gray-400'>Corporate Information</Link></li>
+              <li><Link to='/corporate-info' className='hover:underline text-gray-400'>Corporate Information</Link></li>
             </ul>
           </div>
 
@@ -38,9 +38,9 @@ const Footer = () => {
             <h4 className='font-bold mb-4'>CONSUMER POLICY</h4>
             <ul>
               <li><Link to='/cancellation' className='hover:underline text-gray-400'>Cancellation & Returns</Link></li>
-              <li><Link to='/terms' className='hover:underline text-gray-400'>Terms Of Use</Link></li>
+              <li><Link to='/terms-conditions' className='hover:underline text-gray-400'>Terms Of Use</Link></li>
               <li><Link to='/security' className='hover:underline text-gray-400'>Security</Link></li>
-              <li><Link to='/privacy' className='hover:underline text-gray-400'>Privacy</Link></li>
+              <li><Link to='/privacy-policy' className='hover:underline text-gray-400'>Privacy</Link></li>
               <li><Link to='/sitemap' className='hover:underline text-gray-400'>Sitemap</Link></li>
               <li><Link to='/compliance' className='hover:underline text-gray-400'>EPR Compliance</Link></li>
             </ul>
