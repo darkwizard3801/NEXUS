@@ -121,6 +121,7 @@ const BannerRequest = () => {
       const result = await response.json();
       if (response.ok) {
         toast.success("Banner request successfully submitted!");
+        
       } else {
         toast.error(result.message || "Failed to submit the banner request.");
       }
@@ -252,7 +253,11 @@ const BannerRequest = () => {
           )}
         </div>
       </div>
-
+      <h4 className="text-red-600"><u>Dimention for uploading the banner</u></h4>
+      <p className="text-green-600">
+        1.For the top banner the Dimention should be 1490 x 385<br/>
+        2.For the Center banners the Dimention should be 520 x 640
+      </p><br/><br/>
       <form onSubmit={handleFormSubmit} className="space-y-6">
         {/* Banner Image Upload */}
         <div>
@@ -306,7 +311,9 @@ const BannerRequest = () => {
           >
             <option value="">Select Position</option>
             <option value="top">Top</option>
-            <option value="middle">Middle</option>
+            <option value="center-1">Center-Right</option>
+            <option value="center-2">Center-Left</option>
+            <option value="center-3">Center-Right-Bottom</option>
             <option value="bottom">Bottom</option>
           </select>
         </div>

@@ -6,10 +6,28 @@ import { MdDelete } from "react-icons/md";
 
 const Cart = () => {
     const [data, setData] = useState([]);
+    const [userDetails, setUserDetails] = useState(null); // State to hold user details
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('Flipkart'); // For Tabs
     const context = useContext(Context);
     const loadingCart = new Array(4).fill(null);
+
+    const fetchUserDetails = async () => {
+        const userDetailsResponse = await fetch(SummaryApi.current_user.url, {
+            method: SummaryApi.current_user.method,
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        const userDetailsData = await userDetailsResponse.json();
+        console.log('Fetched User Details:', userDetailsData); // Check fetched data
+
+        if (userDetailsData.success) {
+            setUserDetails(userDetailsData.data);
+        }
+    };
 
     const fetchData = async () => {
         const response = await fetch(SummaryApi.addToCartProductView.url, {
@@ -28,6 +46,7 @@ const Cart = () => {
 
     const handleLoading = async () => {
         await fetchData();
+        await fetchUserDetails(); // Fetch user details as well
     };
 
     useEffect(() => {
@@ -35,6 +54,44 @@ const Cart = () => {
         handleLoading();
         setLoading(false);
     }, []);
+
+    const getAddress = (userDetails) => {
+        return userDetails?.addresses || '';
+        if (!userDetails || !userDetails.address) return '';
+        console.log('User details or address not found');
+
+
+        const { 
+            phoneNumber, 
+            additionalPhoneNumber, 
+            houseFlat, 
+            street, 
+            postOffice, 
+            district, 
+            state, 
+            zipCode 
+        } = userDetails.address;
+
+        const addressComponents = [];
+
+        if (houseFlat) addressComponents.push(houseFlat);
+        if (street) addressComponents.push(street);
+        if (postOffice) addressComponents.push(postOffice);
+        if (district) addressComponents.push(district);
+        if (state) addressComponents.push(state);
+        if (zipCode) addressComponents.push(zipCode);
+        
+        if (phoneNumber) addressComponents.push(`Ph: ${phoneNumber}`);
+        if (additionalPhoneNumber) addressComponents.push(`Alt: ${additionalPhoneNumber}`);
+        
+        const fullAddress = addressComponents.join(', ');
+
+        // Log the concatenated address
+        // SetFullAdresss=(fullAddress)
+        console.log('Concatenated Address:', fullAddress);
+        return fullAddress;
+    };
+    // console.log(userDetails)
 
     const increaseQty = async (id, qty) => {
         const response = await fetch(SummaryApi.updateCartProduct.url, {
@@ -45,7 +102,7 @@ const Cart = () => {
             },
             body: JSON.stringify({
                 _id: id,
-                quantity: parseInt(qty) + 1  // Ensuring it's a number to prevent concatenation
+                quantity: parseInt(qty) + 1
             })
         });
     
@@ -54,7 +111,7 @@ const Cart = () => {
             fetchData();  // Re-fetch updated cart data
         }
     };
-
+    
     const decraseQty = async (id, qty) => {
         if (qty >= 2) {
             const response = await fetch(SummaryApi.updateCartProduct.url, {
@@ -102,6 +159,14 @@ const Cart = () => {
 
     return (
         <div className='container mx-auto'>
+            {/* Address Section */}
+            <div className="bg-white p-4 mb-4">
+                <div className='flex justify-between items-center'>
+                    <h2 className='text-lg font-semibold'>Delivery Address</h2>
+                    <button className='text-blue-500 hover:underline' onClick={() => console.log('Edit Address')}>Change</button>
+                </div>
+                <p className='text-gray-600'>{getAddress(userDetails)}</p>
+            </div>
 
             {/* Tabs for Flipkart and Grocery */}
             <div className="flex justify-between border-b-2 mb-4">
@@ -166,6 +231,8 @@ const Cart = () => {
                             <div className='bg-white p-4'>
                                 <h2 className='text-white bg-red-600 px-4 py-1'>Price Details</h2>
                                 <div className='flex justify-between px-4 py-2'>
+                                    
+
                                     <p>Price ({totalQty} items)</p>
                                     <p>{displayINRCurrency(totalPrice)}</p>
                                 </div>
