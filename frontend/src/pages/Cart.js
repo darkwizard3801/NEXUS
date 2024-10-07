@@ -26,6 +26,7 @@ const Cart = () => {
 
         if (userDetailsData.success) {
             setUserDetails(userDetailsData.data);
+            console.log("user details",userDetails)
         }
     };
 
@@ -55,42 +56,7 @@ const Cart = () => {
         setLoading(false);
     }, []);
 
-    const getAddress = (userDetails) => {
-        return userDetails?.addresses || '';
-        if (!userDetails || !userDetails.address) return '';
-        console.log('User details or address not found');
-
-
-        const { 
-            phoneNumber, 
-            additionalPhoneNumber, 
-            houseFlat, 
-            street, 
-            postOffice, 
-            district, 
-            state, 
-            zipCode 
-        } = userDetails.address;
-
-        const addressComponents = [];
-
-        if (houseFlat) addressComponents.push(houseFlat);
-        if (street) addressComponents.push(street);
-        if (postOffice) addressComponents.push(postOffice);
-        if (district) addressComponents.push(district);
-        if (state) addressComponents.push(state);
-        if (zipCode) addressComponents.push(zipCode);
-        
-        if (phoneNumber) addressComponents.push(`Ph: ${phoneNumber}`);
-        if (additionalPhoneNumber) addressComponents.push(`Alt: ${additionalPhoneNumber}`);
-        
-        const fullAddress = addressComponents.join(', ');
-
-        // Log the concatenated address
-        // SetFullAdresss=(fullAddress)
-        console.log('Concatenated Address:', fullAddress);
-        return fullAddress;
-    };
+    
     // console.log(userDetails)
 
     const increaseQty = async (id, qty) => {
@@ -165,7 +131,7 @@ const Cart = () => {
                     <h2 className='text-lg font-semibold'>Delivery Address</h2>
                     <button className='text-blue-500 hover:underline' onClick={() => console.log('Edit Address')}>Change</button>
                 </div>
-                <p className='text-gray-600'>{getAddress(userDetails)}</p>
+                {userDetails && userDetails.address ? userDetails.address : 'No address available'}
             </div>
 
             {/* Tabs for Flipkart and Grocery */}

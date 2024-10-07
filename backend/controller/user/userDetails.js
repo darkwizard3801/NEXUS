@@ -63,7 +63,7 @@ async function updateUserDetailsController(req, res) {
 
         // Update user details conditionally
         if (name) user.name = name;
-        if (email) user.email = email; 
+        if (email) user.email = email;
         if (phoneNumber) user.phoneNumber = phoneNumber;
         if (additionalPhoneNumber) user.additionalPhoneNumber = additionalPhoneNumber;
 
@@ -77,6 +77,23 @@ async function updateUserDetailsController(req, res) {
         if (district) user.district = district;
         if (state) user.state = state;
         if (zipCode) user.zipCode = zipCode;
+
+        // Concatenate sub-address fields into a single 'address' field
+        const fullAddress = [
+            houseFlat ? houseFlat.trim() : "",
+            street ? street.trim() : "",
+            postOffice ? postOffice.trim() : "",
+            district ? district.trim() : "",
+            state ? state.trim() : "",
+            zipCode ? zipCode.trim() : ""
+        ]
+        .filter(Boolean) // Remove empty fields
+        .join(", "); // Join with a comma and space
+
+        // Store the concatenated address in the 'address' field (array)
+        if (fullAddress) {
+            user.address = [fullAddress];  // Storing as an array
+        }
 
         // Save the updated user
         const updatedUser = await user.save();
@@ -96,6 +113,7 @@ async function updateUserDetailsController(req, res) {
         });
     }
 }
+
 
 module.exports = {
     userDetailsController,

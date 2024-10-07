@@ -83,7 +83,12 @@ const userSchema = new mongoose.Schema({
 },
 resetOtpExpire: {
     type: Date // Field to store the expiration time of the OTP
-}
+},
+address:
+{
+  type: [String],  // Array of strings
+  default: [],  // Default value is an empty array
+},
     // required: true, // Uncomment if required
 
   
