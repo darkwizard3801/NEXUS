@@ -38,6 +38,8 @@ const { getAllCategories, addCategory,toggleCategory } = require('../controller/
 
 const searchProduct = require('../controller/product/searchProduct')
 const filterProductController = require('../controller/product/filterProduct')
+const { createEvent, getEvents, updateEventStatus } = require('../controller/user/eventController')
+ // Import the controller
 
 
 
@@ -62,6 +64,9 @@ router.post('/resend-otp', resendOtp);
 router.get('/fetch-user/:email', getUserByEmail);
 // router.post('/sendVerificationLink', sendVerificationLink);
 router.put('/UpdateProfile',authToken, updateUserDetailsController);
+router.post('/create', createEvent);
+router.get('/events', getEvents);
+router.patch('/events-del/:id', updateEventStatus);
 
 
 

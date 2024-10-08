@@ -126,7 +126,19 @@ const SummaryApi = {
     filterProduct : {
         url : `${backendDomin}/api/filter-product`,
         method : 'post'
-    }
+    },
+    event_add : {
+        url : `${backendDomin}/api/create`,
+        method : 'post'
+    },
+    user_events : {
+        url : `${backendDomin}/api/events`,
+        method : 'get'
+    },
+    events_del : {
+        url : `${backendDomin}/api/events-del`,
+        method : 'patch'
+    },
 
 
 
