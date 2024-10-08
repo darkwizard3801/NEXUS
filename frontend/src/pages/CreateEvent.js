@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Slider from 'react-slider';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import SummaryApi from '../common';
+import { toast } from 'react-toastify';
 // import MapComponent from '../components/MapComponent';
 // import { fetchLocationName } from '../helpers/fetchLocation';
 import axios from 'axios';
@@ -20,6 +22,8 @@ const redIcon = new L.Icon({
 });
 
 const CreateEvent = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [eventDetails, setEventDetails] = useState({
     eventType: '',
     occasion: '',
@@ -81,7 +85,39 @@ const CreateEvent = () => {
   };
 
   useEffect(() => {
-    fetchUserDetails(); // Fetch user details on component mount
+    const checkUserLoggedIn = async () => {
+      try {
+        const userDetailsResponse = await fetch(SummaryApi.current_user.url, {
+          method: SummaryApi.current_user.method,
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const userDetailsData = await userDetailsResponse.json();
+
+        if (userDetailsData.success) {
+          setUserDetails(userDetailsData.data);
+          setEventDetails((prevDetails) => ({
+            ...prevDetails,
+            phoneNumber: userDetailsData.data.phoneNumber || '',
+          }));
+          fetchUserEvents(userDetailsData.data.email);
+        } else {
+          // User is not logged in, redirect to home page
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Error checking user login status:', error);
+        // In case of error, redirect to home page
+        navigate('/');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkUserLoggedIn();
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -104,7 +140,7 @@ const CreateEvent = () => {
       console.error("Geolocation is not supported by this browser.");
       setLoadingLocation(false);
     }
-  }, []);
+  }, [navigate]);
   useEffect(() => {
     const fetchPlaceName = async (lat, lng, eventId) => {
       try {
@@ -195,7 +231,7 @@ const CreateEvent = () => {
 
       const result = await response.json();
       if (result.success) {
-        alert(result.message);
+      toast.success("event added successfully")
         setEventDetails({
           eventType: '',
           occasion: '',
@@ -209,7 +245,7 @@ const CreateEvent = () => {
         // Refetch the user's events after creating a new one
         fetchUserEvents(userDetails.email);
       } else {
-        alert(result.message);
+        toast.error(result.message)
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -234,6 +270,10 @@ const CreateEvent = () => {
       <Marker position={eventDetails.location} icon={redIcon} />
     ) : null;
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -278,8 +318,8 @@ const CreateEvent = () => {
         <p className="text-center">No events found. Create one below!</p>
       )}
     </div>
-
-      <div className="bg-white rounded-lg shadow-lg w-100 md:w-128 p-6">
+<div className='pb-32'>
+      <div className="bg-white rounded-lg shadow-lg w-100 md:w-128 p-6 ">
         <h2 className="text-2xl font-semibold mb-6 text-center">Create Event</h2>
         <form onSubmit={handleSubmit}>
           {/* Row with Event Type, Occasion, and Expected Guests */}
@@ -398,14 +438,14 @@ const CreateEvent = () => {
           </div>
 
           {/* Map to select location */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="mb-4 ">
+            <label className=" text-sm font-medium text-gray-700">
               Select Location
             </label>
             {loadingLocation ? (
               <p>Loading your location...</p>
             ) : (
-              <MapContainer center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} zoom={13} style={{ height: '300px', width: '100%' }}>
+              <MapContainer center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} zoom={13} style={{ height: '300px', width: '100%', position:'fixed'}}>
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -425,6 +465,7 @@ const CreateEvent = () => {
         </form>
       </div>
       </div>
+    </div>
     </div>
   );
 };
