@@ -3,6 +3,8 @@ import SummaryApi from '../common';
 import Context from '../context';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { MdDelete } from "react-icons/md";
+import { Link } from "react-router-dom";
+
 
 const Cart = () => {
     const [data, setData] = useState([]);
@@ -215,7 +217,9 @@ const Cart = () => {
                                     <p>Total Amount</p>
                                     <p>{displayINRCurrency(finalAmount)}</p>
                                 </div>
+                                <Link to={"/payment"}>
                                 <button className='w-full bg-orange-500 text-white p-2 mt-3'>Place Order</button>
+                                </Link>
                             </div>
                         )
                     }

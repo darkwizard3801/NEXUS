@@ -38,30 +38,7 @@ const CreateEvent = () => {
   const [userDetails, setUserDetails] = useState(null);
   const [userEvents, setUserEvents] = useState([]); // To store the user's events
   const [placeNames, setPlaceNames] = useState({});
-  // Fetch user details and their events
-  const fetchUserDetails = async () => {
-    const userDetailsResponse = await fetch(SummaryApi.current_user.url, {
-      method: SummaryApi.current_user.method,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const userDetailsData = await userDetailsResponse.json();
-    console.log('Fetched User Details:', userDetailsData);
-
-    if (userDetailsData.success) {
-      setUserDetails(userDetailsData.data);
-      setEventDetails((prevDetails) => ({
-        ...prevDetails,
-        phoneNumber: userDetailsData.data.phoneNumber || '', // Default to empty if not available
-      }));
-
-      // Fetch events created by the user
-      fetchUserEvents(userDetailsData.data.email);
-    }
-  };
+  
 
   // Fetch events created by the user
   const fetchUserEvents = async (email) => {
@@ -174,33 +151,7 @@ const CreateEvent = () => {
       budget: value,
     });
   };
-  const handleDelete = async (eventId) => {
-    // Call your API to update the event status to 'cancelled'
-    try {
-      const response = await fetch(`${SummaryApi.events_del.url}/${eventId}`, {
-        method: 'PATCH', // Use the appropriate method
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'cancelled' }), // Update status
-      });
-  
-      // Check if the response is OK
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-  
-      // Update the userEvents state to reflect the changes
-      setUserEvents((prevEvents) =>
-        prevEvents.map((event) =>
-          event._id === eventId ? { ...event, status: 'cancelled' } : event
-        )
-      );
-    } catch (error) {
-      console.error('Error cancelling the event:', error);
-      // Optionally, you can also show a toast notification or alert to inform the user
-    }
-  };
+ 
   
 
 
@@ -232,6 +183,7 @@ const CreateEvent = () => {
       const result = await response.json();
       if (result.success) {
       toast.success("event added successfully")
+      navigate("/recomendated-events")
         setEventDetails({
           eventType: '',
           occasion: '',
@@ -279,45 +231,8 @@ const CreateEvent = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-4xl">
        
-        {/* Display user's events */}
-        <div className="mb-8 max-w-7xl mx-auto">
-      <h3 className="text-xl font-semibold mb-4 text-center">Your Created Events</h3>
-      {userEvents.length > 0 ? (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {userEvents
-            .filter((event) => event.createdBy.email === userDetails?.email) // Filter events by user email
-            .map((event) => (
-              <li
-                key={event._id}
-                className={`bg-white shadow-md rounded-lg p-6 transition-transform transform hover:scale-105 ${event.status === 'cancelled' ? 'opacity-50' : ''}`}
-              >
-                <h4 className="text-lg font-semibold">{event.eventType} - {event.occasion}</h4>
-                <p className="text-black py-2"><b>Guests:</b> {event.guests}</p>
-                {/* <p className="text-gray-700">Budget: ₹{event.budget[0]} - ₹{event.budget[1]}</p> */}
-                <p className="text-black"><b>Date:</b> {new Date(event.date).toLocaleDateString()}</p>
-                <p className="text-black py-2"><b>Location:</b> {placeNames[event._id] || 'Loading...'}</p> {/* Display place name */}
-                
-                {/* Delete Icon and Cancelled Box */}
-                {event.status !== 'cancelled' ? (
-                  <button
-                    className="mt-4 text-red-500 hover:text-red-700"
-                    onClick={() => handleDelete(event._id)}
-                    aria-label="Cancel event"
-                  >
-                    <FaTrash className="inline-block" />
-                  </button>
-                ) : (
-                  <div className="mt-4 bg-red-100 text-red-500 border border-red-500 rounded text-center p-2">
-                    Cancelled
-                  </div>
-                )}
-              </li>
-            ))}
-        </ul>
-      ) : (
-        <p className="text-center">No events found. Create one below!</p>
-      )}
-    </div>
+       
+     
 <div className='pb-32'>
       <div className="bg-white rounded-lg shadow-lg w-100 md:w-128 p-6 ">
         <h2 className="text-2xl font-semibold mb-6 text-center">Create Event</h2>
@@ -445,7 +360,7 @@ const CreateEvent = () => {
             {loadingLocation ? (
               <p>Loading your location...</p>
             ) : (
-              <MapContainer center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} zoom={13} style={{ height: '300px', width: '100%', position:'fixed'}}>
+              <MapContainer center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} zoom={13} style={{ height: '300px', width: '100%'}}>
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

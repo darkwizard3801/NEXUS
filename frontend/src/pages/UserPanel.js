@@ -45,6 +45,7 @@ const UserPanel = () => {
                         {/* <Link to={"all-users"} className='px-2 py-1 hover:bg-slate-100'>All Users</Link> */}
                         <Link to={"orders"} className='px-2 py-1 hover:bg-slate-100'>My Orders</Link>
                         <Link to={"my-profile"} className='px-2 py-1 hover:bg-slate-100'>Profile</Link>
+                        <Link to={"my-events"} className='px-2 py-1 hover:bg-slate-100'>My Events</Link>
                     </nav>
 
                  

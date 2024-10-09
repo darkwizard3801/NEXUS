@@ -35,6 +35,8 @@ import CreateEvent from '../pages/CreateEvent'
 import CoperateInfo from '../pages/CoperateInfo'
 import PrivacyPolicy from '../pages/PrivacyPolicy'
 import TermsAndConditions from '../pages/TermsAndConditions'
+import MyEvents from '../pages/MyEvents'
+import RecomendedEvents from '../pages/RecomendedEvents'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -136,6 +138,12 @@ const router = createBrowserRouter([
                 path : 'terms-conditions',
                 element : <TermsAndConditions/>
             },
+            {
+                path : 'recomendated-events',
+                element : <RecomendedEvents/>
+            },
+          
+           
            
             
 
@@ -210,6 +218,10 @@ const router = createBrowserRouter([
                 {
                     path : 'my-profile',
                     element : <MyProfile/>
+                },
+                {
+                    path : 'my-events',
+                    element : <MyEvents/>
                 },
                
             ]
