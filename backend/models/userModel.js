@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
   isOAuth: {
     type: Boolean,
     default: false // By default, users are not OAuth users
-},
+  },
   isVerified: {
     type: Boolean,
     default: false,
@@ -79,19 +79,19 @@ const userSchema = new mongoose.Schema({
   },
   resetOtp: {
     type: String, // Field to store the OTP
-     // Do not select OTP by default
-},
-resetOtpExpire: {
-    type: Date // Field to store the expiration time of the OTP
-},
-address:
-{
-  type: [String],  // Array of strings
-  default: [],  // Default value is an empty array
-},
-    // required: true, // Uncomment if required
-
-  
+    // Do not select OTP by default
+  },
+  resetOtpExpire: {
+    type: Date, // Field to store the expiration time of the OTP
+  },
+  address: {
+    type: [String],  // Array of strings
+    default: [],  // Default value is an empty array
+  },
+  licenseNumber: {
+    type: String, // License number field added
+    default: '', // Optional, can be left blank if not provided
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

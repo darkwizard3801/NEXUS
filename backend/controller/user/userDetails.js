@@ -43,7 +43,8 @@ async function updateUserDetailsController(req, res) {
         district,
         state,
         zipCode,
-        role // Include role from request body
+        role, // Include role from request body
+        licenseNumber // New field added
     } = req.body;
 
     console.log("Incoming request data:", req.body);
@@ -66,9 +67,8 @@ async function updateUserDetailsController(req, res) {
         if (email) user.email = email;
         if (phoneNumber) user.phoneNumber = phoneNumber;
         if (additionalPhoneNumber) user.additionalPhoneNumber = additionalPhoneNumber;
-
-        // Update role if provided
         if (role) user.role = role;
+        if (licenseNumber) user.licenseNumber = licenseNumber; // Update licenseNumber
 
         // Update address fields directly
         if (houseFlat) user.houseFlat = houseFlat;
@@ -113,6 +113,7 @@ async function updateUserDetailsController(req, res) {
         });
     }
 }
+
 
 
 module.exports = {

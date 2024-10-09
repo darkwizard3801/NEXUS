@@ -10,6 +10,7 @@ const MYProfile = () => {
     profilePic: '',
     phoneNumber: '',
     additionalPhoneNumber: '',
+    licenseNumber: '', // Add license number to the state
     houseFlat: '',
     street: '',
     postOffice: '',
@@ -48,6 +49,7 @@ const MYProfile = () => {
         profilePic: result.data.profilePic || '',
         phoneNumber: result.data.phoneNumber || '',
         additionalPhoneNumber: result.data.additionalPhoneNumber || '',
+        licenseNumber: result.data.licenseNumber || '', // Set license number if exists
         houseFlat: result.data.houseFlat || '',
         street: result.data.street || '',
         postOffice: result.data.postOffice || '',
@@ -223,7 +225,7 @@ const MYProfile = () => {
           <div>
             <label className="block font-semibold">Phone Number</label>
             <input
-              type="text"
+              type="number"
               name="phoneNumber"
               value={userDetails.phoneNumber} // Bind the value to the state
               onChange={handleChange}
@@ -235,17 +237,31 @@ const MYProfile = () => {
           </div>
 
           {role === 'Vendor' && (
-            <div>
-              <label className="block font-semibold">Additional Phone Number (optional)</label>
-              <input
-                type="text"
-                name="additionalPhoneNumber"
-                value={userDetails.additionalPhoneNumber} // Bind the value to the state
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-                maxLength={10}
-              />
-            </div>
+            <>
+              <div>
+                <label className="block font-semibold">Additional Phone Number (optional)</label>
+                <input
+                  type="number"
+                  name="additionalPhoneNumber"
+                  value={userDetails.additionalPhoneNumber} // Bind the value to the state
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  maxLength={10}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold">License Number</label>
+                <input
+                  type="text"
+                  name="licenseNumber"
+                  value={userDetails.licenseNumber} // Bind the value to the state
+                  onChange={handleChange}
+                  className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

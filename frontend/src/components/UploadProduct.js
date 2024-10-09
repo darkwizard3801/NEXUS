@@ -22,6 +22,7 @@ const UploadProduct = ({ onClose, fetchData }) => {
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [licenseNumber, setLicenseNumber] = useState(""); // State to store license number
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,11 +43,18 @@ const UploadProduct = ({ onClose, fetchData }) => {
       });
       const userDetails = await response.json();
       const userEmail = userDetails?.data?.email;
+      const userLicenseNumber = userDetails?.data?.licenseNumber; // Assuming licenseNumber is part of userDetails
 
       if (userEmail) {
         setData((prevData) => ({ ...prevData, user: userEmail }));
       } else {
         toast.error("Failed to fetch user email.");
+      }
+
+      if (userLicenseNumber) {
+        setLicenseNumber(userLicenseNumber); // Set license number if it exists
+      } else {
+        toast.error("No license number found. Please provide your license number.");
       }
     } catch (error) {
       toast.error("An error occurred while fetching user details.");
@@ -73,10 +81,7 @@ const UploadProduct = ({ onClose, fetchData }) => {
 
       if (dataResponse.success) {
         console.log('Enabled categories:', enabledCategories);
-      } 
-      // else {
-      //   toast.error("Failed to fetch categories.");
-      // }
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error("An error occurred while fetching categories.");
@@ -90,8 +95,8 @@ const UploadProduct = ({ onClose, fetchData }) => {
     setData((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleUploadProduct = async (e) => {
-const file = e.target.files[0];
+  const handleUploadProduct = async (e) => {
+    const file = e.target.files[0];
     if (file) {
       const uploadImageCloudinary = await uploadImage(file);
       setData((prev) => ({
@@ -110,6 +115,12 @@ const file = e.target.files[0];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if the license number exists
+    if (!licenseNumber) {
+      toast.error("You must provide a valid license number before uploading a product.");
+      return;
+    }
 
     try {
       const response = await fetch(SummaryApi.uploadProduct.url, {
