@@ -16,7 +16,7 @@ const updateUser = require('../controller/user/updateUser')
 const UploadProductController = require('../controller/product/uploadProduct')
 const getProductController = require('../controller/product/getProduct')
 const updateProductController = require('../controller/product/updateProduct')
-const { disableProduct , enableProduct } = require('../controller/product/productController'); // Adjust the path to your controller
+const { disableProduct , enableProduct, updateSponsorStatus } = require('../controller/product/productController'); // Adjust the path to your controller
 const verifyEmailController = require('../controller/user/verifyEmailController')
 const { forgotPassword, resetPassword, verifyOtp, resendOtp } = require('../controller/user/forgotPasswordController')
 const { getUserByEmail } = require('../controller/user/fetchuser')
@@ -88,7 +88,7 @@ router.patch('/enable/:id', enableProduct);
 router.get("/get-categoryProduct",getCategoryProduct)
 router.post("/category-product",getCategoryWiseProduct)
 router.post("/product-details",getProductDetails)
-
+router.patch("/sponser/:id",updateSponsorStatus)
 router.get('/categories', getAllCategories);
 router.post("/filter-product",filterProductController)
 

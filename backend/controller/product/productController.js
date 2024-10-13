@@ -44,4 +44,36 @@ const enableProduct = async (req, res) => {
   }
 };
 
-module.exports = { disableProduct, enableProduct };
+const updateSponsorStatus = async (req, res) => {
+  try {
+    const { id } = req.params; // Get product ID from URL parameters
+    const { sponsor } = req.body; // Get the sponsor status from the request body
+
+    // Find the product by ID and update the sponsor field
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { sponsor: sponsor }, // Update the sponsor field
+      { new: true } // Return the updated document
+    );
+
+    // Check if the product was found and updated
+    if (!updatedProduct) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // Send a success response
+    res.status(200).json({
+      success: true,
+      message: 'Sponsor status updated successfully',
+      data: updatedProduct,
+    });
+  } catch (error) {
+    console.error('Error updating sponsor status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update sponsor status',
+    });
+  }
+};
+
+module.exports = { disableProduct, enableProduct, updateSponsorStatus };

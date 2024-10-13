@@ -7,6 +7,7 @@ const addToCartController = async (req, res) => {
 
     // Ensure quantity is a number
     const productQuantity = parseInt(quantity, 10);
+    console.log(productQuantity)
 
     // Check if the product is already in the cart for the current user
     const isProductInCart = await addToCartModel.findOne({ productId, userId: currentUser });
@@ -53,4 +54,4 @@ const addToCartController = async (req, res) => {
 module.exports = addToCartController;
 
 
-module.exports = addToCartController;
+

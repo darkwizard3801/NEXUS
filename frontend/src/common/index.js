@@ -139,6 +139,10 @@ const SummaryApi = {
         url : `${backendDomin}/api/events-del`,
         method : 'patch'
     },
+   sponser : {
+        url : `${backendDomin}/api/sponser`,
+        method : 'patch'
+    },
 
 
 

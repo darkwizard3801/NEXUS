@@ -153,6 +153,9 @@ const MYProfile = () => {
       
       // Reload the page after successful update
       fetchUserDetails()
+      setTimeout(() => {
+        window.location.reload();
+        }, 5000);
       
     } catch (error) {
       toast.error(error.message);
@@ -215,6 +218,7 @@ const MYProfile = () => {
                 name="email"
                 value={userDetails.email} // Bind the value to the state
                 onChange={handleChange}
+                readOnly
                 className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
                 required
               />

@@ -46,6 +46,7 @@ const VendorPanel = () => {
                         <Link to={"vendor-products"} className='px-2 py-1 hover:bg-slate-100'>All product</Link>
                         <Link to={"banner-req"} className='px-2 py-1 hover:bg-slate-100'>Request banner Adds</Link>
                         <Link to={"my-profile"} className='px-2 py-1 hover:bg-slate-100'>Profile</Link>
+                        <Link to={"sponser-add"} className='px-2 py-1 hover:bg-slate-100'>Sponser Add Request</Link>
 
                     </nav>
 

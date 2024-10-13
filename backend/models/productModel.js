@@ -8,7 +8,8 @@ const productSchema = mongoose.Schema({
     description: String,
     price: Number,
     user: String,
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    sponsor: {type: Boolean, default: false },
 }, {
     timestamps: true
 });

@@ -37,6 +37,7 @@ import PrivacyPolicy from '../pages/PrivacyPolicy'
 import TermsAndConditions from '../pages/TermsAndConditions'
 import MyEvents from '../pages/MyEvents'
 import RecomendedEvents from '../pages/RecomendedEvents'
+import SponserAdd from '../pages/SponserAdd'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -193,6 +194,10 @@ const router = createBrowserRouter([
                     {
                         path : "vendor-products",
                         element : <VendorProducts/>
+                    },
+                    {
+                        path : "sponser-add",
+                        element : <SponserAdd/>
                     },
                     {
                         path : "banner-req",

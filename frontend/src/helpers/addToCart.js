@@ -7,7 +7,7 @@ const addToCart = async (e, id, quantity) => {
 
     // Ensure quantity is passed as a number
     const qtyToSend = parseInt(quantity, 10); 
-
+    console.log(qtyToSend)
     const response = await fetch(SummaryApi.addToCartProduct.url, {
         method: SummaryApi.addToCartProduct.method,
         credentials: 'include',

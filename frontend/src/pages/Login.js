@@ -46,7 +46,6 @@ const Login = () => {
             // Check if the response has a success property
             if (dataApi.success) {
                 // Use a fallback message
-                toast.success(dataApi.message || "Login successful");
                 const userDetailsResponse = await fetch(SummaryApi.current_user.url, {
                     method: SummaryApi.current_user.method,
                     credentials: "include",
@@ -60,16 +59,27 @@ const Login = () => {
 
                 if (userDetails && userDetails.data && userDetails.data.role) {
                     const userRole = userDetails.data.role;
+                    const isVerified = userDetails.data.isVerified;
+
+                    if (!isVerified) {
+                        toast.error("Please verify your email before proceeding.");
+                        return; // Prevent further execution if email is not verified
+                    }
 
                     if (userRole === "Vendor") {
                         navigate("/");
                         fetchUserDetails();
+                        toast.success(dataApi.message || "Login successful");
+
+                        
                     } else if (userRole === "Customer") {
                         navigate("/",{ replace: true });
-                         // Reload the page after 500 mili seconds
-                        setTimeout(() => {
-                        window.location.reload();
-                        }, 500);
+                        
+                         
+                        fetchUserDetails();
+                        toast.success(dataApi.message || "Login successful");
+
+                        
                     } else {
                         toast.error("Invalid role");
                     }

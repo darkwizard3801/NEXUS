@@ -9,8 +9,8 @@ const VerticalCard = ({loading,data = []}) => {
     const loadingList = new Array(13).fill(null)
     const { fetchUserAddToCart } = useContext(Context)
 
-    const handleAddToCart = async(e,id)=> {
-        await addToCart(e,id)
+    const handleAddToCart = async(e,id,quantity)=> {
+        await addToCart(e,id,1)
         fetchUserAddToCart()
     }
 
