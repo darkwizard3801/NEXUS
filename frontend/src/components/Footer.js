@@ -77,7 +77,7 @@ const Footer = () => {
           </div>
 
           <div className='flex space-x-4 mt-4 md:mt-0'>
-            <Link to='/facebook' className='text-gray-400 hover:text-white'>
+            <Link to='/instagram' className='text-gray-400 hover:text-white'>
               <RiInstagramFill size={20} />
             </Link>
             <Link to='/twitter' className='text-gray-400 hover:text-white'>

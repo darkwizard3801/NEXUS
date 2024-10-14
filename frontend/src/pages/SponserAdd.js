@@ -73,7 +73,15 @@ const SponserAdd = () => {
   return (
     <div>
       <ToastContainer position="top-center" />
-      <p className='font-semibold text-2xl'>My Products</p>
+      <div className='bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md'>
+  <p className='font-bold text-sm'>Disclaimer:</p>
+  <p className='text-sm'>
+    Products shown on the sponsored page will inccur a 5% commission if purchased by a customer.
+  </p>
+</div>
+
+
+      <p className='font-semibold text-2xl py-12'>My Products</p>
 
       {/* Sponsored Products Section */}
       <h2 className="text-lg font-bold my-4">Your Sponsored Requests</h2>

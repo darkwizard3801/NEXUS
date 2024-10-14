@@ -35,6 +35,7 @@ async function updateUserDetailsController(req, res) {
     const {
         name,
         email,
+        profilePic,
         phoneNumber,
         additionalPhoneNumber,
         houseFlat,
@@ -43,8 +44,8 @@ async function updateUserDetailsController(req, res) {
         district,
         state,
         zipCode,
-        role, // Include role from request body
-        licenseNumber // New field added
+        role,
+        licenseNumber
     } = req.body;
 
     console.log("Incoming request data:", req.body);
@@ -68,7 +69,8 @@ async function updateUserDetailsController(req, res) {
         if (phoneNumber) user.phoneNumber = phoneNumber;
         if (additionalPhoneNumber) user.additionalPhoneNumber = additionalPhoneNumber;
         if (role) user.role = role;
-        if (licenseNumber) user.licenseNumber = licenseNumber; // Update licenseNumber
+        if (licenseNumber) user.licenseNumber = licenseNumber;
+        if (profilePic) user.profilePic = profilePic; // Update profilePic if provided
 
         // Update address fields directly
         if (houseFlat) user.houseFlat = houseFlat;
@@ -80,12 +82,12 @@ async function updateUserDetailsController(req, res) {
 
         // Concatenate sub-address fields into a single 'address' field
         const fullAddress = [
-            houseFlat ? houseFlat.trim() : "",
-            street ? street.trim() : "",
-            postOffice ? postOffice.trim() : "",
-            district ? district.trim() : "",
-            state ? state.trim() : "",
-            zipCode ? zipCode.trim() : ""
+            houseFlat?.trim() || "",
+            street?.trim() || "",
+            postOffice?.trim() || "",
+            district?.trim() || "",
+            state?.trim() || "",
+            zipCode?.trim() || ""
         ]
         .filter(Boolean) // Remove empty fields
         .join(", "); // Join with a comma and space
@@ -110,9 +112,11 @@ async function updateUserDetailsController(req, res) {
             message: "An error occurred while updating user details",
             error: true,
             success: false,
+            details: err.message // Provide error details for debugging
         });
     }
 }
+
 
 
 

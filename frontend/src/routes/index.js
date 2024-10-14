@@ -38,6 +38,7 @@ import TermsAndConditions from '../pages/TermsAndConditions'
 import MyEvents from '../pages/MyEvents'
 import RecomendedEvents from '../pages/RecomendedEvents'
 import SponserAdd from '../pages/SponserAdd'
+import NotFound from '../pages/404'
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -142,6 +143,10 @@ const router = createBrowserRouter([
             {
                 path : 'recomendated-events',
                 element : <RecomendedEvents/>
+            },
+            {
+                path : '*',
+                element : <NotFound/>
             },
           
            

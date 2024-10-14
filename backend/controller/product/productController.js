@@ -1,5 +1,5 @@
 const Product = require('../../models/productModel');
-
+const cron = require('node-cron');
 // Controller to disable a product
 const disableProduct = async (req, res) => {
   const { id } = req.params;
@@ -59,6 +59,18 @@ const updateSponsorStatus = async (req, res) => {
     // Check if the product was found and updated
     if (!updatedProduct) {
       return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // If the sponsor status is set to true, schedule it to revert after a week
+    if (sponsor) {
+      // Schedule a job to update the sponsor status to false after 1 week
+      cron.schedule('* * * * *', async () => {
+        const revertDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Current time + 1 week
+        if (Date.now() >= revertDate) {
+          await Product.findByIdAndUpdate(id, { sponsor: false });
+          console.log('Sponsor status reverted to false for product ID:', id);
+        }
+      });
     }
 
     // Send a success response

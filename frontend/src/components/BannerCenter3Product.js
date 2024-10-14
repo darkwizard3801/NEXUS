@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SummaryApi from '../common';
 
-const BannerCenter3Product = () => {
+const BannerCenter1Product = () => {
   const [banners, setBanners] = useState([]);
   const [currentImage, setCurrentImage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ const BannerCenter3Product = () => {
     <div className="container mx-auto px-4 rounded-xl overflow-hidden">
       <div className="h-80 md:h-[40rem] w-full bg-slate-200 relative">
         {banners.length > 0 ? (
-          <div className="relative h-full w-full overflow-hidden flex justify-center items-center flex-row">
+          <div className="relative h-full w-full overflow-hidden flex justify-center items-center">
             {banners.map((banner, index) => (
               <div
                 key={banner.id || index}
@@ -59,7 +59,12 @@ const BannerCenter3Product = () => {
                   ${currentImage === index ? 'opacity-100' : 'opacity-0'}`}
                 style={{ transition: 'opacity 1s ease-in-out' }}
               >
-                <img src={banner.image} alt={banner.description} className="w-full h-full object-cover" />
+                <img
+                  src={banner.image}
+                  alt={banner.description}
+                  className="w-full h-full object-cover  rounded-lg"
+                  loading="lazy" // Lazy load images
+                />
               </div>
             ))}
           </div>
@@ -73,4 +78,4 @@ const BannerCenter3Product = () => {
   );
 };
 
-export default BannerCenter3Product;
+export default BannerCenter1Product;
