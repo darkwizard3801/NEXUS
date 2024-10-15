@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, lazy, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { useInView } from 'react-intersection-observer';
+import { FaComments } from 'react-icons/fa'; // Import an icon from react-icons
 
 // Lazy load your components
 const CategoryList = lazy(() => import('../components/CategoryList'));
@@ -113,6 +114,24 @@ const Home2 = () => {
         <div className="flex justify-center mt-6">
           <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Explore Now</button>
         </div>
+      </div>
+
+      {/* Chatbot Icon */}
+      <div 
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#39ac31',
+          padding: '15px',
+          borderRadius: '50%',
+          boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+          cursor: 'pointer',
+          zIndex: 1000,
+        }}
+        onClick={() => alert('Chatbot activated!')} // You can replace this with your chatbot logic
+      >
+        <FaComments size={24} color="#fff" />
       </div>
     </div>
   );

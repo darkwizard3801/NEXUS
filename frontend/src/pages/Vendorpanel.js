@@ -10,7 +10,7 @@ const VendorPanel = () => {
 
 
 
-     const user = useSelector(state => state?.user?.user)
+    const user = useSelector(state => state?.user?.user)
     const navigate = useNavigate()
 
 

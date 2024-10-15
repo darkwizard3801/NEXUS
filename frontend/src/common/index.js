@@ -143,6 +143,10 @@ const SummaryApi = {
         url : `${backendDomin}/api/sponser`,
         method : 'patch'
     },
+    checkout : {
+        url : `${backendDomin}/api/checkout`,
+        method : 'post'
+    },
 
 
 
