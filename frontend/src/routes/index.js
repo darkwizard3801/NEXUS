@@ -39,7 +39,10 @@ import MyEvents from '../pages/MyEvents'
 import RecomendedEvents from '../pages/RecomendedEvents'
 import SponserAdd from '../pages/SponserAdd'
 import NotFound from '../pages/404'
-import Payment from '../pages/Payment'
+
+import PaymentSuccess from '../pages/PaymentSuccess'
+import Chat from '../pages/Chat'
+
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
 
@@ -150,9 +153,14 @@ const router = createBrowserRouter([
                 element : <NotFound/>
             },
             {
-                path : 'payment',
-                element : <Payment/>
+                path : 'payment-success',
+                element : <PaymentSuccess/>
             },
+            {
+                path : 'chat',
+                element : <Chat/>
+            },
+           
           
            
            

@@ -1,4 +1,3 @@
-// models/orderModel.js
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
@@ -25,12 +24,25 @@ const orderSchema = new mongoose.Schema({
                 type: String,
                 required: true,
             },
+            
             quantity: {
                 type: Number,
                 required: true,
             },
             price: {
                 type: Number,
+                required: true,
+            },
+            vendor: {
+                type: String,
+                required: true,
+            },
+            image: {
+                type: String,
+                required: true,
+            },
+            vendorName: {
+                type: String,
                 required: true,
             },
         },
@@ -49,7 +61,27 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        default: 'Pending', // Possible values: 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'
+        default: 'Pending', // Possible values: 'Pending', 'Ordered', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'
+    },
+    paymentId: {
+        type: String,
+        required: false, // Optional, can be set after payment is made
+    },
+    invoicePath: {
+        type: String,
+        required: false, // Optional, can be set after invoice generation
+    },
+    invoiceNumber:{
+        type: String,
+    },
+    deliveryDate:{
+        type: Date,
+    },
+    cancellationReason:{
+        type: String,
+    },
+    cancelledAt:{
+        type: Date,
     },
     createdAt: {
         type: Date,

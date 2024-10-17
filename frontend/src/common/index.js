@@ -147,6 +147,22 @@ const SummaryApi = {
         url : `${backendDomin}/api/checkout`,
         method : 'post'
     },
+    orderDetails : {
+        url : `${backendDomin}/api/order-view`,
+        method : 'get'
+    },
+    cancelOrder : {
+        url : `${backendDomin}/api/cancel-order`,
+        method : 'post'
+    },
+    updateOrderWithPayment : {
+        url : `${backendDomin}/api/updateOrderWithPayment`,
+        method : 'post'
+    },
+    clear_cart : {
+        url : `${backendDomin}/api/clear-cart`,
+        method : 'delete'
+    },
 
 
 

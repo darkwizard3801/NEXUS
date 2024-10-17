@@ -39,7 +39,8 @@ const { getAllCategories, addCategory,toggleCategory } = require('../controller/
 const searchProduct = require('../controller/product/searchProduct')
 const filterProductController = require('../controller/product/filterProduct')
 const { createEvent, getEvents, updateEventStatus } = require('../controller/user/eventController')
-const {  createOrUpdateOrder } = require('../controller/user/orderController')
+const {  createOrUpdateOrder, getAllOrders, updateOrderWithPayment, cancelOrder } = require('../controller/user/orderController')
+const { clearCart } = require('../controller/user/cartController')
  // Import the controller
 
 
@@ -116,8 +117,10 @@ router.get("/view-card-product",authToken,addToCartViewProduct)
 router.post("/update-cart-product",authToken,updateAddToCartProduct)
 router.post("/delete-cart-product",authToken,deleteAddToCartProduct)
 router.post('/checkout', createOrUpdateOrder);
-
-
+router.get('/order-view',getAllOrders);
+router.post('/cancel-order',cancelOrder);
+router.post('/updateOrderWithPayment', updateOrderWithPayment);
+router.delete('/clear-cart', authToken, clearCart);
 //contacts
 
 router.post('/contact', handleContactForm);
