@@ -241,109 +241,112 @@ const MyOrders = () => {
                 
 
                 {expandedOrderId === order._id && (
-                  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div
-                      className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative"
-                      style={{ maxHeight: '80vh', overflowY: 'auto' }}
-                    >
-                      {/* Close Button */}
-                      <button
-                        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-                        onClick={() => toggleOrderDetails(order._id)}
-                      >
-                        <IoCloseSharp className="text-2xl" />
-                      </button>
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div
+      className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative"
+      style={{ maxHeight: '80vh', overflowY: 'auto' }}
+    >
+      {/* Close Button */}
+      <button
+        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+        onClick={() => toggleOrderDetails(order._id)}
+      >
+        <IoCloseSharp className="text-2xl" />
+      </button>
 
-                      <h3 className="font-semibold text-gray-800 mb-2">Order ID: {order._id}</h3>
-                      <div className="text-gray-600 mb-4">
-                        <h4 className="font-semibold">Address:</h4>
-                        <p className="whitespace-pre-line">{order.address}</p>
-                      </div>
-                      <p className="font-semibold text-black">
-                        Status: <span className={getStatusClass(order.status)}>{order.status}</span>
-                      </p>
-                      <p>Delivery Date: {new Date(order.deliveryDate).toLocaleDateString()}</p>
+      <h3 className="font-semibold text-gray-800 mb-2">Order ID: {order._id}</h3>
+      <div className="text-gray-600 mb-4">
+        <h4 className="font-semibold">Address:</h4>
+        <p className="whitespace-pre-line">{order.address}</p>
+      </div>
+      <p className="font-semibold text-black">
+        Status: <span className={getStatusClass(order.status)}>{order.status}</span>
+      </p>
+      <p>Delivery Date: {new Date(order.deliveryDate).toLocaleDateString()}</p>
 
-                      <div className="mt-4">
-                        <h4 className="font-semibold text-gray-700">Products:</h4>
-                        <ul className="list-disc pl-5 space-y-1">
-                          {order.products.map((product, index) => (
-                            <li key={index} className="text-gray-600">
-                              {product.productName} - {product.quantity} x ₹{product.price}
-                              <br />
-                              <img
-                                src={product.image}
-                                alt={product.productName}
-                                className="w-20 h-20 object-cover mt-1"
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+      <div className="mt-4">
+        <h4 className="font-semibold text-gray-700">Products:</h4>
+        <ul className="list-disc pl-5 space-y-1">
+          {order.products.map((product, index) => (
+            <li key={index} className="bg-gray-100 rounded-md p-4 flex items-center space-x-4">
+              <img
+                src={product.image}
+                alt={product.productName}
+                className="w-20 h-20 object-cover"
+              />
+              <div className="flex-1">
+                <div className="text-gray-800 font-semibold">{product.productName}</div>
+                <div className="text-gray-600">
+                  Quantity: {product.quantity} x ₹{product.price}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-                      <div className="mt-4">
-                        <p className="text-gray-700 font-semibold">Total Price: ₹{order.totalPrice || '0.00'}</p>
-                        <p className="text-gray-700 font-semibold">Discount: ₹{order.discount || '0.00'}</p>
-                        <p className="text-gray-700 font-semibold">Final Amount: ₹{order.finalAmount}</p>
-                      </div>
+      <div className="mt-4">
+        <p className="text-gray-700 font-semibold">Total Price: ₹{order.totalPrice || '0.00'}</p>
+        <p className="text-gray-700 font-semibold">Discount: ₹{order.discount || '0.00'}</p>
+        <p className="text-gray-700 font-semibold">Final Amount: ₹{order.finalAmount}</p>
+      </div>
 
-                      <div className="mt-4 flex space-x-2">
-                        <button
-                          className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700"
-                          onClick={() => downloadInvoice(order)}
-                        >
-                          <FaDownload className="inline mr-1" /> Download Invoice
-                        </button>
-                       
-                        
-                        
-                        {order.status !== 'Cancelled' && (
-                          <button 
-                            className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-                            onClick={() => setShowCancellationForm(true)}
-                          >
-                            <FaTimes className="inline mr-1" /> Cancel Order
-                          </button>
-                        )}
-                      </div>
+      <div className="mt-4 flex space-x-2">
+        <button
+          className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700"
+          onClick={() => downloadInvoice(order)}
+        >
+          <FaDownload className="inline mr-1" /> Download Invoice
+        </button>
 
-                      {showCancellationForm && (
-                        <div className="mt-4 bg-gray-100 p-4 rounded-lg">
-                          <h4 className="font-semibold text-gray-700 mb-2">Why are you cancelling the order?</h4>
-                          <select
-                            className="w-full p-2 border rounded-md mb-2"
-                            value={cancellationReason}
-                            onChange={(e) => setCancellationReason(e.target.value)}
-                          >
-                            <option value="">Select a reason</option>
-                            <option value="Changed my mind">Changed my mind</option>
-                            <option value="Found a better deal">Found a better deal</option>
-                            <option value="Ordered by mistake">Ordered by mistake</option>
-                            <option value="Shipping takes too long">Shipping takes too long</option>
-                            <option value="Other">Other</option>
-                          </select>
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              className="bg-gray-300 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-400"
-                              onClick={() => {
-                                setShowCancellationForm(false);
-                                setCancellationReason('');
-                              }}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-                              onClick={() => cancelOrder(order._id)}
-                            >
-                              Submit
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+        {order.status !== 'Cancelled' && (
+          <button 
+            className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+            onClick={() => setShowCancellationForm(true)}
+          >
+            <FaTimes className="inline mr-1" /> Cancel Order
+          </button>
+        )}
+      </div>
+
+      {showCancellationForm && (
+        <div className="mt-4 bg-gray-100 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-700 mb-2">Why are you cancelling the order?</h4>
+          <select
+            className="w-full p-2 border rounded-md mb-2"
+            value={cancellationReason}
+            onChange={(e) => setCancellationReason(e.target.value)}
+          >
+            <option value="">Select a reason</option>
+            <option value="Changed my mind">Changed my mind</option>
+            <option value="Found a better deal">Found a better deal</option>
+            <option value="Ordered by mistake">Ordered by mistake</option>
+            <option value="Shipping takes too long">Shipping takes too long</option>
+            <option value="Other">Other</option>
+          </select>
+          <div className="flex justify-end space-x-2">
+            <button
+              className="bg-gray-300 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-400"
+              onClick={() => {
+                setShowCancellationForm(false);
+                setCancellationReason('');
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+              onClick={() => cancelOrder(order._id)}
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
               </div>
             ))}
           </div>

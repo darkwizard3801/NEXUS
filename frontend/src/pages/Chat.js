@@ -9,6 +9,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [currentUserName, setCurrentUserName] = useState('');
   const [selectedOrderProducts, setSelectedOrderProducts] = useState([]);
   const [currentVendor, setCurrentVendor] = useState('');
   const [vendorMessageSent, setVendorMessageSent] = useState(false); // New state for vendor message
@@ -35,6 +36,7 @@ const Chat = () => {
 
         const data = await response.json();
         setCurrentUserEmail(data.data.email);
+        setCurrentUserName(data.data.name)
       } catch (error) {
         setError(error.message);
       }
@@ -185,25 +187,28 @@ const Chat = () => {
 
           {/* Messages */}
           {messages.map((message, index) => (
-            <div key={index} className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
-              <div
-                className={`inline-block p-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
-              >
-                {message.sender === 'vendor' ? (
-                  <span>
-                    {/* {`${currentVendor.split(' ')[0]}: `} Display vendor name */}
-                    {message.text}
-                  </span>
-                ) : (
-                  message.text
-                )}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">{message.timestamp.toLocaleTimeString()}  <span className='px-3'>{currentVendor}</span></div>
-              
-              {/* Display the full vendor name below the chat bubble */}
-              
-            </div>
-          ))}
+  <div key={index} className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+    <div
+      className={`inline-block p-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
+    >
+      {message.sender === 'vendor' ? (
+        <span>
+          {/* Display vendor name */}
+          {message.text}
+        </span>
+      ) : (
+        message.text
+      )}
+    </div>
+    <div className="text-xs text-gray-500 mt-1">
+      {message.timestamp.toLocaleTimeString()}
+      <span className='px-3'>
+        {message.sender === 'user' ? currentUserName : currentVendor}
+      </span>
+    </div>
+  </div>
+))}
+
           <div ref={messagesEndRef} />
         </div>
         <form onSubmit={handleSendMessage} className="bg-gray-100 p-4">

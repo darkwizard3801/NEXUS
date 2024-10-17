@@ -73,7 +73,7 @@ const Footer = () => {
           <div className='flex space-x-8'>
             <Link to='/seller' className='hover:underline text-sm text-gray-400'>Become a Seller</Link>
             <Link to='/advertise' className='hover:underline text-sm text-gray-400'>Advertise</Link>
-            <Link to='/help' className='hover:underline text-sm text-gray-400'>Help Center</Link>
+            <Link to='/chat' className='hover:underline text-sm text-gray-400'>Help Center</Link>
           </div>
 
           <div className='flex space-x-4 mt-4 md:mt-0'>
