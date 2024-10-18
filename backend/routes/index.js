@@ -41,6 +41,7 @@ const filterProductController = require('../controller/product/filterProduct')
 const { createEvent, getEvents, updateEventStatus } = require('../controller/user/eventController')
 const {  createOrUpdateOrder, getAllOrders, updateOrderWithPayment, cancelOrder } = require('../controller/user/orderController')
 const { clearCart } = require('../controller/user/cartController')
+const { addRatingReview } = require('../controller/user/ratingController')
  // Import the controller
 
 
@@ -121,6 +122,8 @@ router.get('/order-view',getAllOrders);
 router.post('/cancel-order',cancelOrder);
 router.post('/updateOrderWithPayment', updateOrderWithPayment);
 router.delete('/clear-cart', authToken, clearCart);
+router.post('/ratings', addRatingReview);
+
 //contacts
 
 router.post('/contact', handleContactForm);

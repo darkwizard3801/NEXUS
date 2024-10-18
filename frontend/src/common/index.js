@@ -163,6 +163,10 @@ const SummaryApi = {
         url : `${backendDomin}/api/clear-cart`,
         method : 'delete'
     },
+    submitRating : {
+        url : `${backendDomin}/api/ratings`,
+        method : 'delete'
+    },
 
 
 

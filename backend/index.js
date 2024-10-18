@@ -21,7 +21,8 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
     origin: process.env.FRONTEND_URL, // Allow requests from your frontend
-    credentials: true,methods: ["GET", "POST", "PATCH", "DELETE"],
+    credentials: true,
+   
 }));
 
 app.use(express.json());

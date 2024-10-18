@@ -18,7 +18,9 @@ const MyOrders = () => {
   const [selectedStatus, setSelectedStatus] = useState('All'); // State for selected filter
   const [cancellationReason, setCancellationReason] = useState('');
   const [showCancellationForm, setShowCancellationForm] = useState(false);
-
+  const [showRatingForm, setShowRatingForm] = useState(false); // State to control rating form visibility
+  const [rating, setRating] = useState(0); // State to hold the selected rating
+  const [ratingComment, setRatingComment] = useState(''); // State to hold the rating comment
   useEffect(() => {
     const fetchCurrentUserDetails = async () => {
       try {
@@ -86,6 +88,8 @@ const MyOrders = () => {
         return 'text-green-600';
       case 'Cancelled':
         return 'text-red-500';
+      case 'Delivered':
+        return 'text-green-700';
       default:
         return 'text-gray-600';
     }
@@ -160,7 +164,6 @@ const MyOrders = () => {
           {
             toast.success("Order Cancelled SuccessFully")
           }
-  
           // Update the local state with the updated order details
           const updatedOrder = await response.json();
           setOrders(orders.map(order => 
@@ -185,13 +188,39 @@ const MyOrders = () => {
     navigate('/chat'); // Replace '/chat' with your actual chat page route
   };
 
+  const handleRatingSubmit = async (orderId) => {
+  try {
+    const response = await fetch(SummaryApi.submitRating.url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ orderId, rating, comment: ratingComment }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to submit rating');
+    }
+
+    toast.success('Rating submitted successfully');
+    setShowRatingForm(false);
+    setRating(0);
+    setRatingComment('');
+  } catch (error) {
+    console.error('Error submitting rating:', error);
+    toast.error('Failed to submit rating. Please try again.');
+  }
+};
+
+
   return (
     <div className="flex flex-col md:flex-row items-start justify-center min-h-screen bg-gray-50 relative">
       {/* Filter Section */}
       <div className="w-full md:w-1/4 p-4">
         <h2 className="text-xl font-bold text-gray-700 mb-4">Filter Orders by Status:</h2>
         <div className="flex flex-col space-y-2">
-          {['All', 'Pending', 'Ordered', 'Dispatched', 'On the Way', 'Cancelled'].map((status) => (
+          {['All', 'Pending', 'Ordered', 'Dispatched', 'On the Way', 'Cancelled','Delivered'].map((status) => (
             <label key={status} className="flex items-center space-x-2">
               <input
                 type="radio"
@@ -226,7 +255,7 @@ const MyOrders = () => {
             {filteredOrders.map((order) => (
               <div
                 key={order._id}
-                className="bg-white rounded-lg shadow-lg overflow-hidden"
+                className={`bg-white rounded-lg shadow-lg overflow-hidden ${order.status === 'Cancelled' && expandedOrderId !== order._id ? 'opacity-50' : ''}`}
               >
                 <div onClick={() => toggleOrderDetails(order._id)} className="cursor-pointer">
                   <img
@@ -242,15 +271,9 @@ const MyOrders = () => {
 
                 {expandedOrderId === order._id && (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div
-      className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative"
-      style={{ maxHeight: '80vh', overflowY: 'auto' }}
-    >
+    <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative flex flex-col" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
       {/* Close Button */}
-      <button
-        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-        onClick={() => toggleOrderDetails(order._id)}
-      >
+      <button className="absolute top-4 right-4 text-gray-500 hover:text-gray-800" onClick={() => toggleOrderDetails(order._id)}>
         <IoCloseSharp className="text-2xl" />
       </button>
 
@@ -263,6 +286,12 @@ const MyOrders = () => {
         Status: <span className={getStatusClass(order.status)}>{order.status}</span>
       </p>
       <p>Delivery Date: {new Date(order.deliveryDate).toLocaleDateString()}</p>
+
+      {/* Rating Form */}
+     
+
+      {/* Give Rating Button */}
+     
 
       <div className="mt-4">
         <h4 className="font-semibold text-gray-700">Products:</h4>
@@ -299,15 +328,24 @@ const MyOrders = () => {
           <FaDownload className="inline mr-1" /> Download Invoice
         </button>
 
-        {order.status !== 'Cancelled' && (
+        {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
           <button 
-            className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+            className="bg-red-500 text-white px-3  rounded-lg hover:bg-red-600"
             onClick={() => setShowCancellationForm(true)}
           >
             <FaTimes className="inline mr-1" /> Cancel Order
           </button>
         )}
+      {order.status === 'Delivered' && !showRatingForm && (
+        <button
+          className="bg-green-500 text-white px-3 py-1  h-9 rounded-lg hover:bg-green-600 "
+          onClick={() => setShowRatingForm(true)}
+        >
+          Give Rating
+        </button>
+      )}
       </div>
+
 
       {showCancellationForm && (
         <div className="mt-4 bg-gray-100 p-4 rounded-lg">
@@ -343,6 +381,36 @@ const MyOrders = () => {
           </div>
         </div>
       )}
+
+{showRatingForm && (
+  <div className="mt-4">
+    <h4 className="font-semibold text-gray-700">Rate this Order:</h4>
+    <div className="flex space-x-2">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`cursor-pointer ${rating >= star ? 'text-yellow-400' : 'text-gray-400'}`}
+          onClick={() => setRating(star)}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+    <textarea
+      className="mt-2 w-full p-2 border rounded-md"
+      rows={3}
+      placeholder="Leave a comment"
+      value={ratingComment}
+      onChange={(e) => setRatingComment(e.target.value)}
+    ></textarea>
+    <button
+      className="bg-blue-600 text-white mt-2 px-3 py-1 rounded-lg hover:bg-blue-700"
+      onClick={() => handleRatingSubmit(order._id)}
+    >
+      Submit Rating
+    </button>
+  </div>
+)}
     </div>
   </div>
 )}

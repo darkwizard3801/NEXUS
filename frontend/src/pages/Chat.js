@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPaperPlane } from 'react-icons/fa';
 import SummaryApi from '../common';
+import { toast } from 'react-toastify';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -12,7 +13,11 @@ const Chat = () => {
   const [currentUserName, setCurrentUserName] = useState('');
   const [selectedOrderProducts, setSelectedOrderProducts] = useState([]);
   const [currentVendor, setCurrentVendor] = useState('');
+  const [vendormail, setVendormail] = useState('');
   const [vendorMessageSent, setVendorMessageSent] = useState(false); // New state for vendor message
+  const [showQuestions, setShowQuestions] = useState(false); // New state for question bubbles
+  const [allUsers, setAllUsers] = useState([]);
+  const [isVendorReady, setIsVendorReady] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -71,6 +76,26 @@ const Chat = () => {
     });
   }, [currentUserEmail]);
 
+
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch(SummaryApi.allUser.url, {
+        method: SummaryApi.allUser.method,
+        credentials: 'include',
+      });
+
+      const dataResponse = await response.json();
+
+      if (dataResponse.success) {
+        setAllUsers(dataResponse.data);
+      } else if (dataResponse.error) {
+        toast.error(dataResponse.message);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch users');
+    }
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (newMessage.trim() === '') return;
@@ -96,7 +121,8 @@ const Chat = () => {
 
   const handleProductClick = (product) => {
     setCurrentVendor(`${product.vendorName}`);
-    // Set vendor message flag to true
+    setVendormail(`${product.vendor}`)
+    
     setVendorMessageSent(true);
     
     // Send a message from the vendor after 3 seconds
@@ -107,8 +133,89 @@ const Chat = () => {
         timestamp: new Date(),
       };
       setMessages((prevMessages) => [...prevMessages, vendorAssistMessage]);
+      setShowQuestions(true); // Show question bubbles after vendor message
     }, 3000);
   };
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const day = String(d.getDate()).padStart(2, '0'); // Get day and pad with zero if needed
+    const month = String(d.getMonth() + 1).padStart(2, '0'); // Get month (0-indexed) and pad
+    const year = d.getFullYear(); // Get full year
+    const dayOfWeek = dayNames[d.getDay()]; // Get the day of the week
+    return `${dayOfWeek}, ${day}/${month}/${year}`; // Return formatted date with day
+  };
+
+  const handleQuestionClick = () => {
+    if (selectedOrderProducts.length > 0) {
+      // Find the order that matches the selected products
+      const order = orders.find(order => 
+        order.products.some(product => 
+          selectedOrderProducts.some(selectedProduct => selectedProduct._id === product._id)
+        )
+      );
+
+      console.log("Selected Order:", order); // Debugging statement
+
+      if (order) {
+        const deliveryDate = order.deliveryDate; // Access the delivery date directly from the order
+        console.log("Delivery Date:", deliveryDate); // Debugging statement
+
+        if (deliveryDate) {
+          const formattedDeliveryDate = formatDate(deliveryDate); // Format the date
+          const deliveryMessage = {
+            text: `The product will be delivered on ${formattedDeliveryDate}.`,
+            sender: 'support',
+            timestamp: new Date(),
+          };
+          setMessages((prevMessages) => [...prevMessages, deliveryMessage]);
+        } else {
+          // Handle case where deliveryDate is not available
+          const errorMessage = {
+            text: 'Sorry, we could not determine the delivery date.',
+            sender: 'support',
+            timestamp: new Date(),
+          };
+          setMessages((prevMessages) => [...prevMessages, errorMessage]);
+        }
+      } else {
+        console.log("No matching order found."); // Debugging statement
+      }
+    } else {
+      console.log("No selected order products."); // Debugging statement
+    }
+  };
+  console.log(vendormail)
+
+  const handleCallVendor = async () => {
+    await fetchAllUsers();
+    const vendor = allUsers.find(user => user.email === vendormail);
+     console.log("vendor details",vendor)
+    if (vendor) {
+      // Example action with the vendor data:
+      const callMessage = {
+        text: `Phone Number: ${vendor.phoneNumber}`,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, callMessage]);
+    } else {
+      const errorMessage = {
+        text: "Sorry, we could not determine the vendor's phone number.",
+        sender: 'support',
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+    }
+  };
+
+  const handleChatClick = () => {
+    setIsVendorReady(true);
+    setShowQuestions(false); // Hide question bubbles when vendor chat is initiated
+    setVendorMessageSent(true); // Set this to true to indicate the message has been sent
+  };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -175,6 +282,7 @@ const Chat = () => {
                   </div>
                 ))} 
               </div>
+              <br/>
 
               {/* Display current vendor message below product cards */}
               {currentVendor && (
@@ -182,6 +290,7 @@ const Chat = () => {
                   {currentVendor} has joined and will be ready to chat in just a minute.
                 </div>
               )}
+             
             </div>
           )}
 
@@ -210,6 +319,29 @@ const Chat = () => {
 ))}
 
           <div ref={messagesEndRef} />
+
+          {/* Render question bubbles if showQuestions is true */}
+          {showQuestions && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <button 
+                className="bg-white border-2 border-black text-black p-2 rounded-full hover:bg-blue-500 hover:text-white"
+                onClick={handleQuestionClick}
+              >
+                When will the product be delivered?
+              </button>
+              <button className="bg-white border-2 border-black text-black p-2 rounded-full hover:bg-blue-500 hover:text-white"  >Cancel Order</button>
+              <button className="bg-white border-2 border-black text-black p-2 rounded-full hover:bg-blue-500 hover:text-white" onClick={handleCallVendor}>Call Vendor</button>
+              <button className="bg-white border-2 border-black text-black p-2 rounded-full hover:bg-blue-500 hover:text-white" onClick={handleChatClick}>Chat with Vendor</button>
+            </div>
+          )}
+                 {/* {isVendorReady && vendorMessageSent && ( // Ensure the message appears only once
+                <div className="mt-4 text-sm text-gray-400 py-5 text-center">
+                  
+                    {currentVendor} has joined and will be ready to chat in just a minute.
+                  
+                </div>
+            )} */}
+              
         </div>
         <form onSubmit={handleSendMessage} className="bg-gray-100 p-4">
           <div className="flex items-center">

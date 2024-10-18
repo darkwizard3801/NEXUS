@@ -1,5 +1,6 @@
 const Order = require('../../models/orderModel');
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
 
 const createOrUpdateOrder = async (req, res) => {
     try {
@@ -76,6 +77,7 @@ const getAllOrders = async (req, res) => {
 };
 
 
+
 const updateOrderWithPayment = async (req, res) => {
     const { paymentId, orderDetails } = req.body;
 
@@ -94,6 +96,64 @@ const updateOrderWithPayment = async (req, res) => {
         // Save the updated order
         await order.save();
 
+        // Set up nodemailer transporter
+        const transporter = nodemailer.createTransport({
+            service: 'Gmail', // e.g., Gmail
+            auth: {
+                user: process.env.EMAIL, // Use your environment variable for the email
+                pass: process.env.EMAIL_PASSWORD, // Use your environment variable for the password or app password
+            },
+        });
+
+        // Prepare email details
+        const productDetails = order.products.map((product) => {
+            return `
+                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">${product.productName} x ${product.quantity} </h3>
+                    <img src="${product.image}" alt="${product.productName}" style="width: 100%; max-width: 200px; height: auto;" />
+                   
+                </div>`;
+        }).join('');
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER, // Sender address
+            to: order.userEmail, // Recipient's email
+            subject: 'Your Order has been placed successfully!',
+            html: `
+                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; background-color: #f9f9f9;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <img src="https://res.cloudinary.com/du8ogkcns/image/upload/v1726763193/n5swrlk0apekdvwsc2w5.png" alt="Nexus" style="width: 150px; height: auto;" /> <!-- Replace with your logo URL -->
+                    </div>
+                    <center>
+                    <h2 style="color: #333;">Thank you for your order!</h2>
+                    <p style="color: #555;">Dear Customer,</p>
+                    <p style="color: #555;">Your order has been successfully placed with the following details:</p>
+                    <p><strong>Invoice Number:</strong> ${order.invoiceNumber}</p>
+                    <p><strong>Order ID:</strong> ${order._id}</p>
+                    <p><strong>Total Amound :</strong> ${order.finalAmount}</p>
+                    <h3 style="color: #333;">Products:</h3>
+                    ${productDetails}
+                    <p style="color: #555;">We will notify you once your order is shipped. If you have any questions, feel free to contact our support team.</p>
+                    <p style="color: #555;">Thank you for shopping with <strong>Nexus</strong>!</p>
+                    <p style="color: #555;">We hope to serve you again soon.</p>
+                    </center>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <p style="font-size: 12px; color: #999;">&copy; 2024 Nexus. All rights reserved.</p>
+                        
+                    </div>
+                </div>
+            `,
+        };
+
+        // Send the email
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+            } else {
+                console.log('Email sent:', info.response);
+            }
+        });
+
         res.json({
             success: true,
             message: 'Order updated successfully with payment details.',
@@ -105,6 +165,10 @@ const updateOrderWithPayment = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+
+
+
+
 
 const cancelOrder = async (req, res) => {
     try {
