@@ -147,6 +147,7 @@ const Login = () => {
                             <div className='bg-slate-100 p-2 rounded-2xl'>
                                 <input
                                     type='email'
+                                    id='email'
                                     placeholder='Enter email'
                                     name='email'
                                     value={data.email}
@@ -162,6 +163,7 @@ const Login = () => {
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     placeholder='Enter password'
+                                    id='password'
                                     value={data.password}
                                     name='password'
                                     onChange={handleOnChange}
@@ -178,7 +180,7 @@ const Login = () => {
                             </Link>
                         </div>
 
-                        <button className='bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block mt-6'>
+                        <button className='bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block mt-6' id='loginButton'>
                             Login
                         </button>
                     </form>

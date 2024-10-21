@@ -143,13 +143,23 @@ const Header = () => {
                     </Link>
                   )}
                   {user?.role === "Customer" && (
-                    <Link
-                      to={"/user-panel"}
-                      className='whitespace-nowrap hover:bg-slate-100 p-2 block'
-                      onClick={() => setMenuDisplay(false)}
-                    >
-                      My Account
-                    </Link>
+                    <nav>
+                      <Link
+                        to={"/user-panel"}
+                        className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                        onClick={() => setMenuDisplay(false)}
+                      >
+                        My Account
+                      </Link>
+                      {/* New option for My Orders */}
+                      <Link
+                        to={"/user-panel/orders"}
+                        className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                        onClick={() => setMenuDisplay(false)}
+                      >
+                        My Orders
+                      </Link>
+                    </nav>
                   )}
                 </nav>
               </div>
