@@ -62,7 +62,7 @@ const BannerCenter1Product = () => {
                 <img
                   src={banner.image}
                   alt={banner.description}
-                  className="w-full h-full object-cover  rounded-lg"
+                  className="w-full h-full object-cover rounded-lg md:object-contain" // Adjusted for responsiveness
                   loading="lazy" // Lazy load images
                 />
               </div>

@@ -97,15 +97,32 @@ const MyOrders = () => {
 
   const downloadInvoice = (order) => {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Invoice', 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Order ID: ${order._id}`, 20, 30);
-    doc.text(`Name: ${order.userName}`, 20, 40);
-    doc.text(`User: ${order.userEmail}`, 20, 50);
-    doc.text(`Address: ${order.address}`, 20, 60);
-    doc.text(`Status: ${order.status}`, 20, 80);
-    doc.text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}`, 20, 90);
+    doc.setFont('Helvetica', 'bold'); // Change font to bold for the heading
+    doc.setFontSize(20); // Increased font size for the heading
+    doc.text('Invoice', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' }); // Centered heading
+    
+    // Add Invoice Number and Date below the heading with reduced size
+    doc.setFont('Helvetica', 'normal'); // Change back to normal font
+    doc.setFontSize(8); // Further reduced font size
+    const invoiceNumberText = `Invoice Number: ${order.invoiceNumber}`;
+    const dateText = `Date: ${new Date().toLocaleString()}`;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Calculate positions for right alignment
+    const invoiceNumberX = pageWidth - doc.getTextWidth(invoiceNumberText) - 20; // 20 units from the right
+    const dateX = pageWidth - doc.getTextWidth(dateText) - 20; // 20 units from the right
+
+    doc.text(invoiceNumberText, invoiceNumberX, 30); // Positioned below the heading
+    doc.text(dateText, dateX, 38); // Positioned below the heading
+
+    doc.setFontSize(12); // Reset font size for the rest of the content
+    doc.setFont('Helvetica', 'normal'); // Ensure normal font for the content
+    doc.text(`Order ID: ${order._id}`, 20, 50);
+    doc.text(`Name: ${order.userName}`, 20, 60);
+    doc.text(`User: ${order.userEmail}`, 20, 70);
+    doc.text(`Address: ${order.address}`, 20, 80);
+    doc.text(`Status: ${order.status}`, 20, 90);
+    doc.text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}`, 20, 100);
     
     const products = order.products.map((product, index) => {
       return [
@@ -121,15 +138,35 @@ const MyOrders = () => {
     });
   
     doc.autoTable({
-      startY: 100,
+      startY: 110,
       head: [['#', 'Product Name', 'Vendor', 'Quantity', 'Price', 'Total']],
       body: products,
+      theme: 'grid', // Add grid theme for a professional look
+      styles: { font: 'Helvetica', fontSize: 10 }, // Set font and size for table
     });
-  
-    doc.text(`Total Price: ${order.totalPrice?.toFixed(2) || '0.00'}`, 20, doc.autoTable.previous.finalY + 20);
-    doc.text(`Discount: ${order.discount?.toFixed(2) || '0.00'}`, 20, doc.autoTable.previous.finalY + 30);
-    doc.text(`Final Amount: ${order.finalAmount?.toFixed(2) || '0.00'}`, 20, doc.autoTable.previous.finalY + 40);
-  
+
+    // Professional price calculation section
+    const totalPriceY = doc.autoTable.previous.finalY + 20;
+    const discountY = totalPriceY + 10;
+    const finalAmountY = discountY + 10;
+
+    doc.setFontSize(12);
+    const priceSummaryText = 'Price Summary';
+    doc.text(priceSummaryText, doc.internal.pageSize.getWidth() / 2, totalPriceY - 10, { align: 'center' }); // Centered section title
+    doc.setFont('Helvetica', 'normal'); // Normal font for the summary
+
+    // Total Price
+    doc.text('Total Price:', 20, totalPriceY);
+    doc.text(`${order.totalPrice?.toFixed(2) || '0.00'}`, pageWidth - 40, totalPriceY, { align: 'right' });
+
+    // Discount
+    doc.text('Discount:', 20, discountY);
+    doc.text(`- ${order.discount?.toFixed(2) || '0.00'}`, pageWidth - 40, discountY, { align: 'right' });
+
+    // Final Amount
+    doc.text('Final Amount:', 20, finalAmountY);
+    doc.text(`${order.finalAmount?.toFixed(2) || '0.00'}`, pageWidth - 40, finalAmountY, { align: 'right' });
+
     doc.save('invoice.pdf');
   };
 

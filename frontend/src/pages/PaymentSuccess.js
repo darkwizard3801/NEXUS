@@ -11,7 +11,7 @@ const PaymentSuccess = () => {
     const timer = setTimeout(() => {
       setShowText(true);
       setAnimationPlayed(true);
-    }, 4000);
+    }, 10000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -21,31 +21,27 @@ const PaymentSuccess = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center h-screen" style={{ backgroundColor: '#d5ddef' }}>
       <div className="w-80 mb-6 relative">
         {!gifError && !animationPlayed ? (
-          <div className="relative overflow-hidden" style={{ backgroundColor: '#f3f4f6' }}>
+          <div className="relative overflow-hidden h-full w-96" style={{ backgroundColor: '#d5ddef' }}>
             <img 
-              src="https://res.cloudinary.com/du8ogkcns/image/upload/v1729081394/output-onlinegiftools_1_tiu6yn.gif" 
+              src="https://res.cloudinary.com/du8ogkcns/image/upload/v1729531753/shot-ezgif.com-video-to-gif-converter_jt7cva.gif" 
               alt="Order Placed Animation" 
-              className="w-full h-auto relative z-10"
+              className="w-256 h-256 relative z-10"
               onError={handleGifError}
               style={{ mixBlendMode: 'multiply' }}
             />
             <div className="absolute inset-0 bg-gray-100 z-0"></div>
           </div>
         ) : (
-          <img 
-            src="https://res.cloudinary.com/du8ogkcns/image/upload/v1729091711/WhatsApp_Image_2024-10-16_at_20.39.27_946239f6_ewsshf.jpg" 
-            alt="Order Placed" 
-            className="w-full h-auto"
-          />
+        
+            <div className="text-center text-2xl font-bold text-green-600 mt-4">
+              Order Placed!
+            </div>
+       
         )}
-        {showText && (
-          <div className="text-center text-2xl font-bold text-green-600 mt-4">
-            Order Placed!
-          </div>
-        )}
+        
       </div>
       <p className="text-center mb-6 px-4">
         Your order has been successfully placed. To view your order, go to your order section in your profile.
