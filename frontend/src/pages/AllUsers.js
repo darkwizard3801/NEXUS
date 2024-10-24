@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react'
 import SummaryApi from '../common'
 import { toast } from 'react-toastify'
 import moment from 'moment'
-import { MdModeEdit } from "react-icons/md";
+import { MdModeEdit, MdDelete } from "react-icons/md";
 import ChangeUserRole from '../components/ChangeUserRole';
+import { CgProfile } from "react-icons/cg";
 
 
 
@@ -55,6 +56,7 @@ const AllUsers = () => {
         <tr className='bg-black text-white'>
             <th>Sr.</th>
             <th>Name</th>
+            <th>profilePic</th>
             <th>Email</th>
             <th>Role</th>
             <th>Created Date</th>
@@ -69,16 +71,28 @@ const AllUsers = () => {
                         <tr>
                              <td>{index+1}</td>
                              <td>{el?.name}</td>
+                             <td className=' px-2 flex  items-center justify-center'>
+                                 {el?.profilePic ? (
+                                     <img src={el.profilePic} alt={`${el.name}'s profile`} className='h-14 w-14 object-cover rounded-full ' />
+                                 ) : (
+                                     <CgProfile className='h-14 w-14 object-cover rounded-full' />
+                                 )}
+                             </td>
                              <td>{el?.email}</td>
                              <td>{el?.role}</td>
                              <td>{moment(el?.createdAt).format('LL')}</td>
                              <td>
-                                <button className='bg-green-100 p-2 rounded-full cursor-pointer hover:bg-green-500 hover:text-white'  onClick={()=>{
+                                <button className='bg-green-100 p-2 rounded-full cursor-pointer hover:bg-green-500 hover:text-white' onClick={()=>{
                                         setUpdateUserDetails(el)
                                         setOpenUpdateRole(true)
 
                                     }} >
                                 <MdModeEdit/>
+                                </button>
+                                <button className='bg-red-100 p-2 rounded-full cursor-pointer hover:bg-red-500 hover:text-white ml-2' onClick={() => {
+                                        // Add delete functionality here
+                                    }}>
+                                    <MdDelete />
                                 </button>
                              </td>
 

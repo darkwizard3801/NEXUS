@@ -39,6 +39,35 @@ const addRatingReview = async (req, res) => {
   }
 };
 
+// New controller to fetch rating details
+const getRatingDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Fetch the rating details for the given orderId
+    const ratingDetails = await Rating.findOne({ orderId });
+    if (!ratingDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rating not found for this order',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: ratingDetails,
+    });
+  } catch (error) {
+    console.error('Error fetching rating details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch rating details',
+    });
+  }
+};
+
+// Exporting the controllers
 module.exports = {
   addRatingReview,
+  getRatingDetails, // Export the new controller
 };
