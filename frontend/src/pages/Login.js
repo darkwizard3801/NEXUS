@@ -53,7 +53,7 @@ const Login = () => {
                         "Content-Type": "application/json",
                     },
                 });
-
+                
                 const userDetails = await userDetailsResponse.json();
                 console.log("User details response:", userDetails); // Log user details response
 
