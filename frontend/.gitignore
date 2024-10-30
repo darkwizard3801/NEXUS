@@ -9,7 +9,7 @@
 /coverage
 
 # production
-/build
+
 .env
 _LOCAL_719.env
 # misc
