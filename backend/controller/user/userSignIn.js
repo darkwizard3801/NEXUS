@@ -80,10 +80,10 @@ async function userSignInController(req, res) {
             const tokenOptions = {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production', // This should be false in development
-                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'lax' in development for easier testing
+                sameSite: 'none', // Use 'lax' in development for easier testing
                 maxAge: 90 * 24 * 60 * 60 * 1000,
                 path: '/',
-                domain: 'https://nexus-b9xa.onrender.com'
+                // domain: 'https://nexus-b9xa.onrender.com'
             };
             
             
