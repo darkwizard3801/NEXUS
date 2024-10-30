@@ -71,7 +71,7 @@ const SponserAdd = () => {
   };
 
   return (
-    <div>
+    <div className='mx-16'>
       <ToastContainer position="top-center" />
       <div className='bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md'>
   <p className='font-bold text-sm'>Disclaimer:</p>

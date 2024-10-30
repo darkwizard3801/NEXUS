@@ -20,8 +20,10 @@ const MyOrders = () => {
   const [showCancellationForm, setShowCancellationForm] = useState(false);
   const [showRatingForm, setShowRatingForm] = useState(false); // State to control rating form visibility
   const [rating, setRating] = useState(0); // State to hold the selected rating
-  const [ratingComment, setRatingComment] = useState(''); // State to hold the rating comment
+  const [ratingComment, setRatingComment] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState(''); // State to hold the selected product ID // State to hold the rating comment
   useEffect(() => {
+    
     const fetchCurrentUserDetails = async () => {
       try {
         const response = await fetch(SummaryApi.current_user.url, {
@@ -61,6 +63,7 @@ const MyOrders = () => {
         const filteredOrders = data.data.filter(order => order.userEmail === currentUserEmail);
         setOrders(filteredOrders);
         setLoading(false);
+        
       } catch (error) {
         setError(error.message);
         setLoading(false);
@@ -225,34 +228,35 @@ const MyOrders = () => {
     navigate('/chat'); // Replace '/chat' with your actual chat page route
   };
 
-  const handleRatingSubmit = async (orderId) => {
-  try {
-    const response = await fetch(SummaryApi.submitRating.url, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ orderId, rating, comment: ratingComment }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to submit rating');
+  const handleRatingSubmit = async (orderId, productId) => { // Add productId parameter
+    try {
+      const response = await fetch(SummaryApi.submitRating.url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId, productId, rating, comment: ratingComment }), // Include productId
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to submit rating');
+      }
+  
+      toast.success('Rating submitted successfully');
+      setShowRatingForm(false);
+      setRating(0);
+      setRatingComment('');
+      setSelectedProductId(''); // Reset selected product ID
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      toast.error('Failed to submit rating. Please try again.');
     }
-
-    toast.success('Rating submitted successfully');
-    setShowRatingForm(false);
-    setRating(0);
-    setRatingComment('');
-  } catch (error) {
-    console.error('Error submitting rating:', error);
-    toast.error('Failed to submit rating. Please try again.');
-  }
-};
+  };
 
 
   return (
-    <div className="flex flex-col md:flex-row items-start justify-center min-h-screen bg-gray-50 relative">
+    <div className="flex flex-col md:flex-row items-start justify-center min-h-screen bg-gray-50 relative mx-10">
       {/* Filter Section */}
       <div className="w-full md:w-1/4 p-4">
         <h2 className="text-xl font-bold text-gray-700 mb-4">Filter Orders by Status:</h2>
@@ -422,6 +426,22 @@ const MyOrders = () => {
 {showRatingForm && (
   <div className="mt-4">
     <h4 className="font-semibold text-gray-700">Rate this Order:</h4>
+    
+    {/* Dropdown for selecting product */}
+    <select
+      className="mt-2 w-full p-2 border rounded-md"
+      value={selectedProductId}
+      onChange={(e) => setSelectedProductId(e.target.value)}
+    >
+      <option value="">Select a product</option>
+      {order.products.map((product) => (
+        <option key={product.productId} value={product.productId}>
+         
+          {product.productName} <img src={product.image}  className="inline w-6 h-6 mr-2" />
+        </option>
+      ))}
+    </select>
+
     <div className="flex space-x-2">
       {[1, 2, 3, 4, 5].map((star) => (
         <span
@@ -442,7 +462,7 @@ const MyOrders = () => {
     ></textarea>
     <button
       className="bg-blue-600 text-white mt-2 px-3 py-1 rounded-lg hover:bg-blue-700"
-      onClick={() => handleRatingSubmit(order._id)}
+      onClick={() => handleRatingSubmit(order._id, selectedProductId)} // Pass selectedProductId
     >
       Submit Rating
     </button>

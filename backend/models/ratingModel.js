@@ -6,6 +6,11 @@ const ratingSchema = new mongoose.Schema({
     ref: 'Order',
     required: true,
   },
+  productId: { // New field for product ID
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'product', // Assuming you have a Product model
+    required: true, // Make it required if necessary
+  },
   rating: {
     type: Number,
     required: true,

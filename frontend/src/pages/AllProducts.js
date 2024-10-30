@@ -80,7 +80,7 @@ const AllProducts = () => {
   }, []);
 
   return (
-    <div>
+    <div className='mx-64'>
       <div className='bg-white py-2 px-4 flex justify-between items-center'>
         <h2 className='font-bold text-lg'>All Product</h2>
         <button

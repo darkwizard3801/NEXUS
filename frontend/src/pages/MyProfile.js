@@ -153,7 +153,7 @@ const MYProfile = () => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-10 p-6">
       <div className="bg-white shadow-md rounded-3xl p-8">
         <h2 className="text-3xl font-bold text-center mb-6">My Profile</h2>
 

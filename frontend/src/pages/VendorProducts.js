@@ -69,7 +69,7 @@ const VendorProducts = () => {
   };
 
   return (
-    <div>
+    <div className='mx-10'>
       <div className='bg-white py-2 px-4 flex justify-between items-center'>
         <h2 className='font-bold text-lg'>My Products</h2>
         <button

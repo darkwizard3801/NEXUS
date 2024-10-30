@@ -184,7 +184,7 @@ const BannerRequest = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-8 p-6">
       <h2 className="text-2xl font-semibold mb-6 text-center">
         Banner Request
       </h2>

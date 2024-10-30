@@ -42,6 +42,7 @@ import NotFound from '../pages/404'
 
 import PaymentSuccess from '../pages/PaymentSuccess'
 import Chat from '../pages/Chat'
+import RatingView from '../pages/RatingView'
 
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
@@ -224,6 +225,10 @@ const router = createBrowserRouter([
                     {
                         path : 'my-profile',
                         element : <MyProfile/>
+                    },
+                    {
+                        path : 'rating',
+                        element : <RatingView/>
                     },
                 ]
 

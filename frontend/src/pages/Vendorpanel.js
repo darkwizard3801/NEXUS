@@ -13,7 +13,7 @@ import { CgProfile } from "react-icons/cg";
 import { RiAdvertisementLine } from "react-icons/ri";
 import { LuRectangleHorizontal } from "react-icons/lu";
 import { AiOutlineProduct } from "react-icons/ai";
-
+import { MdOutlineReviews } from "react-icons/md";
 // import ROLE from '../common/role';
 
 
@@ -55,15 +55,15 @@ const VendorPanel = () => {
           {/* Sidebar */}
           <div className={`hidden md:block md:w-1/4 lg:w-1/5`}>
             <aside
-              className={`bg-white min-h-full ${
+              className={`bg-white min-h-[50rem] ${
                 isCollapsed ? "w-16" : "w-full"
               } transition-all duration-300 customShadow flex flex-col relative`}
             >
               {/* Collapse/Expand Button */}
               <button
                 onClick={toggleCollapse}
-                className={`absolute top-80 p-2 bg-gray-200 hover:bg-blue-500 transition duration-300 ease-in-out rounded-full flex items-center justify-center ${
-                  isCollapsed ? "left-2/3" : "left-56"
+                className={`absolute top-60 p-2 bg-gray-200 hover:bg-blue-500 transition duration-300 ease-in-out rounded-full flex items-center justify-center ${
+                  isCollapsed ? "left-3/4" : "left-60"
                 }`}
               >
                 {isCollapsed ? (
@@ -134,6 +134,15 @@ const VendorPanel = () => {
                   />
                   {isCollapsed ? null : "Sponsored Products"}
                 </Link>
+                <Link
+                  to={"rating"}
+                  className="flex items-center p-2 hover:bg-blue-600 hover:text-white hover:rounded-r-full transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  <MdOutlineReviews
+                    className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
+                  />
+                  {isCollapsed ? null : "View Ratings & Reviews"}
+                </Link>
               </nav>
             </aside>
           </div>
@@ -198,6 +207,14 @@ const VendorPanel = () => {
                   >
                     <RiAdvertisementLine className="mr-2" />
                     Sponsored Products
+                  </Link>
+                  <Link
+                    to={"rating"}
+                    className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
+                    onClick={toggleSidebar}
+                  >
+                    <MdOutlineReviews className="mr-2" />
+                   View Ratings & Reviews
                   </Link>
                 </nav>
               </div>

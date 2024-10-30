@@ -167,6 +167,10 @@ const SummaryApi = {
         url : `${backendDomin}/api/ratings`,
         method : 'delete'
     },
+    getRating : {
+        url : `${backendDomin}/api/show-rating`,
+        method : 'get'
+    },
 
 
 

@@ -4,7 +4,7 @@ const Order = require('../../models/orderModel'); // Replace with your actual or
 // Add rating and review for an order
 const addRatingReview = async (req, res) => {
   try {
-    const { orderId, rating, comment } = req.body;
+    const { orderId,productId, rating, comment } = req.body;
 
     // Check if the order exists
     const order = await Order.findById(orderId);
@@ -18,6 +18,7 @@ const addRatingReview = async (req, res) => {
     // Create a new rating object
     const newRating = new Rating({
       orderId,
+      productId,
       rating,
       review: comment,
     });
@@ -42,28 +43,28 @@ const addRatingReview = async (req, res) => {
 // New controller to fetch rating details
 const getRatingDetails = async (req, res) => {
   try {
-    const { orderId } = req.params;
-
-    // Fetch the rating details for the given orderId
-    const ratingDetails = await Rating.findOne({ orderId });
-    if (!ratingDetails) {
+    // Fetch all rating details from the database
+    const ratings = await Rating.find({});
+    
+    if (ratings.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Rating not found for this order',
+        message: 'No ratings found',
       });
     }
 
     res.status(200).json({
       success: true,
-      data: ratingDetails,
+      data: ratings,
     });
   } catch (error) {
-    console.error('Error fetching rating details:', error);
+    console.error('Error fetching ratings:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch rating details',
+      message: 'Failed to fetch ratings',
     });
   }
+
 };
 
 // Exporting the controllers
