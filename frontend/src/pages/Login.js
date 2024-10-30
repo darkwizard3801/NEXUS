@@ -98,11 +98,11 @@ const Login = () => {
 
     const handleGoogleLogin = () => {
         // Trigger Google OAuth login
-        window.open("http://localhost:8080/auth/google", "_self");
+        window.open(`${process.env.REACT_APP_BACKEND_URL}/auth/google`, "_self");
 
         // Assuming the backend redirects back to the frontend with user data after successful login
         window.addEventListener('message', async (event) => {
-            if (event.origin !== "http://localhost:8080") return; // Ensure the event is from your backend
+            if (event.origin !== process.env.REACT_APP_BACKEND_URL) return; // Ensure the event is from your backend
 
             const { success, isNewUser, role } = event.data;
 
@@ -129,7 +129,7 @@ const Login = () => {
     };
 
     const handleFacebookLogin = () => {
-        window.open("http://localhost:8080/auth/facebook", "_self");
+        window.open(`${process.env.REACT_APP_BACKEND_URL}/auth/facebook`, "_self");
     };
 
     return (
