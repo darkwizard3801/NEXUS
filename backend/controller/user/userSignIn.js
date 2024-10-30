@@ -78,12 +78,13 @@ async function userSignInController(req, res) {
             console.log("Generated Token:", token);
             
             const tokenOptions = {
-                httpOnly: true, // Set to true if you don't need JavaScript to access the cookie
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production', // This should be false in development
+                sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'lax' in development for easier testing
                 maxAge: 90 * 24 * 60 * 60 * 1000,
-                path: '/' // Ensures availability across all routes
+                path: '/'
             };
+            
             
             res.cookie("token", token, tokenOptions)
                .status(200)
