@@ -82,7 +82,8 @@ async function userSignInController(req, res) {
                 secure: process.env.NODE_ENV === 'production', // This should be false in development
                 sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Use 'lax' in development for easier testing
                 maxAge: 90 * 24 * 60 * 60 * 1000,
-                path: '/'
+                path: '/',
+                domain: 'https://nexus-b9xa.onrender.com'
             };
             
             
@@ -96,6 +97,7 @@ async function userSignInController(req, res) {
                
             
             });
+            console.log("Cookie set with token:", token);
         } else {
             console.log(`Invalid password attempt for user: ${email}`);
             return res.status(401).json({
