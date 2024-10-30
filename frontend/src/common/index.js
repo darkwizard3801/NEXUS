@@ -1,4 +1,5 @@
-const backendDomin = "http://localhost:8080"
+// const backendDomin = "http://localhost:8080"
+const backendDomin = "https://nexus-q4sy.onrender.com"
 
 const SummaryApi = {
     signUP : {
@@ -170,6 +171,18 @@ const SummaryApi = {
     getRating : {
         url : `${backendDomin}/api/show-rating`,
         method : 'get'
+    },
+    forgot_password : {
+        url : `${backendDomin}/api/forgot-password`,
+        method : 'post'
+    },
+    verify_otp : {
+        url : `${backendDomin}/api/verify-otp`,
+        method : 'post'
+    },
+    resend_otp : {
+        url : `${backendDomin}/api/resend-otp`,
+        method : 'post'
     },
 
 

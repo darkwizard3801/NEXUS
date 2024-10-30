@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import SummaryApi from '../common';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/forgot-password', {
+      const response = await fetch(SummaryApi.forgot_password.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,7 +54,7 @@ const ForgotPassword = () => {
     // const payload = { email, otp };
     // console.log('Payload to send:', payload);
     try {
-      const response = await fetch('http://localhost:8080/api/verify-otp', {
+      const response = await fetch(SummaryApi.verify_otp.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/resend-otp', {
+      const response = await fetch(SummaryApi.resend_otp.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
