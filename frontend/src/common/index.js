@@ -184,6 +184,15 @@ const SummaryApi = {
         url : `${backendDomin}/api/resend-otp`,
         method : 'post'
     },
+    google_login : {
+        url : `${backendDomin}/auth/google`,
+        method : 'get'
+    },
+    facebook_login : {
+        url : `${backendDomin}/auth/facebook`,
+        method : 'get'
+    },
+    
 
 
 

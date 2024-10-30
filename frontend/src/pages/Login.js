@@ -98,7 +98,7 @@ const Login = () => {
 
     const handleGoogleLogin = () => {
         // Trigger Google OAuth login
-        window.open(`${process.env.REACT_APP_BACKEND_URL}/auth/google`, "_self");
+        window.open(SummaryApi.google_login.url, "_self");
 
         // Assuming the backend redirects back to the frontend with user data after successful login
         window.addEventListener('message', async (event) => {
