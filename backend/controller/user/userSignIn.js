@@ -73,8 +73,9 @@ async function userSignInController(req, res) {
                 email: user.email,
                 role: user.role // Include role in token data for redirection later
             };
+            console.log("tokendata",tokenData)
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-
+             
             // Set cookie options
             const tokenOptions = {
                 httpOnly: true,
