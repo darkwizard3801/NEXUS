@@ -75,21 +75,25 @@ async function userSignInController(req, res) {
             };
             console.log("tokendata",tokenData)
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-             console.log("token",token)
-            // Set cookie options
+            console.log("Generated Token:", token);
+            
             const tokenOptions = {
-                httpOnly: false,
-                secure: process.env.NODE_ENV === 'production', // Secure flag for production
-                sameSite: 'strict', // Helps prevent CSRF attacks
-                maxAge: 90 * 24 * 60 * 60 * 1000 // Max age for cookie (in milliseconds)
+                httpOnly: true, // Set to true if you don't need JavaScript to access the cookie
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 90 * 24 * 60 * 60 * 1000,
+                path: '/' // Ensures availability across all routes
             };
-
-            // Send response with cookie
-            res.cookie("token", token, tokenOptions).status(200).json({
-                message: "Login successful",
-                data: { token }, // Include token in the response data
-                success: true,
-                error: false
+            
+            res.cookie("token", token, tokenOptions)
+               .status(200)
+               .json({
+                   message: "Login successful",
+                   data: { token },
+                   success: true,
+                   error: false
+               
+            
             });
         } else {
             console.log(`Invalid password attempt for user: ${email}`);
