@@ -78,7 +78,7 @@ async function userSignInController(req, res) {
              
             // Set cookie options
             const tokenOptions = {
-                httpOnly: true,
+                httpOnly: false,
                 secure: process.env.NODE_ENV === 'production', // Secure flag for production
                 sameSite: 'strict', // Helps prevent CSRF attacks
                 maxAge: 90 * 24 * 60 * 60 * 1000 // Max age for cookie (in milliseconds)
