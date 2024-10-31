@@ -117,13 +117,21 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production', // This should be false in development
+            sameSite: 'none', // Use 'lax' in development for easier testing
+            maxAge: 90 * 24 * 60 * 60 * 1000,
+            path: '/',
         };
 
         // Send token as a cookie
-        res.cookie("token", token, tokenOption);
-
+        res.cookie("token", token, tokenOption)
+        .status(200)
+        .json({
+            message: "Login successful",
+            data: { token },
+            success: true,
+            error: false
+        })
         // Check if the user is new or already has a role
         if (!user.role) {
             // Redirect to select-role if the user is new
