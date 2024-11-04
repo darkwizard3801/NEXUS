@@ -122,9 +122,9 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             sameSite: 'none',
             maxAge: 90 * 24 * 60 * 60 * 1000,
         };
-
+        
         // Send token as a cookie
-        res.cookie("token", token, tokenOption);
+        res.cookie("token---", token, tokenOption);
 
         // Determine redirect URL based on role
         let redirectUrl;
@@ -132,7 +132,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             redirectUrl = `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
         } else {
             redirectUrl = user.role === "Vendor"
-                ? `${process.env.FRONTEND_URL}/vendor-page`
+                ? `${process.env.FRONTEND_URL}/`
                 : user.role === "Customer"
                 ? `${process.env.FRONTEND_URL}/`
                 : user.role === "Admin"
