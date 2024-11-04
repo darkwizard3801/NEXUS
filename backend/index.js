@@ -134,18 +134,15 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         let redirectUrl;
         if (!role) {
             redirectUrl = `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
-        } if(role==="Admin"){
-            redirectUrl = `${process.env.FRONTEND_URL}/`;
+        } else {
+            redirectUrl = role === "Vendor"
+                ? `${process.env.FRONTEND_URL}`
+                : role === "Customer"
+                ? `${process.env.FRONTEND_URL}`
+                : role === "Admin"
+                ? `${process.env.FRONTEND_URL}`
+                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
         }
-        // {
-        //     redirectUrl = role === "Vendor"
-        //         ? `${process.env.FRONTEND_URL}/`
-        //         : role === "Customer"
-        //         ? `${process.env.FRONTEND_URL}/`
-        //         : role === "Admin"
-        //         ? `${process.env.FRONTEND_URL}/`
-        //         : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
-        // }
 
         // Redirect based on user role
         return res.redirect(redirectUrl);
