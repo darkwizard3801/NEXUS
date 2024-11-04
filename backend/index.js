@@ -104,54 +104,48 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 // Google callback
 app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
     try {
-        const user = req.user;
+        const user = req.user; // User is attached to the request
         const tokenData = {
             _id: user._id,
             email: user.email,
-            role: user.role,
+            role: user.role // Include role in token data for redirection later
         };
-
+        
         // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-        console.log("token=", token);
-        const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
 
-
-        const role = decodedToken.role; // Extract the _id from the decoded token
-        console.log("Decoded user ID:",role)
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            // sameSite: 'none',
-            maxAge: 90 * 24 * 60 * 60 * 1000,
+            sameSite: 'strict',
         };
-        
+
         // Send token as a cookie
-        res.cookie("token---", token, tokenOption);
+        res.cookie("token", token, tokenOption);
 
-        // Determine redirect URL based on role
-        let redirectUrl;
+        // Check if the user is new or already has a role
         if (!user.role) {
-            redirectUrl = `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
+            // Redirect to select-role if the user is new
+            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
         } else {
-            redirectUrl = user.role === "Vendor"
-                ? `${process.env.FRONTEND_URL}/`
-                : user.role === "Customer"
-                ? `${process.env.FRONTEND_URL}/`
-                : user.role === "Admin"
-                ? `${process.env.FRONTEND_URL}/`
-                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
+            // Redirect based on role
+            const redirectUrl = user.role === "Vendor" 
+                ? `${process.env.FRONTEND_URL}/vendor-page` 
+                : user.role === "Customer" 
+                ? `${process.env.FRONTEND_URL}/` 
+                : user.role === "Admin" 
+                ? `${process.env.FRONTEND_URL}/` 
+                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
+
+            res.redirect(redirectUrl); // Redirect to appropriate page
         }
-
-        // Redirect based on user role
-        return res.redirect(redirectUrl);
-
     } catch (error) {
         console.error("Error during Google login callback:", error);
         res.redirect('/login'); // Fallback redirect
     }
 });
+
 
 
 // Routes for Facebook authentication
