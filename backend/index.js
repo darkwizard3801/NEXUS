@@ -104,31 +104,11 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 // Google callback
 app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
     try {
-        const user = req.user; // User is attached to the request
-        const tokenData = {
-            _id: user._id,
-            email: user.email,
-            role: user.role // Include role in token data for redirection later
-        };
-        
-        // Generate token
-        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+        const user = req.user;
+        console.log("user",user)
 
-        // Set cookie options
-        const tokenOption = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-        };
-
-        // Send token as a cookie
-        res.cookie("token", token, tokenOption);
-
-        // Check if the user is new or already has a role
-        if (!user.role) {
-            // Redirect to select-role if the user is new
-            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
-        } else {
+        // Check if the user is already logged in and has a role
+        if (user.role) {
             // Redirect based on role
             const redirectUrl = user.role === "Vendor" 
                 ? `${process.env.FRONTEND_URL}/vendor-page` 
@@ -138,8 +118,36 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
                 ? `${process.env.FRONTEND_URL}/` 
                 : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
 
-            res.redirect(redirectUrl); // Redirect to appropriate page
+            return res.redirect(redirectUrl); // Redirect to appropriate page
         }
+
+        const tokenData = {
+            _id: user._id,
+            email: user.email,
+            role: user.role,
+        };
+
+        // Generate token
+        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+        
+        // Set cookie options
+        const tokenOption = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax', // Change to 'lax' or 'strict' as needed
+            maxAge: 90 * 24 * 60 * 60 * 1000,
+        };
+        
+        // Send token as a cookie
+        res.cookie("token---", token, tokenOption);
+        console.log("Cookie set:", { name: "token---", value: token });
+
+        // Check if the user is new or already has a role
+        if (!user.role) {
+            // Redirect to select-role if the user is new
+            return res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
+        }
+
     } catch (error) {
         console.error("Error during Google login callback:", error);
         res.redirect('/login'); // Fallback redirect
