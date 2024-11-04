@@ -21,7 +21,8 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
     origin: process.env.FRONTEND_URL, // Allow requests from your frontend
-    credentials: true, // Ensure credentials (cookies) are allowed
+    credentials: true,
+   
 }));
 
 app.use(express.json());
@@ -115,14 +116,14 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         console.log("token=", token);
         const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
 
+
         const role = decodedToken.role; // Extract the _id from the decoded token
-        console.log("Decoded user ID:", role);
-        
+        console.log("Decoded user ID:",role)
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax', // Change to 'lax' or 'strict' as needed
+            // sameSite: 'none',
             maxAge: 90 * 24 * 60 * 60 * 1000,
         };
         
