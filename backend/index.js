@@ -113,14 +113,14 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         
         // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-
+         console.log("token=",token)
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production', // This should be false in development
             sameSite: 'none', // Use 'lax' in development for easier testing
             maxAge: 90 * 24 * 60 * 60 * 1000,
-            path: '/',
+            // path: '/',
         };
 
         // Send token as a cookie
