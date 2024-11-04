@@ -114,7 +114,11 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
         console.log("token=", token);
+        const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
 
+
+        const role = decodedToken.role; // Extract the _id from the decoded token
+        console.log("Decoded user ID:",role)
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
@@ -128,14 +132,14 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
 
         // Determine redirect URL based on role
         let redirectUrl;
-        if (!user.role) {
+        if (!role) {
             redirectUrl = `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
         } else {
-            redirectUrl = user.role === "Vendor"
+            redirectUrl = role === "Vendor"
                 ? `${process.env.FRONTEND_URL}/`
-                : user.role === "Customer"
+                : role === "Customer"
                 ? `${process.env.FRONTEND_URL}/`
-                : user.role === "Admin"
+                : role === "Admin"
                 ? `${process.env.FRONTEND_URL}/`
                 : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
         }
