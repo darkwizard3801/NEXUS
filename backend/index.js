@@ -21,8 +21,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
     origin: process.env.FRONTEND_URL, // Allow requests from your frontend
-    credentials: true,
-   
+    credentials: true, // Ensure credentials (cookies) are allowed
 }));
 
 app.use(express.json());
@@ -116,14 +115,14 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         console.log("token=", token);
         const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
 
-
         const role = decodedToken.role; // Extract the _id from the decoded token
-        console.log("Decoded user ID:",role)
+        console.log("Decoded user ID:", role);
+        
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
+            sameSite: 'lax', // Change to 'lax' or 'strict' as needed
             maxAge: 90 * 24 * 60 * 60 * 1000,
         };
         
@@ -132,15 +131,15 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
 
         // Determine redirect URL based on role
         let redirectUrl;
-        if (!role) {
+        if (!user.role) {
             redirectUrl = `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
         } else {
-            redirectUrl = role === "Vendor"
-                ? `${process.env.FRONTEND_URL}`
-                : role === "Customer"
-                ? `${process.env.FRONTEND_URL}`
-                : role === "Admin"
-                ? `${process.env.FRONTEND_URL}`
+            redirectUrl = user.role === "Vendor"
+                ? `${process.env.FRONTEND_URL}/`
+                : user.role === "Customer"
+                ? `${process.env.FRONTEND_URL}/`
+                : user.role === "Admin"
+                ? `${process.env.FRONTEND_URL}/`
                 : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
         }
 
