@@ -46,20 +46,32 @@ passport.use(new GoogleStrategy({
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         console.log("Google Strategy - Profile received:", profile.emails[0].value);
-        let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
+        // First, try to find user by googleId
+        let user = await User.findOne({ googleId: profile.id });
+        
+        // If no user found by googleId, check by email
         if (!user) {
+            user = await User.findOne({ email: profile.emails[0].value });
+            
+            // If user exists with email but no googleId, it's a different auth method
+            if (user) {
+                console.log("User exists with different auth method");
+                return done(null, false, { message: "Email already exists with different login method" });
+            }
+            
+            // Create new user if neither googleId nor email exists
             console.log("Creating new user for:", profile.emails[0].value);
-            // Create new user if not found
             user = new User({ 
                 googleId: profile.id, 
                 name: profile.displayName, 
                 email: profile.emails[0].value,
-                profilePic: profile.photos[0].value, // Add profile picture
+                profilePic: profile.photos[0].value,
                 isOAuth: true,
-                role: null // Indicate that this user authenticated via OAuth
+                role: null
             });
-            await user.save(); // Save the new user to the database
+            await user.save();
         }
+        
         console.log("User object:", user);
         done(null, user);
     } catch (error) {
@@ -115,10 +127,10 @@ app.get('/auth/google', (req, res, next) => {
 
 // Google callback
 app.get('/auth/google/callback', 
-    (req, res, next) => {
-        console.log("Google callback received");
-        passport.authenticate('google', { session: false })(req, res, next);
-    },
+    passport.authenticate('google', { 
+        session: false,
+        failureRedirect: `${process.env.FRONTEND_URL}/login?error=Email already exists with different login method`
+    }),
     async (req, res) => {
         try {
             console.log("Processing Google callback");
