@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import Logo from "./Logo";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { IoSearch } from "react-icons/io5";
@@ -20,6 +20,35 @@ const Header = () => {
   const URLSearch = new URLSearchParams(searchInput?.search);
   const searchQuery = URLSearch.getAll("q");
   const [search, setSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    // Check for loginSuccess parameter
+    const params = new URLSearchParams(window.location.search);
+    const loginSuccess = params.get('loginSuccess');
+
+    if (loginSuccess === 'true') {
+      // Fetch user details
+      const fetchUserDetails = async () => {
+        try {
+          const response = await fetch(SummaryApi.current_user.url, {
+            credentials: 'include'
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            dispatch(setUserDetails(data.data));
+            // Remove the query parameter
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+        }
+      };
+
+      fetchUserDetails();
+    }
+  }, [dispatch]);
 
   const handleLogout = async () => {
     const fetchData = await fetch(SummaryApi.logout_user.url, {

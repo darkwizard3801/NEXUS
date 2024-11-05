@@ -39,7 +39,9 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback',
+    callbackURL: process.env.NODE_ENV === 'production' 
+        ? 'https://nexus-q4sy.onrender.com/auth/google/callback'  // Production URL
+        : 'http://localhost:8080/auth/google/callback',           // Development URL
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
@@ -107,18 +109,20 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         const tokenData = {
             _id: user._id,
             email: user.email,
-            role: user.role
+            role: user.role,
+            name: user.name,           // Add name
+            profilePic: user.profilePic // Add profile picture
         };
         
         // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-        // Set cookie options - match them with your regular login
+        // Set cookie options
         const tokenOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
+            maxAge: 90 * 24 * 60 * 60 * 1000,
             path: '/'
         };
 
@@ -127,21 +131,22 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
 
         // Check if the user is new or already has a role
         if (!user.role) {
-            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
+            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}&token=${token}`);
         } else {
-            const redirectUrl = user.role === "Vendor" 
+            // Include token in redirect URL
+            const baseRedirectUrl = user.role === "Vendor" 
                 ? `${process.env.FRONTEND_URL}/vendor-page` 
                 : user.role === "Customer" 
                 ? `${process.env.FRONTEND_URL}/` 
                 : user.role === "Admin" 
                 ? `${process.env.FRONTEND_URL}/` 
-                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
+                : `${process.env.FRONTEND_URL}/select-role`;
 
-            res.redirect(redirectUrl);
+            res.redirect(`${baseRedirectUrl}?loginSuccess=true`);
         }
     } catch (error) {
         console.error("Error during Google login callback:", error);
-        res.redirect(`${process.env.FRONTEND_URL}/login`);
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=true`);
     }
 });
 
