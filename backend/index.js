@@ -120,7 +120,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             secure: true, // Always true for production
             sameSite: 'none', // Important for cross-site cookies
             maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
-            domain: process.env.NODE_ENV === 'production' ? 'https://nexus-q4sy.onrender.com' : 'localhost', // Update with your domain
+            domain: process.env.NODE_ENV === 'production' ? 'https://nexus-b9xa.onrender.com/' : 'localhost', // Update with your domain
         };
         console.log(token);
         console.log(tokenOption);
