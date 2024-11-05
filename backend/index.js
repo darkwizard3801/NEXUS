@@ -20,9 +20,11 @@ const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:3000' ], // Allow both local and production URLs
+    origin: process.env.NODE_ENV === 'production' 
+        ? ['https://nexus-q4sy.onrender.com', 'https://nexus-b9xa.onrender.com']
+        : 'http://localhost:3000',
     credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE","OPTIONS","PUT"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"],
 }));
 
 app.use(express.json());
@@ -43,8 +45,10 @@ passport.use(new GoogleStrategy({
     callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`, // Use full URL
 }, async (accessToken, refreshToken, profile, done) => {
     try {
+        console.log("Google Strategy - Profile received:", profile.emails[0].value);
         let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
         if (!user) {
+            console.log("Creating new user for:", profile.emails[0].value);
             // Create new user if not found
             user = new User({ 
                 googleId: profile.id, 
@@ -56,8 +60,10 @@ passport.use(new GoogleStrategy({
             });
             await user.save(); // Save the new user to the database
         }
+        console.log("User object:", user);
         done(null, user);
     } catch (error) {
+        console.error("Error in Google Strategy:", error);
         done(error, null);
     }
 }));
@@ -99,56 +105,71 @@ passport.deserializeUser((id, done) => {
 });
 
 // Routes for Google authentication
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google', (req, res, next) => {
+    console.log("Starting Google authentication");
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'],
+        prompt: 'select_account' // Add this to force Google account selection
+    })(req, res, next);
+});
 
 // Google callback
-app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
-    try {
-        const user = req.user; // User is attached to the request
-        const tokenData = {
-            _id: user._id,
-            email: user.email,
-            role: user.role // Include role in token data for redirection later
-        };
-        
-        // Generate token
-        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+app.get('/auth/google/callback', 
+    (req, res, next) => {
+        console.log("Google callback received");
+        passport.authenticate('google', { session: false })(req, res, next);
+    },
+    async (req, res) => {
+        try {
+            console.log("Processing Google callback");
+            const user = req.user; // User is attached to the request
+            console.log("User from request:", user);
 
-        // Set cookie options
-        const tokenOption = {
-            httpOnly: true,
-            secure: true, // Always true for production
-            sameSite: 'none', // Important for cross-site cookies
-            maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
-            domain: process.env.NODE_ENV === 'production' ? 'https://nexus-b9xa.onrender.com/' : 'localhost', // Update with your domain
-        };
-        console.log(token);
-        console.log(tokenOption);
-        // Send token as a cookie
-        res.cookie("token", token, tokenOption);
-        console.log("Cookie set:", { name: "token", value: token });
+            const tokenData = {
+                _id: user._id,
+                email: user.email,
+                role: user.role // Include role in token data for redirection later
+            };
 
-        // Check if the user is new or already has a role
-        if (!user.role) {
-            // Redirect to select-role if the user is new
-            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
-        } else {
-            // Redirect based on role
-            const redirectUrl = user.role === "Vendor" 
-                ? `${process.env.FRONTEND_URL}/vendor-page` 
-                : user.role === "Customer" 
-                ? `${process.env.FRONTEND_URL}/` 
-                : user.role === "Admin" 
-                ? `${process.env.FRONTEND_URL}/` 
-                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
+            const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+            console.log("JWT Token generated");
 
-            res.redirect(redirectUrl); // Redirect to appropriate page
+            // Set cookie options
+            const tokenOption = {
+                httpOnly: true,
+                secure: true, // Always true for production
+                sameSite: 'none', // Important for cross-site cookies
+                maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
+                domain: process.env.NODE_ENV === 'production' ? 'https://nexus-b9xa.onrender.com/' : 'http://localhost:3000', // Update with your domain
+            };
+            console.log(token);
+            console.log(tokenOption);
+            // Send token as a cookie
+            res.cookie("token", token, tokenOption);
+            console.log("Cookie set:", { name: "token", value: token });
+
+            // Check if the user is new or already has a role
+            if (!user.role) {
+                // Redirect to select-role if the user is new
+                res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
+            } else {
+                // Redirect based on role
+                const redirectUrl = user.role === "Vendor" 
+                    ? `${process.env.FRONTEND_URL}/vendor-page` 
+                    : user.role === "Customer" 
+                    ? `${process.env.FRONTEND_URL}/` 
+                    : user.role === "Admin" 
+                    ? `${process.env.FRONTEND_URL}/` 
+                    : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
+
+                res.redirect(redirectUrl); // Redirect to appropriate page
+            }
+        } catch (error) {
+            console.error("Detailed error in callback:", error);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
         }
-    } catch (error) {
-        console.error("Error during Google login callback:", error);
-        res.redirect('/login'); // Fallback redirect
     }
-});
+);
 
 // Routes for Facebook authentication
 app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
