@@ -43,50 +43,28 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
-    proxy: true
+    proxy: true,
+    timeout: 20000 // Add timeout
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log("\n=== Google Strategy Debug ===");
-        console.log("1. Received Google Profile:", {
-            id: profile.id,
-            email: profile.emails[0].value,
-            name: profile.displayName,
-            photo: profile.photos[0].value
-        });
-
-        // First, try to find user by googleId
-        let user = await User.findOne({ googleId: profile.id });
-        console.log("2. Search by googleId result:", user);
+        console.log("Starting Google Auth...");
         
-        // If no user found by googleId, check by email
-        if (!user) {
-            user = await User.findOne({ email: profile.emails[0].value });
-            console.log("3. Search by email result:", user);
-            
-            if (user) {
-                console.log("4. ERROR: Email exists but with different auth method");
-                return done(null, false, { 
-                    message: "This email is already registered using a different method" 
-                });
-            }
-            
-            // Create new user
-            const newUser = new User({ 
-                googleId: profile.id, 
-                name: profile.displayName, 
-                email: profile.emails[0].value,
-                profilePic: profile.photos[0].value,
-                isOAuth: true,
-                role: null
-            });
-
-            user = await newUser.save();
-            console.log("5. New user created:", user);
-        }
-
-        console.log("6. Final user object:", user);
-        console.log("=== End Google Strategy Debug ===\n");
+        // Simplified user search
+        const user = await User.findOneAndUpdate(
+            { email: profile.emails[0].value },
+            {
+                $setOnInsert: {
+                    googleId: profile.id,
+                    name: profile.displayName,
+                    email: profile.emails[0].value,
+                    profilePic: profile.photos[0].value,
+                    isOAuth: true
+                }
+            },
+            { upsert: true, new: true }
+        );
         
+        console.log("User processed:", user.email);
         return done(null, user);
     } catch (error) {
         console.error("Google Strategy Error:", error);
@@ -140,58 +118,51 @@ app.get('/auth/google', (req, res, next) => {
 });
 
 // Google callback
-app.get('/auth/google/callback', 
+app.get('/auth/google/callback',
     (req, res, next) => {
-        console.log("\n=== Google Callback Debug ===");
-        console.log("1. Callback initiated");
+        // Set timeout handler
+        const timeoutHandler = setTimeout(() => {
+            console.log("Auth timeout - redirecting to login");
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=timeout`);
+        }, 20000);
+        
+        req.timeoutHandler = timeoutHandler;
         next();
     },
-    passport.authenticate('google', { session: false }),
+    passport.authenticate('google', { 
+        session: false,
+        failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed` 
+    }),
     async (req, res) => {
+        // Clear timeout as authentication succeeded
+        clearTimeout(req.timeoutHandler);
+        
         try {
-            console.log("2. User authenticated:", req.user);
+            console.log("Processing callback for:", req.user.email);
             
-            // Clear any existing cookies
-            res.clearCookie('token');
-            console.log("3. Cleared existing cookies");
-            
-            const tokenData = {
+            const token = jwt.sign({
                 _id: req.user._id,
                 email: req.user.email,
                 name: req.user.name,
-                role: req.user.role,
-                profilePic: req.user.profilePic
-            };
-            console.log("4. Token data prepared:", tokenData);
+                role: req.user.role
+            }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d' });
 
-            const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-            console.log("5. JWT generated");
-            
-            const tokenOption = {
+            res.cookie("token", token, {
                 httpOnly: true,
                 secure: true,
                 sameSite: 'none',
-                maxAge: 90 * 24 * 60 * 60 * 1000
-            };
-            console.log("6. Cookie options:", tokenOption);
+                maxAge: 24 * 60 * 60 * 1000 // 1 day
+            });
 
-            res.cookie("token", token, tokenOption);
-            console.log("7. Cookie set with token");
+            const redirectUrl = req.user.role 
+                ? `${process.env.FRONTEND_URL}/` 
+                : `${process.env.FRONTEND_URL}/select-role?userId=${req.user._id}`;
 
-            // Determine redirect URL
-            const redirectUrl = !req.user.role 
-                ? `${process.env.FRONTEND_URL}/select-role?userId=${req.user._id}`
-                : req.user.role === "Vendor"
-                    ? `${process.env.FRONTEND_URL}/vendor-page`
-                    : `${process.env.FRONTEND_URL}/`;
-
-            console.log("8. Redirect URL determined:", redirectUrl);
-            console.log("=== End Google Callback Debug ===\n");
-            
+            console.log("Redirecting to:", redirectUrl);
             return res.redirect(redirectUrl);
         } catch (error) {
-            console.error("Detailed callback error:", error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
+            console.error("Callback error:", error);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
         }
     }
 );
