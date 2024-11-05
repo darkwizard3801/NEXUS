@@ -43,30 +43,68 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
-    proxy: true
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        let user = await User.findOne({ 
-            $or: [
-                { googleId: profile.id },
-                { email: profile.emails[0].value }
-            ]
+        console.log("\n=== Google Auth Debug ===");
+        console.log("Incoming Google Profile:", {
+            id: profile.id,
+            email: profile.emails[0].value,
+            name: profile.displayName
         });
 
+        // Clear any existing sessions
+        // First, try to find user by googleId
+        let user = await User.findOne({ googleId: profile.id });
+        console.log("Search by googleId result:", user);
+        
+        // If no user found by googleId, check by email
         if (!user) {
-            user = await User.create({ 
+            user = await User.findOne({ email: profile.emails[0].value });
+            console.log("Search by email result:", user);
+            
+            if (user) {
+                console.log("ERROR: Email exists but with different auth method");
+                return done(null, false, { 
+                    message: "This email is already registered using a different method. Please use your original login method." 
+                });
+            }
+            
+            // Create new user
+            const newUser = new User({ 
                 googleId: profile.id, 
                 name: profile.displayName, 
                 email: profile.emails[0].value,
                 profilePic: profile.photos[0].value,
-                isOAuth: true
+                isOAuth: true,
+                role: null
             });
-        } else if (!user.googleId) {
-            return done(null, false, { message: "Email exists with different login method" });
+
+            user = await newUser.save();
+            console.log("New user created:", user);
         }
 
+        // Verify the user object
+        if (!user.googleId) {
+            console.log("ERROR: User found but no googleId");
+            return done(null, false, { 
+                message: "Account exists with different login method" 
+            });
+        }
+
+        // Verify the googleId matches
+        if (user.googleId !== profile.id) {
+            console.log("ERROR: GoogleId mismatch");
+            return done(null, false, { 
+                message: "Authentication method mismatch" 
+            });
+        }
+
+        console.log("Authentication successful for user:", user.email);
+        console.log("=== End Google Auth Debug ===\n");
+        
         return done(null, user);
     } catch (error) {
+        console.error("Google Strategy Error:", error);
         return done(error, null);
     }
 }));
@@ -116,57 +154,51 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// Google callback route with timeout handling
+// Google callback
 app.get('/auth/google/callback', 
-    (req, res, next) => {
-        // Set a timeout for the authentication process
-        const timeoutDuration = 25000; // 25 seconds
-        const timeout = setTimeout(() => {
-            console.error('Authentication timeout');
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=Authentication timeout`);
-        }, timeoutDuration);
-
-        // Store timeout in request object to clear it later
-        req.authTimeout = timeout;
-        next();
-    },
-    passport.authenticate('google', { 
-        session: false,
-        failureRedirect: `${process.env.FRONTEND_URL}/login?error=Authentication failed`
-    }),
+    passport.authenticate('google', { session: false }),
     async (req, res) => {
-        // Clear the timeout since authentication succeeded
-        clearTimeout(req.authTimeout);
-
         try {
-            const user = req.user;
+            console.log("User authenticated:", req.user);
             
-            // Generate token immediately
-            const token = jwt.sign({
-                _id: user._id,
-                email: user.email,
-                name: user.name,
-                role: user.role
-            }, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+            // Clear any existing cookies
+            res.clearCookie('token');
+            
+            const tokenData = {
+                _id: req.user._id,
+                email: req.user.email,
+                name: req.user.name,  // Include name in token data
+                role: req.user.role,
+                profilePic: req.user.profilePic  // Include profile picture if needed
+            };
 
-            // Set cookie with minimal options
-            res.cookie("token", token, {
+            const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+            
+            const tokenOption = {
                 httpOnly: true,
                 secure: true,
                 sameSite: 'none',
                 maxAge: 90 * 24 * 60 * 60 * 1000
-            });
+            };
 
-            // Redirect immediately
-            const redirectUrl = !user.role 
-                ? `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`
-                : `${process.env.FRONTEND_URL}/`;
+            res.cookie("token", token, tokenOption);
+            console.log("Token Data:", tokenData);
+            console.log("Cookie Set:", token);
 
+            // Determine redirect URL
+            const redirectUrl = !req.user.role 
+                ? `${process.env.FRONTEND_URL}/select-role?userId=${req.user._id}`
+                : req.user.role === "Vendor"
+                    ? `${process.env.FRONTEND_URL}/vendor-page`
+                    : `${process.env.FRONTEND_URL}/`;
+
+            console.log("Redirecting to:", redirectUrl);
+            console.log("=== End Google Callback Debug ===\n");
+            
             return res.redirect(redirectUrl);
-
         } catch (error) {
             console.error("Callback Error:", error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=Server error`);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=Something went wrong`);
         }
     }
 );
