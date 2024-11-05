@@ -67,31 +67,37 @@ async function userSignInController(req, res) {
             };
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-            // Set cookie options
+            // Set cookie options with more permissive settings
             const tokenOptions = {
                 httpOnly: true,
-                secure: true, // Always set to true for deployed environments
-                sameSite: 'none', // Changed to 'none' to allow cross-site cookies
+                secure: process.env.NODE_ENV === 'production', // Only true in production
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
                 maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
-                path: '/', // Explicitly set the path
-                domain: process.env.COOKIE_DOMAIN || undefined // Add your domain if needed
+                path: '/'
             };
-              
-            // Send response with cookie
-            res.cookie("token", token, tokenOptions)
-               .status(200)
-               .json({
-                    message: "Login successful",
-                    data: { 
-                        token,
-                        user: {
-                            email: user.email,
-                            role: user.role
-                        }
-                    },
-                    success: true,
-                    error: false
-                });
+            
+            // Add debug logging
+            console.log('Token being set:', token);
+            console.log('Cookie options:', tokenOptions);
+            
+            // Set the cookie and send response
+            res.cookie("token", token, tokenOptions);
+            
+            // Add debug header to check if cookies are being set
+            res.setHeader('X-Cookie-Set', 'true');
+            
+            return res.status(200).json({
+                message: "Login successful",
+                data: { 
+                    token,
+                    user: {
+                        email: user.email,
+                        role: user.role
+                    }
+                },
+                success: true,
+                error: false
+            });
         } else {
             console.log(`Invalid password attempt for user: ${email}`);
             return res.status(401).json({
