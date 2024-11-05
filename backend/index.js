@@ -20,8 +20,14 @@ const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: process.env.FRONTEND_URL, // Allow requests from your frontend
-    credentials: true
+    origin: [
+        process.env.FRONTEND_URL,
+        'https://nexus-q4sy.onrender.com',
+        'http://localhost:3000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 app.use(express.json());
@@ -35,6 +41,41 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Add Cloudflare and security headers
+app.use((req, res, next) => {
+    // Allow Cloudflare
+    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+    
+    // Security headers
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'DENY');
+    res.header('X-XSS-Protection', '1; mode=block');
+    
+    // Handle OPTIONS method
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
+    next();
+});
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
+        error: process.env.NODE_ENV === 'production' ? {} : err
+    });
+});
+
+// Add health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 // Passport configuration for Google strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -42,7 +83,9 @@ passport.use(new GoogleStrategy({
     callbackURL: process.env.NODE_ENV === 'production' 
         ? 'https://nexus-q4sy.onrender.com/auth/google/callback'
         : 'http://localhost:8080/auth/google/callback',
-    proxy: true
+    proxy: true,
+    timeout: 20000,
+    trustProxy: true
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         console.log('Google authentication successful, profile:', profile); // Debug log
