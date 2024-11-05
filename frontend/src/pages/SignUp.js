@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import imageTobase64 from '../helpers/imageTobase64';
 import SummaryApi from '../common';
 import { ToastContainer, toast } from 'react-toastify';
-import { FaFacebook, FaGoogle } from 'react-icons/fa';
+// import { FaFacebook, FaGoogle } from 'react-icons/fa';
+import { FcGoogle } from "react-icons/fc";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -211,20 +212,20 @@ const SignUp = () => {
                 <div className="flex flex-col items-center mt-4">
                   <p>Or sign up with</p>
                   <div className="flex gap-4 mt-2">
-                    <button 
+                    {/* <button 
                       type="button" 
                       className="flex items-center gap-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
                       onClick={handleFacebookLogin}
                     >
                       <FaFacebook />
                       Facebook
-                    </button>
+                    </button> */}
                     <button 
                       type="button" 
                       className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
                       onClick={handleGoogleLogin}
                     >
-                      <FaGoogle />
+                      <FcGoogle />
                       Google
                     </button>
                   </div>

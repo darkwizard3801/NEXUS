@@ -1,6 +1,8 @@
 import React, { useContext, useState } from 'react';
 import loginIcons from '../assest/signin.gif';
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebookF } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+
 import { Link, useNavigate,Navigate } from 'react-router-dom';
 import SummaryApi from '../common';
 import { toast } from 'react-toastify';
@@ -137,9 +139,9 @@ const Login = () => {
         });
     };
 
-    const handleFacebookLogin = () => {
-        window.open("https://nexus-q4sy.onrender.com/auth/facebook", "_self");
-    };
+    // const handleFacebookLogin = () => {
+    //     window.open("https://nexus-q4sy.onrender.com/auth/facebook", "_self");
+    // };
 
     return (
         <section id='login'>
@@ -194,14 +196,14 @@ const Login = () => {
                     <br />
                     <label><center><b>or Login with</b></center></label>
                     <div className="flex justify-center mt-4 gap-4">
-                        <button onClick={handleGoogleLogin} className='bg-red-500 hover:bg-red-600 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all flex items-center justify-center'>
-                            <FaGoogle className='mr-2' />
+                        <button onClick={handleGoogleLogin} className='bg-black hover:bg-red-600 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all flex items-center justify-center'>
+                            <FcGoogle className='mr-2' />
                             Google
                         </button>
-                        <button onClick={handleFacebookLogin} className='bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all flex items-center justify-center'>
+                        {/* <button onClick={handleFacebookLogin} className='bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all flex items-center justify-center'>
                             <FaFacebookF className='mr-2' />
                             Facebook
-                        </button>
+                        </button> */}
                     </div>
 
                     <p className='my-5'>Don't have an account? <Link to={"/sign-up"} className='text-red-600 hover:text-red-700 hover:underline'>Sign up</Link></p>
