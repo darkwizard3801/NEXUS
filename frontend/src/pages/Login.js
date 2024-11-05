@@ -80,7 +80,16 @@ const Login = () => {
                         toast.success(dataApi.message || "Login successful");
 
                         
-                    } else {
+                    } 
+                    else if (userRole === "Admin") {
+                        navigate("/",{ replace: true });
+                        
+                         
+                        fetchUserDetails();
+                        toast.success(dataApi.message || "Login successful");
+
+                        
+                    }else {
                         toast.error("Invalid role");
                     }
                 } else {

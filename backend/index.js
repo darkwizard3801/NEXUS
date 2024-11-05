@@ -15,25 +15,6 @@ const router = require('./routes');
 
 const app = express();
 
-// Add this at the start of your file to verify environment variables
-const requiredEnvVars = [
-    'TOKEN_SECRET_KEY',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-    'FRONTEND_URL'
-];
-
-requiredEnvVars.forEach(varName => {
-    if (!process.env[varName]) {
-        console.error(`Missing required environment variable: ${varName}`);
-        process.exit(1);
-    }
-});
-
-// Log configuration
-console.log('Environment:', process.env.NODE_ENV);
-console.log('Frontend URL:', process.env.FRONTEND_URL);
-console.log('Token Secret Key exists:', !!process.env.TOKEN_SECRET_KEY);
 
 // Middleware setup
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -161,61 +142,37 @@ app.get('/auth/google/callback',
     }),
     async (req, res) => {
         try {
-            console.log('Callback received, processing user data');
             const user = req.user;
             
-            if (!user) {
-                console.error('No user data found in request');
-                return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_user`);
-            }
-
-            // Create token data
-            const tokenData = {
-                _id: user._id.toString(), // Convert ObjectId to string
-                email: user.email,
-                role: user.role,
-                name: user.name,
-                profilePic: user.profilePic
-            };
-
-            console.log('Token data being signed:', tokenData); // Debug log
-
             // Generate token
             const token = jwt.sign(
-                tokenData,
+                { 
+                    _id: user._id,
+                    email: user.email,
+                    role: user.role 
+                }, 
                 process.env.TOKEN_SECRET_KEY,
                 { expiresIn: '90d' }
             );
 
-            console.log('Generated token:', token); // Debug log
-
-            // Set cookie options
-            const cookieOptions = {
+            // Set cookie
+            res.cookie('token', token, {
                 httpOnly: true,
                 secure: true,
                 sameSite: 'none',
-                maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
-                path: '/'
-            };
+                maxAge: 90 * 24 * 60 * 60 * 1000
+            });
 
-            // Set the cookie
-            res.cookie('token', token, cookieOptions);
-
-            // Determine redirect URL based on role
-            let redirectUrl;
+            // Redirect based on role
             if (!user.role) {
-                redirectUrl = `${process.env.FRONTEND_URL}/select-role?token=${token}&userId=${user._id}`;
-            } else {
-                const basePath = user.role === "Vendor" ? '/vendor-page' : '/';
-                redirectUrl = `${process.env.FRONTEND_URL}${basePath}?token=${token}`;
+                return res.redirect(`${process.env.FRONTEND_URL}/select-role?token=${token}`);
             }
 
-            console.log('Redirecting to:', redirectUrl); // Debug log
-            return res.redirect(redirectUrl);
+            return res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
 
         } catch (error) {
-            console.error('Error in callback:', error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+            console.error('Callback error:', error);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=true`);
         }
     }
 );
