@@ -72,13 +72,13 @@ const Login = () => {
                     // Redirect based on role
                     switch(userRole) {
                         case "Vendor":
-                            navigate("/vendor-page");
+                            navigate("/");
                             break;
                         case "Customer":
                             navigate("/");
                             break;
                         case "Admin":
-                            navigate("/admin");
+                            navigate("/");
                             break;
                         default:
                             toast.error("Invalid role");
@@ -99,7 +99,7 @@ const Login = () => {
 
 
 
-    
+
     const handleGoogleLogin = () => {
         window.open(SummaryApi.google_login.url, "_self");
 
@@ -116,13 +116,13 @@ const Login = () => {
                     
                     switch(role) {
                         case "Vendor":
-                            navigate("/vendor-page");
+                            navigate("/");
                             break;
                         case "Customer":
                             navigate("/");
                             break;
                         case "Admin":
-                            navigate("/admin");
+                            navigate("/");
                             break;
                         default:
                             toast.error("Invalid role");
