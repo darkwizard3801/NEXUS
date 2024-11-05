@@ -20,8 +20,9 @@ const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: process.env.FRONTEND_URL, // Allow requests from your frontend
-    credentials: true,methods: ["GET", "POST", "PATCH", "DELETE"],
+    origin: [process.env.FRONTEND_URL || 'http://localhost:3000' ], // Allow both local and production URLs
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE","OPTIONS","PUT"],
 }));
 
 app.use(express.json());
@@ -39,7 +40,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback',
+    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`, // Use full URL
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
@@ -62,29 +63,29 @@ passport.use(new GoogleStrategy({
 }));
 
 // Passport configuration for Facebook strategy
-passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: '/auth/facebook/callback',
-    profileFields: ['id', 'displayName', 'email']
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        let user = await User.findOne({ facebookId: profile.id });
-        if (!user) {
-            // Create new user if not found
-            user = new User({ 
-                facebookId: profile.id, 
-                name: profile.displayName, 
-                email: profile.emails[0].value,
-                isOAuth: true // Indicate that this user authenticated via OAuth
-            });
-            await user.save(); // Save the new user to the database
-        }
-        done(null, user);
-    } catch (error) {
-        done(error, null);
-    }
-}));
+// passport.use(new FacebookStrategy({
+//     clientID: process.env.FACEBOOK_APP_ID,
+//     clientSecret: process.env.FACEBOOK_APP_SECRET,
+//     callbackURL: '/auth/facebook/callback',
+//     profileFields: ['id', 'displayName', 'email']
+// }, async (accessToken, refreshToken, profile, done) => {
+//     try {
+//         let user = await User.findOne({ facebookId: profile.id });
+//         if (!user) {
+//             // Create new user if not found
+//             user = new User({ 
+//                 facebookId: profile.id, 
+//                 name: profile.displayName, 
+//                 email: profile.emails[0].value,
+//                 isOAuth: true // Indicate that this user authenticated via OAuth
+//             });
+//             await user.save(); // Save the new user to the database
+//         }
+//         done(null, user);
+//     } catch (error) {
+//         done(error, null);
+//     }
+// }));
 
 passport.serializeUser((user, done) => {
     done(null, user.id); // Serialize user ID
@@ -116,13 +117,16 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: true, // Always true for production
+            sameSite: 'none', // Important for cross-site cookies
+            maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
+            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : 'localhost', // Update with your domain
         };
         console.log(token);
         console.log(tokenOption);
         // Send token as a cookie
         res.cookie("token", token, tokenOption);
+        console.log("Cookie set:", { name: "token", value: token });
 
         // Check if the user is new or already has a role
         if (!user.role) {
