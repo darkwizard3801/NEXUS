@@ -103,45 +103,45 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 // Google callback
 app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
     try {
-        const user = req.user; // User is attached to the request
+        const user = req.user;
         const tokenData = {
             _id: user._id,
             email: user.email,
-            role: user.role // Include role in token data for redirection later
+            role: user.role
         };
         
         // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-        // Set cookie options
-        const tokenOption = {
+        // Set cookie options - match them with your regular login
+        const tokenOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
+            path: '/'
         };
 
         // Send token as a cookie
-        res.cookie("token", token, tokenOption);
+        res.cookie("token", token, tokenOptions);
 
         // Check if the user is new or already has a role
         if (!user.role) {
-            // Redirect to select-role if the user is new
             res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
         } else {
-            // Redirect based on role
             const redirectUrl = user.role === "Vendor" 
                 ? `${process.env.FRONTEND_URL}/vendor-page` 
                 : user.role === "Customer" 
                 ? `${process.env.FRONTEND_URL}/` 
                 : user.role === "Admin" 
                 ? `${process.env.FRONTEND_URL}/` 
-                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
+                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
 
-            res.redirect(redirectUrl); // Redirect to appropriate page
+            res.redirect(redirectUrl);
         }
     } catch (error) {
         console.error("Error during Google login callback:", error);
-        res.redirect('/login'); // Fallback redirect
+        res.redirect(`${process.env.FRONTEND_URL}/login`);
     }
 });
 
@@ -151,17 +151,36 @@ app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }
 // Facebook callback
 app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/' }), async (req, res) => {
     try {
-        const user = await User.findById(req.user.id); // Fetch user details
+        const user = await User.findById(req.user.id);
+        
+        const tokenData = {
+            _id: user._id,
+            email: user.email,
+            role: user.role
+        };
+        
+        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+
+        const tokenOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 90 * 24 * 60 * 60 * 1000,
+            path: '/'
+        };
+
+        res.cookie("token", token, tokenOptions);
+
         const redirectUrl = user.role === "Vendor" 
             ? `${process.env.FRONTEND_URL}/vendor-page` 
             : user.role === "Customer" 
             ? `${process.env.FRONTEND_URL}/` 
-            : `${process.env.FRONTEND_URL}/select-role?userId=${req.user.id}`; // Redirect to select-role if new
+            : `${process.env.FRONTEND_URL}/select-role?userId=${req.user.id}`;
 
-        res.redirect(redirectUrl); // Redirect to appropriate page
+        res.redirect(redirectUrl);
     } catch (error) {
         console.error("Error during Facebook login callback:", error);
-        res.redirect('/login'); // Fallback redirect
+        res.redirect(`${process.env.FRONTEND_URL}/login`);
     }
 });
 
