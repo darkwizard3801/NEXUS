@@ -40,25 +40,31 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.NODE_ENV === 'production' 
-        ? 'https://nexus-q4sy.onrender.com/auth/google/callback'  // Production URL
-        : 'http://localhost:8080/auth/google/callback',           // Development URL
+        ? 'https://nexus-q4sy.onrender.com/auth/google/callback'
+        : 'http://localhost:8080/auth/google/callback',
+    proxy: true
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
+        console.log('Google authentication successful, profile:', profile); // Debug log
+        
+        let user = await User.findOne({ email: profile.emails[0].value });
         if (!user) {
-            // Create new user if not found
             user = new User({ 
                 googleId: profile.id, 
                 name: profile.displayName, 
                 email: profile.emails[0].value,
-                profilePic: profile.photos[0].value, // Add profile picture
+                profilePic: profile.photos[0].value,
                 isOAuth: true,
-                role: null // Indicate that this user authenticated via OAuth
+                role: null
             });
-            await user.save(); // Save the new user to the database
+            await user.save();
+            console.log('New user created:', user); // Debug log
+        } else {
+            console.log('Existing user found:', user); // Debug log
         }
         done(null, user);
     } catch (error) {
+        console.error('Error in Google Strategy:', error);
         done(error, null);
     }
 }));
@@ -100,72 +106,70 @@ passport.deserializeUser((id, done) => {
 });
 
 // Routes for Google authentication
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google',
+    (req, res, next) => {
+        console.log('Starting Google authentication'); // Debug log
+        next();
+    },
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'],
+        prompt: 'select_account'
+    })
+);
 
 // Google callback
-app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
-    try {
-        console.log('Google callback received, user:', req.user); // Debug log
+app.get('/auth/google/callback', 
+    (req, res, next) => {
+        console.log('Received callback from Google'); // Debug log
+        next();
+    },
+    passport.authenticate('google', { 
+        session: false,
+        failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`
+    }), 
+    async (req, res) => {
+        try {
+            console.log('Authentication successful, processing callback');
+            
+            const user = req.user;
+            if (!user) {
+                console.error('No user data in request');
+                return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_user`);
+            }
 
-        const user = req.user;
-        if (!user) {
-            console.error('No user found in request');
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_user`);
-        }
+            const tokenData = {
+                _id: user._id,
+                email: user.email,
+                role: user.role,
+                name: user.name,
+                profilePic: user.profilePic
+            };
 
-        const tokenData = {
-            _id: user._id,
-            email: user.email,
-            role: user.role,
-            name: user.name,
-            profilePic: user.profilePic
-        };
-        
-        console.log('Token data:', tokenData); // Debug log
-        
-        // Generate token
-        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-        
-        console.log('Generated token:', token); // Debug log
+            const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-        // Set cookie options
-        const tokenOptions = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 90 * 24 * 60 * 60 * 1000,
-            path: '/'
-        };
+            const tokenOptions = {
+                httpOnly: true,
+                secure: true, // Always true for production
+                sameSite: 'none',
+                maxAge: 90 * 24 * 60 * 60 * 1000,
+                path: '/'
+            };
 
-        console.log('Cookie options:', tokenOptions); // Debug log
+            res.cookie("token", token, tokenOptions);
 
-        // Send token as a cookie and in query params
-        res.cookie("token", token, tokenOptions);
+            // Determine redirect URL
+            const redirectUrl = !user.role 
+                ? `${process.env.FRONTEND_URL}/select-role?userId=${user._id}&token=${token}`
+                : `${process.env.FRONTEND_URL}${user.role === "Vendor" ? '/vendor-page' : '/'}?loginSuccess=true&token=${token}`;
 
-        // Check if the user is new or already has a role
-        if (!user.role) {
-            const redirectUrl = `${process.env.FRONTEND_URL}/select-role?userId=${user._id}&token=${token}`;
-            console.log('Redirecting to select role:', redirectUrl); // Debug log
+            console.log('Redirecting to:', redirectUrl);
             return res.redirect(redirectUrl);
-        } else {
-            // Include token in redirect URL
-            const baseRedirectUrl = user.role === "Vendor" 
-                ? `${process.env.FRONTEND_URL}/vendor-page` 
-                : user.role === "Customer" 
-                ? `${process.env.FRONTEND_URL}/` 
-                : user.role === "Admin" 
-                ? `${process.env.FRONTEND_URL}/` 
-                : `${process.env.FRONTEND_URL}/select-role`;
-
-            const finalRedirectUrl = `${baseRedirectUrl}?loginSuccess=true&token=${token}`;
-            console.log('Redirecting to role-based URL:', finalRedirectUrl); // Debug log
-            return res.redirect(finalRedirectUrl);
+        } catch (error) {
+            console.error('Error in callback handler:', error);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
         }
-    } catch (error) {
-        console.error("Error during Google login callback:", error);
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=callback_error`);
     }
-});
+);
 
 // Routes for Facebook authentication
 app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
