@@ -66,26 +66,27 @@ const Login = () => {
                         return; // Prevent further execution if email is not verified
                     }
 
-                    if (userRole === "Vendor") {
-                        navigate("/");
-                        fetchUserDetails();
-                        toast.success(dataApi.message || "Login successful");
+                    // Update user details
+                    await fetchUserDetails();
 
-                        
-                    } else if (userRole === "Customer") {
-                        navigate("/",{ replace: true });
-                        
-                         
-                        fetchUserDetails();
-                        toast.success(dataApi.message || "Login successful");
-
-                        
-                    } else {
-                        toast.error("Invalid role");
+                    // Redirect based on role
+                    switch(userRole) {
+                        case "Vendor":
+                            navigate("/vendor-page");
+                            break;
+                        case "Customer":
+                            navigate("/");
+                            break;
+                        case "Admin":
+                            navigate("/admin");
+                            break;
+                        default:
+                            toast.error("Invalid role");
                     }
+                    
+                    toast.success(dataApi.message || "Login successful");
                 } else {
                     toast.error("Failed to retrieve user details");
-                    console.error("User details response does not contain role:", userDetails);
                 }
             } else {
                 toast.error(dataApi.message || "Login failed");
@@ -97,29 +98,31 @@ const Login = () => {
     };
 
     const handleGoogleLogin = () => {
-        // Trigger Google OAuth login
         window.open(SummaryApi.google_login.url, "_self");
 
-        // Assuming the backend redirects back to the frontend with user data after successful login
         window.addEventListener('message', async (event) => {
-            if (event.origin !== process.env.REACT_APP_BACKEND_URL) return; // Ensure the event is from your backend
+            if (event.origin !== process.env.REACT_APP_BACKEND_URL) return;
 
             const { success, isNewUser, role } = event.data;
 
             if (success) {
                 if (isNewUser || !role) {
-                    // If the user is new or has no role, navigate to role selection
                     navigate("/select-role");
                 } else {
-                    // If the user has a role, redirect based on their role
-                    if (role === "Vendor") {
-                        navigate("/vendor-page");
-                    } else if (role === "Customer") {
-                        navigate("/");
-                    } else if (role === "Admin") {
-                        navigate("/admin-page");
-                    } else {
-                        toast.error("Invalid role");
+                    await fetchUserDetails();
+                    
+                    switch(role) {
+                        case "Vendor":
+                            navigate("/vendor-page");
+                            break;
+                        case "Customer":
+                            navigate("/");
+                            break;
+                        case "Admin":
+                            navigate("/admin");
+                            break;
+                        default:
+                            toast.error("Invalid role");
                     }
                 }
             } else {

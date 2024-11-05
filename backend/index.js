@@ -119,7 +119,8 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             httpOnly: true,
             secure: true,  // Always use secure in production
             sameSite: 'none',  // Change to 'none' for cross-site cookies
-            domain: process.env.FRONTEND_URL  // Add your domain
+            domain: process.env.FRONTEND_URL ,
+            path: '/' // Add your domain
         };
 
         // Send token as a cookie
