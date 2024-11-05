@@ -42,26 +42,35 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`, // Use full URL
+    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log("Google Strategy - Profile received:", profile.emails[0].value);
+        console.log("\n=== Google Auth Debug ===");
+        console.log("Incoming Google Profile:", {
+            id: profile.id,
+            email: profile.emails[0].value,
+            name: profile.displayName
+        });
+
+        // Clear any existing sessions
         // First, try to find user by googleId
         let user = await User.findOne({ googleId: profile.id });
+        console.log("Search by googleId result:", user);
         
         // If no user found by googleId, check by email
         if (!user) {
             user = await User.findOne({ email: profile.emails[0].value });
+            console.log("Search by email result:", user);
             
-            // If user exists with email but no googleId, it's a different auth method
             if (user) {
-                console.log("User exists with different auth method");
-                return done(null, false, { message: "Email already exists with different login method" });
+                console.log("ERROR: Email exists but with different auth method");
+                return done(null, false, { 
+                    message: "This email is already registered using a different method. Please use your original login method." 
+                });
             }
             
-            // Create new user if neither googleId nor email exists
-            console.log("Creating new user for:", profile.emails[0].value);
-            user = new User({ 
+            // Create new user
+            const newUser = new User({ 
                 googleId: profile.id, 
                 name: profile.displayName, 
                 email: profile.emails[0].value,
@@ -69,14 +78,34 @@ passport.use(new GoogleStrategy({
                 isOAuth: true,
                 role: null
             });
-            await user.save();
+
+            user = await newUser.save();
+            console.log("New user created:", user);
         }
+
+        // Verify the user object
+        if (!user.googleId) {
+            console.log("ERROR: User found but no googleId");
+            return done(null, false, { 
+                message: "Account exists with different login method" 
+            });
+        }
+
+        // Verify the googleId matches
+        if (user.googleId !== profile.id) {
+            console.log("ERROR: GoogleId mismatch");
+            return done(null, false, { 
+                message: "Authentication method mismatch" 
+            });
+        }
+
+        console.log("Authentication successful for user:", user.email);
+        console.log("=== End Google Auth Debug ===\n");
         
-        console.log("User object:", user);
-        done(null, user);
+        return done(null, user);
     } catch (error) {
-        console.error("Error in Google Strategy:", error);
-        done(error, null);
+        console.error("Google Strategy Error:", error);
+        return done(error, null);
     }
 }));
 
@@ -127,58 +156,55 @@ app.get('/auth/google', (req, res, next) => {
 
 // Google callback
 app.get('/auth/google/callback', 
+    (req, res, next) => {
+        console.log("\n=== Google Callback Debug ===");
+        console.log("Callback initiated");
+        next();
+    },
     passport.authenticate('google', { 
         session: false,
-        failureRedirect: `${process.env.FRONTEND_URL}/login?error=Email already exists with different login method`
+        failureRedirect: `${process.env.FRONTEND_URL}/login?error=Authentication failed`,
+        failWithError: true
     }),
     async (req, res) => {
         try {
-            console.log("Processing Google callback");
-            const user = req.user; // User is attached to the request
-            console.log("User from request:", user);
-
+            console.log("User authenticated:", req.user.email);
+            
+            // Clear any existing cookies
+            res.clearCookie('token');
+            
             const tokenData = {
-                _id: user._id,
-                email: user.email,
-                role: user.role // Include role in token data for redirection later
+                _id: req.user._id,
+                email: req.user.email,
+                role: req.user.role
             };
 
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-            console.log("JWT Token generated");
-
-            // Set cookie options
+            
             const tokenOption = {
                 httpOnly: true,
-                secure: true, // Always true for production
-                sameSite: 'none', // Important for cross-site cookies
-                maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
-                domain: process.env.NODE_ENV === 'production' ? 'https://nexus-b9xa.onrender.com/' : 'http://localhost:3000', // Update with your domain
+                secure: true,
+                sameSite: 'none',
+                maxAge: 90 * 24 * 60 * 60 * 1000
             };
-            console.log(token);
-            console.log(tokenOption);
-            // Send token as a cookie
+
             res.cookie("token", token, tokenOption);
-            console.log("Cookie set:", { name: "token", value: token });
+            console.log("New token set for user:", req.user.email);
 
-            // Check if the user is new or already has a role
-            if (!user.role) {
-                // Redirect to select-role if the user is new
-                res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
-            } else {
-                // Redirect based on role
-                const redirectUrl = user.role === "Vendor" 
-                    ? `${process.env.FRONTEND_URL}/vendor-page` 
-                    : user.role === "Customer" 
-                    ? `${process.env.FRONTEND_URL}/` 
-                    : user.role === "Admin" 
-                    ? `${process.env.FRONTEND_URL}/` 
-                    : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
+            // Determine redirect URL
+            const redirectUrl = !req.user.role 
+                ? `${process.env.FRONTEND_URL}/select-role?userId=${req.user._id}`
+                : req.user.role === "Vendor"
+                    ? `${process.env.FRONTEND_URL}/vendor-page`
+                    : `${process.env.FRONTEND_URL}/`;
 
-                res.redirect(redirectUrl); // Redirect to appropriate page
-            }
+            console.log("Redirecting to:", redirectUrl);
+            console.log("=== End Google Callback Debug ===\n");
+            
+            return res.redirect(redirectUrl);
         } catch (error) {
-            console.error("Detailed error in callback:", error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
+            console.error("Callback Error:", error);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=Something went wrong`);
         }
     }
 );
