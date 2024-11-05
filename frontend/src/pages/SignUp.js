@@ -222,7 +222,8 @@ const SignUp = () => {
                     </button> */}
                     <button 
                       type="button" 
-                      className="flex items-center gap-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                      className="flex items-center gap-2 p-2 bg-black
+                       text-white rounded-full hover:bg-red-600 transition"
                       onClick={handleGoogleLogin}
                     >
                       <FcGoogle />
