@@ -119,7 +119,8 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
         };
-
+        console.log(token);
+        console.log(tokenOption);
         // Send token as a cookie
         res.cookie("token", token, tokenOption);
 
