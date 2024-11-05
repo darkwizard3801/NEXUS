@@ -27,7 +27,7 @@ transporter.verify((error, success) => {
 // Function to send verification email
 const sendVerificationEmail = async (user) => {
   const token = jwt.sign({ id: user._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1h' });
-  const verificationLink = `http://localhost:8080/api/verify-email?token=${token}`;
+  const verificationLink = `https://nexus-q4sy.onrender.com/api/verify-email?token=${token}`;
 
   const mailOptions = {
     from: process.env.EMAIL,

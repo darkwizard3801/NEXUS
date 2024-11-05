@@ -16,7 +16,7 @@ const ResetPassword = () => {
     // Fetch user details using the email to greet the user
     const fetchUser = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/fetch-user/${email}`);
+        const response = await fetch(`https://nexus-q4sy.onrender.com/api/fetch-user/${email}`);
         const data = await response.json();
         
         if (data.success) {
@@ -46,7 +46,7 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/reset-password', {
+      const response = await fetch('https://nexus-q4sy.onrender.com/api/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

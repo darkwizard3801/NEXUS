@@ -20,9 +20,8 @@ const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: [process.env.FRONTEND_URL, 'https://accounts.google.com'],  // Add Google's domain
-    credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE"],
+    origin: process.env.FRONTEND_URL, // Allow requests from your frontend
+    credentials: true
 }));
 
 app.use(express.json());
@@ -40,7 +39,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,  // Add full URL
+    callbackURL: '/auth/google/callback',
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
@@ -117,10 +116,8 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         // Set cookie options
         const tokenOption = {
             httpOnly: true,
-            secure: true,  // Always use secure in production
-            sameSite: 'none',  // Change to 'none' for cross-site cookies
-            domain: process.env.FRONTEND_URL ,
-            path: '/' // Add your domain
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
         };
 
         // Send token as a cookie
@@ -131,20 +128,20 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             // Redirect to select-role if the user is new
             res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
         } else {
-            // Updated redirect logic to include admin page
+            // Redirect based on role
             const redirectUrl = user.role === "Vendor" 
-                ? `${process.env.FRONTEND_URL}/` 
+                ? `${process.env.FRONTEND_URL}/vendor-page` 
                 : user.role === "Customer" 
                 ? `${process.env.FRONTEND_URL}/` 
                 : user.role === "Admin" 
-                ? `${process.env.FRONTEND_URL}/`  // Changed this line to redirect to admin page
-                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
+                ? `${process.env.FRONTEND_URL}/` 
+                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
 
             res.redirect(redirectUrl); // Redirect to appropriate page
         }
     } catch (error) {
         console.error("Error during Google login callback:", error);
-        res.redirect(`${process.env.FRONTEND_URL}/login`);  // Add full URL
+        res.redirect('/login'); // Fallback redirect
     }
 });
 

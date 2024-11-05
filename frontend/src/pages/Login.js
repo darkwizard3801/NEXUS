@@ -53,7 +53,7 @@ const Login = () => {
                         "Content-Type": "application/json",
                     },
                 });
-                
+
                 const userDetails = await userDetailsResponse.json();
                 console.log("User details response:", userDetails); // Log user details response
 
@@ -66,27 +66,26 @@ const Login = () => {
                         return; // Prevent further execution if email is not verified
                     }
 
-                    // Update user details
-                    await fetchUserDetails();
+                    if (userRole === "Vendor") {
+                        navigate("/");
+                        fetchUserDetails();
+                        toast.success(dataApi.message || "Login successful");
 
-                    // Redirect based on role
-                    switch(userRole) {
-                        case "Vendor":
-                            navigate("/");
-                            break;
-                        case "Customer":
-                            navigate("/");
-                            break;
-                        case "Admin":
-                            navigate("/");
-                            break;
-                        default:
-                            toast.error("Invalid role");
+                        
+                    } else if (userRole === "Customer") {
+                        navigate("/",{ replace: true });
+                        
+                         
+                        fetchUserDetails();
+                        toast.success(dataApi.message || "Login successful");
+
+                        
+                    } else {
+                        toast.error("Invalid role");
                     }
-                    
-                    toast.success(dataApi.message || "Login successful");
                 } else {
                     toast.error("Failed to retrieve user details");
+                    console.error("User details response does not contain role:", userDetails);
                 }
             } else {
                 toast.error(dataApi.message || "Login failed");
@@ -97,35 +96,30 @@ const Login = () => {
         }
     };
 
-
-
-
     const handleGoogleLogin = () => {
-        window.open(SummaryApi.google_login.url, "_self");
+        // Trigger Google OAuth login
+        window.open("https://nexus-q4sy.onrender.com/auth/google", "_self");
 
+        // Assuming the backend redirects back to the frontend with user data after successful login
         window.addEventListener('message', async (event) => {
-            if (event.origin !== process.env.REACT_APP_BACKEND_URL) return;
+            if (event.origin !== "https://nexus-q4sy.onrender.com") return; // Ensure the event is from your backend
 
             const { success, isNewUser, role } = event.data;
 
             if (success) {
                 if (isNewUser || !role) {
+                    // If the user is new or has no role, navigate to role selection
                     navigate("/select-role");
                 } else {
-                    await fetchUserDetails();
-                    
-                    switch(role) {
-                        case "Vendor":
-                            navigate("/");
-                            break;
-                        case "Customer":
-                            navigate("/");
-                            break;
-                        case "Admin":
-                            navigate("/");
-                            break;
-                        default:
-                            toast.error("Invalid role");
+                    // If the user has a role, redirect based on their role
+                    if (role === "Vendor") {
+                        navigate("/vendor-page");
+                    } else if (role === "Customer") {
+                        navigate("/");
+                    } else if (role === "Admin") {
+                        navigate("/admin-page");
+                    } else {
+                        toast.error("Invalid role");
                     }
                 }
             } else {
@@ -135,7 +129,7 @@ const Login = () => {
     };
 
     const handleFacebookLogin = () => {
-        window.open(`${process.env.REACT_APP_BACKEND_URL}/auth/facebook`, "_self");
+        window.open("https://nexus-q4sy.onrender.com/auth/facebook", "_self");
     };
 
     return (
@@ -153,7 +147,6 @@ const Login = () => {
                             <div className='bg-slate-100 p-2 rounded-2xl'>
                                 <input
                                     type='email'
-                                    id='email'
                                     placeholder='Enter email'
                                     name='email'
                                     value={data.email}
@@ -169,7 +162,6 @@ const Login = () => {
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     placeholder='Enter password'
-                                    id='password'
                                     value={data.password}
                                     name='password'
                                     onChange={handleOnChange}
@@ -186,7 +178,7 @@ const Login = () => {
                             </Link>
                         </div>
 
-                        <button className='bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block mt-6' id='loginButton'>
+                        <button className='bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[150px] rounded-full hover:scale-110 transition-all mx-auto block mt-6'>
                             Login
                         </button>
                     </form>

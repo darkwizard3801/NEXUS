@@ -108,11 +108,11 @@ const SignUp = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.open('http://localhost:8080/auth/google', '_self');
+    window.open('https://nexus-q4sy.onrender.com/auth/google', '_self');
   };
 
   const handleFacebookLogin = () => {
-    window.open('http://localhost:8080/auth/facebook', '_self');
+    window.open('https://nexus-q4sy.onrender.com/auth/facebook', '_self');
   };
 
   return (

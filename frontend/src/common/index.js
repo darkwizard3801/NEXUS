@@ -1,5 +1,5 @@
-// const backendDomin = "http://localhost:8080"
 const backendDomin = "https://nexus-q4sy.onrender.com"
+// const backendDomin = "https://nexus-q4sy.onrender.com"
 
 const SummaryApi = {
     signUP : {
