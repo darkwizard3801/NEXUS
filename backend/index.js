@@ -20,11 +20,9 @@ const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://nexus-q4sy.onrender.com', 'https://nexus-b9xa.onrender.com']
-        : 'http://localhost:3000',
+    origin: [process.env.FRONTEND_URL, 'https://accounts.google.com'],  // Add Google's domain
     credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
 }));
 
 app.use(express.json());
@@ -42,60 +40,52 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
-    proxy: true,
-    timeout: 20000 // Add timeout
+    callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,  // Add full URL
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log("Starting Google Auth...");
-        
-        // Simplified user search
-        const user = await User.findOneAndUpdate(
-            { email: profile.emails[0].value },
-            {
-                $setOnInsert: {
-                    googleId: profile.id,
-                    name: profile.displayName,
-                    email: profile.emails[0].value,
-                    profilePic: profile.photos[0].value,
-                    isOAuth: true
-                }
-            },
-            { upsert: true, new: true }
-        );
-        
-        console.log("User processed:", user.email);
-        return done(null, user);
+        let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
+        if (!user) {
+            // Create new user if not found
+            user = new User({ 
+                googleId: profile.id, 
+                name: profile.displayName, 
+                email: profile.emails[0].value,
+                profilePic: profile.photos[0].value, // Add profile picture
+                isOAuth: true,
+                role: null // Indicate that this user authenticated via OAuth
+            });
+            await user.save(); // Save the new user to the database
+        }
+        done(null, user);
     } catch (error) {
-        console.error("Google Strategy Error:", error);
-        return done(error, null);
+        done(error, null);
     }
 }));
 
 // Passport configuration for Facebook strategy
-// passport.use(new FacebookStrategy({
-//     clientID: process.env.FACEBOOK_APP_ID,
-//     clientSecret: process.env.FACEBOOK_APP_SECRET,
-//     callbackURL: '/auth/facebook/callback',
-//     profileFields: ['id', 'displayName', 'email']
-// }, async (accessToken, refreshToken, profile, done) => {
-//     try {
-//         let user = await User.findOne({ facebookId: profile.id });
-//         if (!user) {
-//             // Create new user if not found
-//             user = new User({ 
-//                 facebookId: profile.id, 
-//                 name: profile.displayName, 
-//                 email: profile.emails[0].value,
-//                 isOAuth: true // Indicate that this user authenticated via OAuth
-//             });
-//             await user.save(); // Save the new user to the database
-//         }
-//         done(null, user);
-//     } catch (error) {
-//         done(error, null);
-//     }
-// }));
+passport.use(new FacebookStrategy({
+    clientID: process.env.FACEBOOK_APP_ID,
+    clientSecret: process.env.FACEBOOK_APP_SECRET,
+    callbackURL: '/auth/facebook/callback',
+    profileFields: ['id', 'displayName', 'email']
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        let user = await User.findOne({ facebookId: profile.id });
+        if (!user) {
+            // Create new user if not found
+            user = new User({ 
+                facebookId: profile.id, 
+                name: profile.displayName, 
+                email: profile.emails[0].value,
+                isOAuth: true // Indicate that this user authenticated via OAuth
+            });
+            await user.save(); // Save the new user to the database
+        }
+        done(null, user);
+    } catch (error) {
+        done(error, null);
+    }
+}));
 
 passport.serializeUser((user, done) => {
     done(null, user.id); // Serialize user ID
@@ -109,63 +99,53 @@ passport.deserializeUser((id, done) => {
 });
 
 // Routes for Google authentication
-app.get('/auth/google', (req, res, next) => {
-    console.log("Starting Google authentication");
-    passport.authenticate('google', { 
-        scope: ['profile', 'email'],
-        prompt: 'select_account' // Add this to force Google account selection
-    })(req, res, next);
-});
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 // Google callback
-app.get('/auth/google/callback',
-    (req, res, next) => {
-        // Set timeout handler
-        const timeoutHandler = setTimeout(() => {
-            console.log("Auth timeout - redirecting to login");
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=timeout`);
-        }, 20000);
+app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
+    try {
+        const user = req.user; // User is attached to the request
+        const tokenData = {
+            _id: user._id,
+            email: user.email,
+            role: user.role // Include role in token data for redirection later
+        };
         
-        req.timeoutHandler = timeoutHandler;
-        next();
-    },
-    passport.authenticate('google', { 
-        session: false,
-        failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed` 
-    }),
-    async (req, res) => {
-        // Clear timeout as authentication succeeded
-        clearTimeout(req.timeoutHandler);
-        
-        try {
-            console.log("Processing callback for:", req.user.email);
-            
-            const token = jwt.sign({
-                _id: req.user._id,
-                email: req.user.email,
-                name: req.user.name,
-                role: req.user.role
-            }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d' });
+        // Generate token
+        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-            res.cookie("token", token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none',
-                maxAge: 24 * 60 * 60 * 1000 // 1 day
-            });
+        // Set cookie options
+        const tokenOption = {
+            httpOnly: true,
+            secure: true,  // Always use secure in production
+            sameSite: 'none',  // Change to 'none' for cross-site cookies
+            domain: process.env.FRONTEND_URL  // Add your domain
+        };
 
-            const redirectUrl = req.user.role 
+        // Send token as a cookie
+        res.cookie("token", token, tokenOption);
+
+        // Check if the user is new or already has a role
+        if (!user.role) {
+            // Redirect to select-role if the user is new
+            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
+        } else {
+            // Redirect based on role
+            const redirectUrl = user.role === "Vendor" 
+                ? `${process.env.FRONTEND_URL}/vendor-page` 
+                : user.role === "Customer" 
                 ? `${process.env.FRONTEND_URL}/` 
-                : `${process.env.FRONTEND_URL}/select-role?userId=${req.user._id}`;
+                : user.role === "Admin" 
+                ? `${process.env.FRONTEND_URL}/` 
+                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
 
-            console.log("Redirecting to:", redirectUrl);
-            return res.redirect(redirectUrl);
-        } catch (error) {
-            console.error("Callback error:", error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+            res.redirect(redirectUrl); // Redirect to appropriate page
         }
+    } catch (error) {
+        console.error("Error during Google login callback:", error);
+        res.redirect(`${process.env.FRONTEND_URL}/login`);  // Add full URL
     }
-);
+});
 
 // Routes for Facebook authentication
 app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
@@ -221,18 +201,5 @@ connectDB().then(() => {
     app.listen(PORT, () => {
         console.log("Connected to DB");
         console.log("Server is running on port " + PORT);
-    });
-});
-
-// Add a route to verify the current session
-app.get('/api/check-session', (req, res) => {
-    console.log('\n=== Session Check ===');
-    console.log('Cookies:', req.cookies);
-    console.log('User:', req.user);
-    console.log('=== End Session Check ===\n');
-    
-    res.json({
-        cookies: req.cookies,
-        user: req
     });
 });
