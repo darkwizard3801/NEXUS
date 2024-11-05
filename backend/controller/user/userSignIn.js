@@ -51,14 +51,6 @@ async function userSignInController(req, res) {
 //     });
 // });
 
-        
-
-
-
-
-
-
-
         // password1="123"
         const isPasswordMatch = await bcrypt.compare(password, user.password);
         console.log(password)
@@ -73,31 +65,33 @@ async function userSignInController(req, res) {
                 email: user.email,
                 role: user.role // Include role in token data for redirection later
             };
-            console.log("tokendata",tokenData)
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-            console.log("Generated Token:", token);
-            
+
+            // Set cookie options
             const tokenOptions = {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production', // This should be false in development
-                sameSite: 'none', // Use 'lax' in development for easier testing
-                maxAge: 90 * 24 * 60 * 60 * 1000,
-                path: '/',
-                // domain: 'https://nexus-b9xa.onrender.com'
+                secure: true, // Always set to true for deployed environments
+                sameSite: 'none', // Changed to 'none' to allow cross-site cookies
+                maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
+                path: '/', // Explicitly set the path
+                domain: process.env.COOKIE_DOMAIN || undefined // Add your domain if needed
             };
-            
-            
+              
+            // Send response with cookie
             res.cookie("token", token, tokenOptions)
                .status(200)
                .json({
-                   message: "Login successful",
-                   data: { token },
-                   success: true,
-                   error: false
-               
-            
-            });
-            console.log("Cookie set with token:", token);
+                    message: "Login successful",
+                    data: { 
+                        token,
+                        user: {
+                            email: user.email,
+                            role: user.role
+                        }
+                    },
+                    success: true,
+                    error: false
+                });
         } else {
             console.log(`Invalid password attempt for user: ${email}`);
             return res.status(401).json({
@@ -106,7 +100,7 @@ async function userSignInController(req, res) {
                 success: false
             });
         }
-
+        
     } catch (err) {
         console.error("Error during login:", err.message || err);
         res.status(500).json({
