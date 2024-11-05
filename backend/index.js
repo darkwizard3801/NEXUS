@@ -43,29 +43,30 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
+    proxy: true
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log("\n=== Google Auth Debug ===");
-        console.log("Incoming Google Profile:", {
+        console.log("\n=== Google Strategy Debug ===");
+        console.log("1. Received Google Profile:", {
             id: profile.id,
             email: profile.emails[0].value,
-            name: profile.displayName
+            name: profile.displayName,
+            photo: profile.photos[0].value
         });
 
-        // Clear any existing sessions
         // First, try to find user by googleId
         let user = await User.findOne({ googleId: profile.id });
-        console.log("Search by googleId result:", user);
+        console.log("2. Search by googleId result:", user);
         
         // If no user found by googleId, check by email
         if (!user) {
             user = await User.findOne({ email: profile.emails[0].value });
-            console.log("Search by email result:", user);
+            console.log("3. Search by email result:", user);
             
             if (user) {
-                console.log("ERROR: Email exists but with different auth method");
+                console.log("4. ERROR: Email exists but with different auth method");
                 return done(null, false, { 
-                    message: "This email is already registered using a different method. Please use your original login method." 
+                    message: "This email is already registered using a different method" 
                 });
             }
             
@@ -80,27 +81,11 @@ passport.use(new GoogleStrategy({
             });
 
             user = await newUser.save();
-            console.log("New user created:", user);
+            console.log("5. New user created:", user);
         }
 
-        // Verify the user object
-        if (!user.googleId) {
-            console.log("ERROR: User found but no googleId");
-            return done(null, false, { 
-                message: "Account exists with different login method" 
-            });
-        }
-
-        // Verify the googleId matches
-        if (user.googleId !== profile.id) {
-            console.log("ERROR: GoogleId mismatch");
-            return done(null, false, { 
-                message: "Authentication method mismatch" 
-            });
-        }
-
-        console.log("Authentication successful for user:", user.email);
-        console.log("=== End Google Auth Debug ===\n");
+        console.log("6. Final user object:", user);
+        console.log("=== End Google Strategy Debug ===\n");
         
         return done(null, user);
     } catch (error) {
@@ -156,23 +141,31 @@ app.get('/auth/google', (req, res, next) => {
 
 // Google callback
 app.get('/auth/google/callback', 
+    (req, res, next) => {
+        console.log("\n=== Google Callback Debug ===");
+        console.log("1. Callback initiated");
+        next();
+    },
     passport.authenticate('google', { session: false }),
     async (req, res) => {
         try {
-            console.log("User authenticated:", req.user);
+            console.log("2. User authenticated:", req.user);
             
             // Clear any existing cookies
             res.clearCookie('token');
+            console.log("3. Cleared existing cookies");
             
             const tokenData = {
                 _id: req.user._id,
                 email: req.user.email,
-                name: req.user.name,  // Include name in token data
+                name: req.user.name,
                 role: req.user.role,
-                profilePic: req.user.profilePic  // Include profile picture if needed
+                profilePic: req.user.profilePic
             };
+            console.log("4. Token data prepared:", tokenData);
 
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
+            console.log("5. JWT generated");
             
             const tokenOption = {
                 httpOnly: true,
@@ -180,10 +173,10 @@ app.get('/auth/google/callback',
                 sameSite: 'none',
                 maxAge: 90 * 24 * 60 * 60 * 1000
             };
+            console.log("6. Cookie options:", tokenOption);
 
             res.cookie("token", token, tokenOption);
-            console.log("Token Data:", tokenData);
-            console.log("Cookie Set:", token);
+            console.log("7. Cookie set with token");
 
             // Determine redirect URL
             const redirectUrl = !req.user.role 
@@ -192,13 +185,13 @@ app.get('/auth/google/callback',
                     ? `${process.env.FRONTEND_URL}/vendor-page`
                     : `${process.env.FRONTEND_URL}/`;
 
-            console.log("Redirecting to:", redirectUrl);
+            console.log("8. Redirect URL determined:", redirectUrl);
             console.log("=== End Google Callback Debug ===\n");
             
             return res.redirect(redirectUrl);
         } catch (error) {
-            console.error("Callback Error:", error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=Something went wrong`);
+            console.error("Detailed callback error:", error);
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
         }
     }
 );
@@ -257,5 +250,18 @@ connectDB().then(() => {
     app.listen(PORT, () => {
         console.log("Connected to DB");
         console.log("Server is running on port " + PORT);
+    });
+});
+
+// Add a route to verify the current session
+app.get('/api/check-session', (req, res) => {
+    console.log('\n=== Session Check ===');
+    console.log('Cookies:', req.cookies);
+    console.log('User:', req.user);
+    console.log('=== End Session Check ===\n');
+    
+    res.json({
+        cookies: req.cookies,
+        user: req
     });
 });
