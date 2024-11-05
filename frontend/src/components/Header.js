@@ -21,7 +21,7 @@ const Header = () => {
   const searchQuery = URLSearch.getAll("q");
   const [search, setSearch] = useState(searchQuery);
      
-  
+
   const handleLogout = async () => {
     const fetchData = await fetch(SummaryApi.logout_user.url, {
       method: SummaryApi.logout_user.method,
@@ -56,6 +56,8 @@ const Header = () => {
   const goToCreateEvent = () => {
     navigate("/create-event");
   };
+
+  console.log(user)
 
   return (
     <header className='h-16 shadow-md bg-white fixed w-full z-40'>

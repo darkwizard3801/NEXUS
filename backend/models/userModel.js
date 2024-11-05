@@ -24,13 +24,14 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: 'customer',
+    enum: ['Customer', 'Vendor', 'Admin', null],
+    default: 'Customer',
     // enum: ['customer', 'vendor', 'admin'], // Uncomment if needed
   },
   googleId: {
     type: String,
     unique: true,
-    sparse: true,
+    
   },
   facebookId: {
     type: String,
