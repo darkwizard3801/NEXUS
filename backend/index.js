@@ -133,11 +133,11 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         } else {
             // Updated redirect logic to include admin page
             const redirectUrl = user.role === "Vendor" 
-                ? `${process.env.FRONTEND_URL}/vendor-page` 
+                ? `${process.env.FRONTEND_URL}/` 
                 : user.role === "Customer" 
                 ? `${process.env.FRONTEND_URL}/` 
                 : user.role === "Admin" 
-                ? `${process.env.FRONTEND_URL}/admin`  // Changed this line to redirect to admin page
+                ? `${process.env.FRONTEND_URL}/`  // Changed this line to redirect to admin page
                 : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`;
 
             res.redirect(redirectUrl); // Redirect to appropriate page
