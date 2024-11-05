@@ -97,6 +97,9 @@ const Login = () => {
         }
     };
 
+
+
+    
     const handleGoogleLogin = () => {
         window.open(SummaryApi.google_login.url, "_self");
 
