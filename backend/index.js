@@ -156,19 +156,10 @@ app.get('/auth/google', (req, res, next) => {
 
 // Google callback
 app.get('/auth/google/callback', 
-    (req, res, next) => {
-        console.log("\n=== Google Callback Debug ===");
-        console.log("Callback initiated");
-        next();
-    },
-    passport.authenticate('google', { 
-        session: false,
-        failureRedirect: `${process.env.FRONTEND_URL}/login?error=Authentication failed`,
-        failWithError: true
-    }),
+    passport.authenticate('google', { session: false }),
     async (req, res) => {
         try {
-            console.log("User authenticated:", req.user.email);
+            console.log("User authenticated:", req.user);
             
             // Clear any existing cookies
             res.clearCookie('token');
@@ -176,7 +167,9 @@ app.get('/auth/google/callback',
             const tokenData = {
                 _id: req.user._id,
                 email: req.user.email,
-                role: req.user.role
+                name: req.user.name,  // Include name in token data
+                role: req.user.role,
+                profilePic: req.user.profilePic  // Include profile picture if needed
             };
 
             const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
@@ -189,7 +182,8 @@ app.get('/auth/google/callback',
             };
 
             res.cookie("token", token, tokenOption);
-            console.log("New token set for user:", req.user.email);
+            console.log("Token Data:", tokenData);
+            console.log("Cookie Set:", token);
 
             // Determine redirect URL
             const redirectUrl = !req.user.role 
