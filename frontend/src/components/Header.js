@@ -28,7 +28,7 @@ const Header = () => {
     });
 
     const data = await fetchData.json();
-
+   console.log(data)
     if (data.success) {
       toast.success(data.message);
       dispatch(setUserDetails(null));
