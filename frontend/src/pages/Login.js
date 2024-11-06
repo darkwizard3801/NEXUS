@@ -128,7 +128,8 @@ const Login = () => {
                     } else if (role === "Customer") {
                         navigate("/");
                     } else if (role === "Admin") {
-                        navigate("/admin-page");
+                        navigate("/");
+                        fetchUserDetails();
                     } else {
                         toast.error("Invalid role");
                     }
