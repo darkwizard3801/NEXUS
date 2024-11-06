@@ -121,7 +121,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         };
 
         // Send token as a cookie
-        res.cookie("token", token, tokenOption);
+        res.cookie("hello", token, tokenOption);
 
         // Check if the user is new or already has a role
         if (!user.role) {
