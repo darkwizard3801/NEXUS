@@ -22,6 +22,9 @@ const Header = () => {
   const searchQuery = URLSearch.getAll("q");
   const [search, setSearch] = useState(searchQuery);
      
+
+
+  console.log("userdetails=",user)
   const getCookie = () => {
     const token = Cookies.get("token"); // Replace 'token' with your actual cookie name
     console.log('Cookie token:', token);
@@ -32,9 +35,9 @@ const Header = () => {
       method: SummaryApi.logout_user.method,
       credentials: "include",
     });
-console.log("userdetails=",user)
+
     const data = await fetchData.json();
-   console.log(data)
+       console.log(data)
     if (data.success) {
       // Cookies.remove('token');
       toast.success(data.message);
