@@ -22,11 +22,11 @@ const Header = () => {
   const searchQuery = URLSearch.getAll("q");
   const [search, setSearch] = useState(searchQuery);
      
-  // const getCookie = () => {
-  //   const token = Cookies.get("token2"); // Replace 'token' with your actual cookie name
-  //   console.log('Cookie token:', token);
-  //   return token;
-  // };
+  const getCookie = () => {
+    const token = Cookies.get("token"); // Replace 'token' with your actual cookie name
+    console.log('Cookie token:', token);
+    return token;
+  };
   const handleLogout = async () => {
     const fetchData = await fetch(SummaryApi.logout_user.url, {
       method: SummaryApi.logout_user.method,
@@ -63,9 +63,9 @@ console.log("userdetails=",user)
     navigate("/create-event");
   };
 
-  // useEffect(() => {
-  //   getCookie();
-  // }, []);
+  useEffect(() => {
+    getCookie();
+  }, []);
 
   console.log(user)
 
