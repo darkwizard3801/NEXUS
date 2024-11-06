@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import Logo from "./Logo";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { IoSearch } from "react-icons/io5";
@@ -9,6 +9,7 @@ import SummaryApi from "../common";
 import { toast } from "react-toastify";
 import { setUserDetails } from "../store/userSlice";
 import Context from "../context";
+import Cookies from 'js-cookie'; 
 
 const Header = () => {
   const user = useSelector((state) => state.user.user);
@@ -21,7 +22,11 @@ const Header = () => {
   const searchQuery = URLSearch.getAll("q");
   const [search, setSearch] = useState(searchQuery);
      
-
+  // const getCookie = () => {
+  //   const token = Cookies.get("token2"); // Replace 'token' with your actual cookie name
+  //   console.log('Cookie token:', token);
+  //   return token;
+  // };
   const handleLogout = async () => {
     const fetchData = await fetch(SummaryApi.logout_user.url, {
       method: SummaryApi.logout_user.method,
@@ -31,6 +36,7 @@ console.log("userdetails=",user)
     const data = await fetchData.json();
    console.log(data)
     if (data.success) {
+      // Cookies.remove('token');
       toast.success(data.message);
       dispatch(setUserDetails(null));
       navigate("/", { replace: true });
@@ -56,6 +62,10 @@ console.log("userdetails=",user)
   const goToCreateEvent = () => {
     navigate("/create-event");
   };
+
+  // useEffect(() => {
+  //   getCookie();
+  // }, []);
 
   console.log(user)
 
