@@ -109,7 +109,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             email: user.email,
             role: user.role // Include role in token data for redirection later
         };
-        
+        console.log("tokenData",tokenData)
         // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
@@ -121,7 +121,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         };
 
         // Send token as a cookie
-        res.cookie("hello", token, tokenOption);
+        res.cookie("token", token, tokenOption);
 
         // Check if the user is new or already has a role
         if (!user.role) {

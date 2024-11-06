@@ -113,7 +113,7 @@ const Login = () => {
 
         // Assuming the backend redirects back to the frontend with user data after successful login
         window.addEventListener('message', async (event) => {
-            if (event.origin !== `${process.env.REACT_APP_BACKEND_URL}`) return; // Ensure the event is from your backend
+            if (event.origin !== process.env.REACT_APP_BACKEND_URL) return; // Ensure the event is from your backend
 
             const { success, isNewUser, role } = event.data;
 
