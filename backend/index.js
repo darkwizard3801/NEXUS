@@ -109,19 +109,23 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             email: user.email,
             role: user.role // Include role in token data for redirection later
         };
-        console.log("tokenData",tokenData)
-        // Generate token
         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-        // Set cookie options
-        const tokenOption = {
+        // Set cookie options with more permissive settings
+        const tokenOptions = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production', // Only true in production
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
+            path: '/'
         };
-
-        // Send token as a cookie
-        res.cookie("token", token, tokenOption);
+        
+        // Add debug logging
+        console.log('Token being set:', token);
+        console.log('Cookie options:', tokenOptions);
+        
+        // Set the cookie and send response
+        res.cookie("token", token, tokenOptions);
 
         // Check if the user is new or already has a role
         if (!user.role) {
