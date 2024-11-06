@@ -126,7 +126,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
         console.log('Cookie being set:', token,tokenOptions);
         
         // Set the cookie and send response
-        res.cookie("token", token,tokenOptions);
+        res.cookie("token", token);
         
        
         // Check if the user is new or already has a role
