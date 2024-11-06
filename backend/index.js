@@ -20,7 +20,7 @@ const app = express();
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
-    origin: true,
+    origin: process.env.FRONTEND_URL, // Allow requests from your frontend
     credentials: true
 }));
 
@@ -35,79 +35,23 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Add Cloudflare and security headers
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    next();
-});
-
-// Add error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(err.status || 500).json({
-        message: err.message || 'Internal Server Error',
-        error: process.env.NODE_ENV === 'production' ? {} : err
-    });
-});
-
-// Add health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-});
-
 // Passport configuration for Google strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://nexus-q4sy.onrender.com/auth/google/callback',
-    proxy: true
+    callbackURL: '/auth/google/callback',
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log('Google profile received:', profile);
-        let user = await User.findOne({ email: profile.emails[0].value });
-        
-        if (!user) {
-            user = new User({
-                googleId: profile.id,
-                name: profile.displayName,
-                email: profile.emails[0].value,
-                profilePic: profile.photos[0].value,
-                isOAuth: true,
-                role: null
-            });
-            await user.save();
-        }
-        
-        return done(null, user);
-    } catch (error) {
-        console.error('Error in Google Strategy:', error);
-        return done(error, null);
-    }
-}));
-
-// Passport configuration for Facebook strategy
-passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: '/auth/facebook/callback',
-    profileFields: ['id', 'displayName', 'email']
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        let user = await User.findOne({ facebookId: profile.id });
+        let user = await User.findOne({ email: profile.emails[0].value }); // Check by email
         if (!user) {
             // Create new user if not found
             user = new User({ 
-                facebookId: profile.id, 
+                googleId: profile.id, 
                 name: profile.displayName, 
                 email: profile.emails[0].value,
-                isOAuth: true // Indicate that this user authenticated via OAuth
+                profilePic: profile.photos[0].value, // Add profile picture
+                isOAuth: true,
+                role: null // Indicate that this user authenticated via OAuth
             });
             await user.save(); // Save the new user to the database
         }
@@ -116,6 +60,31 @@ passport.use(new FacebookStrategy({
         done(error, null);
     }
 }));
+
+// Passport configuration for Facebook strategy
+// passport.use(new FacebookStrategy({
+//     clientID: process.env.FACEBOOK_APP_ID,
+//     clientSecret: process.env.FACEBOOK_APP_SECRET,
+//     callbackURL: '/auth/facebook/callback',
+//     profileFields: ['id', 'displayName', 'email']
+// }, async (accessToken, refreshToken, profile, done) => {
+//     try {
+//         let user = await User.findOne({ facebookId: profile.id });
+//         if (!user) {
+//             // Create new user if not found
+//             user = new User({ 
+//                 facebookId: profile.id, 
+//                 name: profile.displayName, 
+//                 email: profile.emails[0].value,
+//                 isOAuth: true // Indicate that this user authenticated via OAuth
+//             });
+//             await user.save(); // Save the new user to the database
+//         }
+//         done(null, user);
+//     } catch (error) {
+//         done(error, null);
+//     }
+// }));
 
 passport.serializeUser((user, done) => {
     done(null, user.id); // Serialize user ID
@@ -129,90 +98,70 @@ passport.deserializeUser((id, done) => {
 });
 
 // Routes for Google authentication
-app.get('/auth/google', 
-    passport.authenticate('google', { 
-        scope: ['profile', 'email'] 
-    })
-);
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-app.get('/auth/google/callback',
-    passport.authenticate('google', { 
-        failureRedirect: '/login',
-        session: false 
-    }),
-    async (req, res) => {
-        try {
-            const user = req.user;
-            
-            // Generate token
-            const token = jwt.sign(
-                { 
-                    _id: user._id,
-                    email: user.email,
-                    role: user.role 
-                }, 
-                process.env.TOKEN_SECRET_KEY,
-                { expiresIn: '90d' }
-            );
+// Google callback
+app.get('/auth/google/callback', passport.authenticate('google', { session: false }), async (req, res) => {
+    try {
+        const user = req.user; // User is attached to the request
+        const tokenData = {
+            _id: user._id,
+            email: user.email,
+            role: user.role // Include role in token data for redirection later
+        };
+        
+        // Generate token
+        const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
 
-            // Set cookie
-            res.cookie('token', token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none',
-                maxAge: 90 * 24 * 60 * 60 * 1000
-            });
+        // Set cookie options
+        const tokenOption = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+        };
 
+        // Send token as a cookie
+        res.cookie("token", token, tokenOption);
+
+        // Check if the user is new or already has a role
+        if (!user.role) {
+            // Redirect to select-role if the user is new
+            res.redirect(`${process.env.FRONTEND_URL}/select-role?userId=${user._id}`);
+        } else {
             // Redirect based on role
-            if (!user.role) {
-                return res.redirect(`${process.env.FRONTEND_URL}/select-role?token=${token}`);
-            }
+            const redirectUrl = user.role === "Vendor" 
+                ? `${process.env.FRONTEND_URL}/vendor-page` 
+                : user.role === "Customer" 
+                ? `${process.env.FRONTEND_URL}/` 
+                : user.role === "Admin" 
+                ? `${process.env.FRONTEND_URL}/` 
+                : `${process.env.FRONTEND_URL}/select-role?userId=${user._id}`; // Default redirect
 
-            return res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
-
-        } catch (error) {
-            console.error('Callback error:', error);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=true`);
+            res.redirect(redirectUrl); // Redirect to appropriate page
         }
+    } catch (error) {
+        console.error("Error during Google login callback:", error);
+        res.redirect('/login'); // Fallback redirect
     }
-);
+});
 
 // Routes for Facebook authentication
-// app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
 
 // Facebook callback
 // app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/' }), async (req, res) => {
 //     try {
-//         const user = await User.findById(req.user.id);
-        
-//         const tokenData = {
-//             _id: user._id,
-//             email: user.email,
-//             role: user.role
-//         };
-        
-//         const token = jwt.sign(tokenData, process.env.TOKEN_SECRET_KEY, { expiresIn: '90d' });
-
-//         const tokenOptions = {
-//             httpOnly: true,
-//             secure: process.env.NODE_ENV === 'production',
-//             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-//             maxAge: 90 * 24 * 60 * 60 * 1000,
-//             path: '/'
-//         };
-
-//         res.cookie("token", token, tokenOptions);
-
+//         const user = await User.findById(req.user.id); // Fetch user details
 //         const redirectUrl = user.role === "Vendor" 
 //             ? `${process.env.FRONTEND_URL}/vendor-page` 
 //             : user.role === "Customer" 
 //             ? `${process.env.FRONTEND_URL}/` 
-//             : `${process.env.FRONTEND_URL}/select-role?userId=${req.user.id}`;
+//             : `${process.env.FRONTEND_URL}/select-role?userId=${req.user.id}`; // Redirect to select-role if new
 
-//         res.redirect(redirectUrl);
+//         res.redirect(redirectUrl); // Redirect to appropriate page
 //     } catch (error) {
 //         console.error("Error during Facebook login callback:", error);
-//         res.redirect(`${process.env.FRONTEND_URL}/login`);
+//         res.redirect('/login'); // Fallback redirect
 //     }
 // });
 

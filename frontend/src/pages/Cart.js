@@ -28,6 +28,7 @@ const Cart = () => {
     const userDetailsData = await userDetailsResponse.json();
     if (userDetailsData.success) {
       setUserDetails(userDetailsData.data);
+      console.log(userDetailsData)
     }
   };
 
@@ -43,7 +44,7 @@ const Cart = () => {
     const responseData = await response.json();
     if (responseData.success) {
       setData(responseData.data);
-      console.log(data)
+      console.log("data",data)
    
     }
   };
