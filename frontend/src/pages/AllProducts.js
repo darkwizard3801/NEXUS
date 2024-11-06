@@ -80,7 +80,7 @@ const AllProducts = () => {
   }, []);
 
   return (
-    <div className='mx-64'>
+    <div className='mx-10'>
       <div className='bg-white py-2 px-4 flex justify-between items-center'>
         <h2 className='font-bold text-lg'>All Product</h2>
         <button
@@ -119,7 +119,7 @@ const AllProducts = () => {
       </div>
 
       {/* Render filtered products */}
-      <div className='flex items-center flex-wrap h-38 gap-5 py-3 overflow-y-scroll '>
+      <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 py-3'>
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product, index) => (
             <AdminProductCard data={product} key={index + "allProduct"} fetchdata={fetchAllProduct} />
