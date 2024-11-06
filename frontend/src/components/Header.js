@@ -27,7 +27,7 @@ const Header = () => {
       method: SummaryApi.logout_user.method,
       credentials: "include",
     });
-
+console.log("userdetails=",user)
     const data = await fetchData.json();
    console.log(data)
     if (data.success) {
