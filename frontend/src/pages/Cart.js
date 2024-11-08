@@ -16,6 +16,12 @@ const Cart = () => {
   const navigate = useNavigate();
   const loadingCart = new Array(4).fill(null);
 
+  const getMinDeliveryDate = () => {
+    const today = new Date();
+    today.setDate(today.getDate() + 2); // Add 2 days to today
+    return today.toISOString().split('T')[0];
+  };
+
   const fetchUserDetails = async () => {
     const userDetailsResponse = await fetch(SummaryApi.current_user.url, {
       method: SummaryApi.current_user.method,
@@ -479,6 +485,7 @@ const Cart = () => {
               name="deliveryDate"
               value={deliveryDate}
               onChange={(e) => setDeliveryDate(e.target.value)}
+              min={getMinDeliveryDate()}
               className="mt-1 block w-full rounded-md border-gray-700 text-md font-semibold text-blue-400 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               required
             />
