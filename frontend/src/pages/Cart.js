@@ -22,6 +22,30 @@ const Cart = () => {
     return today.toISOString().split('T')[0];
   };
 
+  const isDateValid = (selectedDate) => {
+    const today = new Date();
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() + 2);
+    
+    const selected = new Date(selectedDate);
+    // Reset time part for accurate date comparison
+    selected.setHours(0, 0, 0, 0);
+    minDate.setHours(0, 0, 0, 0);
+    
+    return selected >= minDate;
+  };
+
+  const handleDeliveryDateChange = (e) => {
+    const selectedDate = e.target.value;
+    if (isDateValid(selectedDate)) {
+      setDeliveryDate(selectedDate);
+    } else {
+      // If invalid date selected, set to minimum allowed date
+      setDeliveryDate(getMinDeliveryDate());
+      toast.error('Please select a date at least 2 days from today');
+    }
+  };
+
   const fetchUserDetails = async () => {
     const userDetailsResponse = await fetch(SummaryApi.current_user.url, {
       method: SummaryApi.current_user.method,
@@ -484,7 +508,7 @@ const Cart = () => {
               id="deliveryDate"
               name="deliveryDate"
               value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              onChange={handleDeliveryDateChange}
               min={getMinDeliveryDate()}
               className="mt-1 block w-full rounded-md border-gray-700 text-md font-semibold text-blue-400 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               required
