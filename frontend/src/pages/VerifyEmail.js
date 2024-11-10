@@ -4,10 +4,19 @@ import React, { useEffect } from 'react';
 const VerifyEmail = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
-            window.close(); // Attempt to close the tab
-        }, 15000); // 15000 ms = 15 seconds
+            // Try multiple methods to close the window
+            try {
+                window.close();
+                window.open('', '_self').close();
+                window.location.href = 'about:blank';
+                window.top.close();
+            } catch (e) {
+                // If all close attempts fail, redirect to home
+                window.location.href = '/';
+            }
+        }, 15000);
 
-        return () => clearTimeout(timer); // Cleanup on unmount
+        return () => clearTimeout(timer);
     }, []);
 
     return (
