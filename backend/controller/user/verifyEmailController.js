@@ -23,7 +23,7 @@ async function verifyEmailController(req, res) {
         await user.save();
 
         // Redirect to the login page
-        res.redirect('http://localhost:3000/login');
+        res.redirect(`${process.env.FRONTEND_URL}/login`);
     } catch (error) {
         console.error("Verification error:", error);
         res.status(500).json({ message: "Failed to verify email.", success: false });
