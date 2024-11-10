@@ -223,6 +223,18 @@ const CreateEvent = () => {
     ) : null;
   };
 
+  const getMinDate = () => {
+    const today = new Date();
+    today.setDate(today.getDate() + 2); // Add 2 days to today
+    return today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  };
+
+  const getMaxDate = () => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() + 2); // Allow booking up to 2 years in advance
+    return today.toISOString().split('T')[0];
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -347,7 +359,10 @@ const CreateEvent = () => {
                 type="date"
                 value={eventDetails.date}
                 onChange={handleChange}
+                min={getMinDate()}
+                max={getMaxDate()}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                required
               />
             </div>
           </div>
