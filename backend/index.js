@@ -118,7 +118,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { session: fals
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
             path: '/',
-            domain: process.env.NODE_ENV === 'production' ? 'https://nexus-b9xa.onrender.com/' : 'http://localhost:3000'
+            domain: process.env.NODE_ENV === 'production' ? 'https://nexus-b9xa.onrender.com' : 'http://localhost:3000'
         };
         
         // Add debug logging
