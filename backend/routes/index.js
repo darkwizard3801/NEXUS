@@ -42,6 +42,7 @@ const { createEvent, getEvents, updateEventStatus } = require('../controller/use
 const {  createOrUpdateOrder, getAllOrders, updateOrderWithPayment, cancelOrder } = require('../controller/user/orderController')
 const { clearCart } = require('../controller/user/cartController')
 const { addRatingReview, getRatingDetails } = require('../controller/user/ratingController')
+const { deleteUser } = require('../controller/user/userController')
  // Import the controller
 
 
@@ -58,7 +59,7 @@ router.get("/user-details",authToken,userDetailsController)
 router.get("/userLogout",userLogout)
 // router.post('/update-role', updateUserRole);
 router.post('/api/update-role', updateRoleController);
-
+router.delete('/delete-user/:userId', deleteUser);
 router.get('/verify-email', verifyEmailController);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);

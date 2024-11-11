@@ -49,8 +49,31 @@ const AllUsers = () => {
 
 
 
+    const handleDeleteUser = async (userId) => {
+        if (window.confirm('Are you sure you want to delete this user?')) {
+            try {
+                const response = await fetch(`${SummaryApi.deleteUser.url}/${userId}`, {
+                    method: SummaryApi.deleteUser.method,
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    toast.success('User deleted successfully');
+                    fetchAllUsers(); // Refresh the users list
+                } else {
+                    toast.error(data.message);
+                }
+            } catch (error) {
+                toast.error('Error deleting user');
+            }
+        }
+    };
+
+
+
   return (
-    <div>
+    <div className='mx-10'>
     <table className='w-full userTable'>
     <thead>
         <tr className='bg-black text-white'>
@@ -89,9 +112,7 @@ const AllUsers = () => {
                                     }} >
                                 <MdModeEdit/>
                                 </button>
-                                <button className='bg-red-100 p-2 rounded-full cursor-pointer hover:bg-red-500 hover:text-white ml-2' onClick={() => {
-                                        // Add delete functionality here
-                                    }}>
+                                <button className='bg-red-100 p-2 rounded-full cursor-pointer hover:bg-red-500 hover:text-white ml-2' onClick={() => handleDeleteUser(el._id)}>
                                     <MdDelete />
                                 </button>
                              </td>

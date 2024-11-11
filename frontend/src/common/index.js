@@ -1,5 +1,5 @@
-const backendDomin = "https://nexus-q4sy.onrender.com"
-// const backendDomin = "http://localhost:8080"
+// const backendDomin = "https://nexus-q4sy.onrender.com"
+const backendDomin = "http://localhost:8080"
 
 const SummaryApi = {
     signUP : {
@@ -192,7 +192,10 @@ const SummaryApi = {
         url : `${backendDomin}/auth/facebook`,
         method : 'get'
     },
-    
+    deleteUser : {
+        url : `${backendDomin}/api/delete-user`,
+        method : 'delete'
+    },
 
 
 
