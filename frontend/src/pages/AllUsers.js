@@ -43,9 +43,7 @@ const AllUsers = () => {
 
 
 
-    useEffect(()=>{
-        fetchAllUsers()
-    },[])
+    
 
 
 
@@ -69,6 +67,10 @@ const AllUsers = () => {
             }
         }
     };
+    
+    useEffect(()=>{
+        fetchAllUsers()
+    },[])
 
 
 

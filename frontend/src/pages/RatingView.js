@@ -28,7 +28,7 @@ const RatingView = () => {
       try {
         const response = await fetch(SummaryApi.allProduct.url);
         const dataResponse = await response.json();
-
+        
         if (Array.isArray(dataResponse?.data)) {
           console.log('Product data:', dataResponse.data);
 

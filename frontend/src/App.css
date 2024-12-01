@@ -19,3 +19,7 @@
     display: none;
 }
 
+body.dark-mode {
+    background-color: #121212; /* Dark background */
+    color: #ffffff; /* Light text */
+  }

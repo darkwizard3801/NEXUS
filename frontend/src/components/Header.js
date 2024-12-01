@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { setUserDetails } from "../store/userSlice";
 import Context from "../context";
 import Cookies from 'js-cookie'; 
+import { ThemeContext } from "../App";
 
 const Header = () => {
   const user = useSelector((state) => state.user.user);
@@ -17,6 +18,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [menuDisplay, setMenuDisplay] = useState(false);
   const context = useContext(Context);
+  const { isDarkMode, toggleDarkMode } = useContext(ThemeContext);
   const searchInput = useLocation();
   const URLSearch = new URLSearchParams(searchInput?.search);
   const searchQuery = URLSearch.getAll("q");
@@ -73,15 +75,24 @@ const Header = () => {
   console.log(user)
 
   return (
-    <header className='h-16 shadow-md bg-white fixed w-full z-40'>
+    <header className={`h-16 shadow-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} fixed w-full z-40`}>
       <div className='h-full container mx-auto flex items-center px-4 justify-between'>
         <Link to={"/"}>
           <Logo w={190} h={70} />
         </Link>
 
+        {/* Dark Mode Toggle Button */}
+        <button
+          onClick={toggleDarkMode}
+          className={`p-2 rounded-full ${isDarkMode ? 'bg-yellow-500' : 'bg-gray-300'}`}
+          title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {isDarkMode ? "🌙" : "☀️"}
+        </button>
+
         {/* Search Bar */}
         {/* Desktop Search Bar */}
-        <div className='hidden md:flex items-center border rounded-full focus-within:shadow pl-2 w-1/3'>
+        <div className='hidden md:flex items-center  rounded-full  focus-within:shadow pl-2 w-1/3 border'>
           <input
             type='text'
             placeholder='Search product here...'
@@ -95,7 +106,7 @@ const Header = () => {
         </div>
 
         {/* Mobile Search Bar */}
-        <div className='md:hidden flex items-center border rounded-full focus-within:shadow pl-2 w-full'>
+        <div className='md:hidden flex items-center border rounded-full focus-within:shadow pl-2 w-full '>
           <input
             type='text'
             placeholder='Search...'

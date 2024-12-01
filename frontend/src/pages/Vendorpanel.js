@@ -8,6 +8,8 @@ import {
   TbLayoutSidebarLeftCollapse,
   TbLayoutSidebarRightCollapse,
 } from "react-icons/tb";
+import { TbReportAnalytics } from "react-icons/tb";
+
 
 import { CgProfile } from "react-icons/cg";
 import { RiAdvertisementLine } from "react-icons/ri";
@@ -99,6 +101,16 @@ const VendorPanel = () => {
     
               {/* Navigation */}
               <nav className="grid p-4">
+                <Link
+                  to={"vendor-report"}
+                  className="flex items-center p-2 hover:bg-blue-600 hover:rounded-r-full hover:text-white transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                 <TbReportAnalytics 
+    
+                    className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
+                  />
+                   {isCollapsed ? null : "Report"}
+                </Link>
                 <Link
                   to={"vendor-products"}
                   className="flex items-center p-2 hover:bg-blue-600 hover:rounded-r-full hover:text-white transition duration-300 ease-in-out transform hover:scale-105"

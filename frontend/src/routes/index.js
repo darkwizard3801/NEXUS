@@ -43,6 +43,7 @@ import NotFound from '../pages/404'
 import PaymentSuccess from '../pages/PaymentSuccess'
 import Chat from '../pages/Chat'
 import RatingView from '../pages/RatingView'
+import VendorReport from '../pages/VendorReport'
 
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
@@ -229,6 +230,10 @@ const router = createBrowserRouter([
                     {
                         path : 'rating',
                         element : <RatingView/>
+                    },
+                    {
+                        path : 'vendor-report',
+                        element : <VendorReport/>
                     },
                 ]
 

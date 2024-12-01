@@ -10,79 +10,67 @@ import SummaryApi from './common';
 import Context from './context';
 import { useDispatch } from 'react-redux';
 import { setUserDetails } from './store/userSlice';
+import { createContext, useContext } from 'react';
 
-
-
-
+const ThemeContext = createContext();
 
 function App() {
+  const dispatch = useDispatch();
+  const [cartProductCount, setCartProductCount] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(prevMode => !prevMode);
+  };
 
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', isDarkMode);
+  }, [isDarkMode]);
 
+  const fetchUserDetails = async () => {
+    const dataResponse = await fetch(SummaryApi.current_user.url, {
+      method: SummaryApi.current_user.method,
+      credentials: 'include'
+    });
+    const dataApi = await dataResponse.json();
 
-
-
-  const dispatch = useDispatch()
-  const [cartProductCount,setCartProductCount] = useState(0)
-
-
-
-  const fetchUserDetails = async()=>{
-    const dataResponse = await fetch(SummaryApi.current_user.url,{
-      method : SummaryApi.current_user.method,
-      credentials : 'include'
-    })
-    const dataApi = await dataResponse.json()
-
-    // console.log("user-data:",dataResponse)
-
-    if(dataApi.success){
-      dispatch(setUserDetails(dataApi.data))
+    if (dataApi.success) {
+      dispatch(setUserDetails(dataApi.data));
     }
-}
+  };
 
-const fetchUserAddToCart = async()=>{
-  const dataResponse = await fetch(SummaryApi.addToCartProductCount.url,{
-    method : SummaryApi.addToCartProductCount.method,
-    credentials : 'include'
-  })
+  const fetchUserAddToCart = async () => {
+    const dataResponse = await fetch(SummaryApi.addToCartProductCount.url, {
+      method: SummaryApi.addToCartProductCount.method,
+      credentials: 'include'
+    });
 
-  const dataApi = await dataResponse.json()
+    const dataApi = await dataResponse.json();
+    setCartProductCount(dataApi?.data?.count);
+  };
 
-  setCartProductCount(dataApi?.data?.count)
-}
-
-  useEffect(()=>
-  {
-    // user details
+  useEffect(() => {
     fetchUserDetails();
+    fetchUserAddToCart();
+  }, []);
 
-    fetchUserAddToCart()
-
-
-
-  },[])
   return (
-   <>
-<Context.Provider value={{
-          fetchUserDetails, // user detail fetch 
-          cartProductCount, // current user add to cart product count,
-          fetchUserAddToCart
+    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+      <Context.Provider value={{
+        fetchUserDetails, // user detail fetch 
+        cartProductCount, // current user add to cart product count,
+        fetchUserAddToCart
       }}>
-
-<ToastContainer 
-          position='top-center'
-          />
-   <Header/>
-   <main className='min-h-[calc(110vh-5px)] pt-16'>
-
-   <Outlet/>
-   </main>
-   <Footer/>
-          </Context.Provider>
-   
-   </>
+        <ToastContainer position='top-center' />
+        <Header toggleDarkMode={toggleDarkMode} />
+        <main className='min-h-[calc(110vh-5px)] pt-16'>
+          <Outlet />
+        </main>
+        <Footer />
+      </Context.Provider>
+    </ThemeContext.Provider>
   );
 }
 
+export { ThemeContext };
 export default App;
