@@ -5,10 +5,12 @@ import displayINRCurrency from '../helpers/displayCurrency';
 import { toast } from 'react-toastify'; // Import toast for notifications
 import SummaryApi from '../common/index';
 import { FaRecycle } from "react-icons/fa";
+import { useTheme } from '../context/ThemeContext';
 
 const VendorProductCard = ({ data, fetchdata }) => {
   const [editProduct, setEditProduct] = useState(false);
   const [isDisabled, setIsDisabled] = useState(data.disabled); // Track disabled state
+  const { isDarkMode } = useTheme();
 
   const handleDisable = async () => {
     if (!window.confirm('Are you sure you want to disable this product?')) return;
@@ -66,9 +68,9 @@ const VendorProductCard = ({ data, fetchdata }) => {
   };
 
   return (
-    <div className={`bg-white  p-4 rounded ${isDisabled ? 'opacity-50' : ''}`}>
-      <div className='w-40 '>
-        <div className='w-34 h-32 flex justify-center items-center '>
+    <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} p-4 rounded ${isDisabled ? 'opacity-50' : ''}`}>
+      <div className='w-40'>
+        <div className='w-34 h-32 flex justify-center items-center'>
           <img src={data?.productImage[0]} className='mx-auto object-fill h-full w-fit' alt={data.productName} />
         </div>
         <h1 className='text-ellipsis line-clamp-2'>{data.productName}</h1>
@@ -80,25 +82,25 @@ const VendorProductCard = ({ data, fetchdata }) => {
 
           <div className='flex items-center gap-3 py-3'>
             <div
-              className={`p-2 bg-green-100 hover:bg-green-600 rounded-full hover:text-white cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
+              className={`p-2 ${isDarkMode ? 'bg-green-900 hover:bg-green-700' : 'bg-green-100 hover:bg-green-600'} rounded-full hover:text-white cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
               onClick={() => !isDisabled && setEditProduct(true)}
             >
-              <MdModeEditOutline />
+              <MdModeEditOutline className={isDarkMode ? 'text-green-400' : ''} />
             </div>
 
             {isDisabled ? (
               <div
-                className='p-2 bg-blue-100 hover:bg-blue-600 rounded-full hover:text-white cursor-pointer'
+                className={`p-2 ${isDarkMode ? 'bg-blue-900 hover:bg-blue-700' : 'bg-blue-100 hover:bg-blue-600'} rounded-full hover:text-white cursor-pointer`}
                 onClick={handleEnable}
               >
-                <FaRecycle />
+                <FaRecycle className={isDarkMode ? 'text-blue-400' : ''} />
               </div>
             ) : (
               <div
-                className='p-2 bg-red-100 hover:bg-red-600 rounded-full hover:text-white cursor-pointer'
+                className={`p-2 ${isDarkMode ? 'bg-red-900 hover:bg-red-700' : 'bg-red-100 hover:bg-red-600'} rounded-full hover:text-white cursor-pointer`}
                 onClick={handleDisable}
               >
-                <MdDelete />
+                <MdDelete className={isDarkMode ? 'text-red-400' : ''} />
               </div>
             )}
           </div>

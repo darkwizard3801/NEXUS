@@ -1,13 +1,16 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 const NotFound = () => {
+  const { isDarkMode } = useTheme();
+
   const page404Styles = {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
-    background: '#fff',
+    background: isDarkMode ? '#1F2937' : '#fff',
     fontFamily: "'Arvo', serif",
     textAlign: 'center',
   };
@@ -26,13 +29,18 @@ const NotFound = () => {
 
   const h1Styles = {
     fontSize: '80px',
-    color: '#fff',
+    color: isDarkMode ? '#000' : '#fff',
     textShadow: '2px 2px 5px rgba(0,0,0,0.5)',
   };
 
   const h3Styles = {
     fontSize: '24px',
     margin: '20px 0',
+    color: isDarkMode ? '#fff' : '#000',
+  };
+
+  const pStyles = {
+    color: isDarkMode ? '#fff' : '#000',
   };
 
   const linkStyles = {
@@ -56,7 +64,7 @@ const NotFound = () => {
       </div>
       <div style={contentBoxStyles}>
         <h3 style={h3Styles}>It looks like you're lost</h3>
-        <p>The page you are looking for is not available!</p>
+        <p style={pStyles}>The page you are looking for is not available!</p>
         <a href="/" style={linkStyles}>
           Go to Home
         </a>

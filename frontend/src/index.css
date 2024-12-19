@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light mode styles */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -9,8 +10,47 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  @apply bg-slate-100
+  @apply bg-white text-black transition-colors duration-200;
+}
 
+/* Dark mode styles */
+body.dark-mode {
+  @apply bg-gray-900 text-white;
+}
+
+/* Ensure inputs and other elements follow the theme */
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+  @apply bg-gray-800 text-white border-gray-700;
+}
+
+/* Style cards and containers in dark mode */
+.dark-mode .bg-white {
+  @apply bg-gray-800;
+}
+
+.dark-mode .text-black {
+  @apply text-white;
+}
+
+.dark-mode .border {
+  @apply border-gray-700;
+}
+
+/* Add a subtle glow effect to buttons in dark mode */
+.dark-mode button:not(.bg-red-600):not(.bg-green-600):not(.bg-blue-600) {
+  @apply bg-gray-700 hover:bg-gray-600 text-white;
+}
+
+/* Style dropdown menus in dark mode */
+.dark-mode .bg-slate-100 {
+  @apply bg-gray-800;
+}
+
+/* Add hover effects for dark mode */
+.dark-mode .hover\:bg-slate-100:hover {
+  @apply hover:bg-gray-700;
 }
 
 code {

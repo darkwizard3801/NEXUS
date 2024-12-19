@@ -1,17 +1,19 @@
 import React from 'react'
+import { useTheme } from '../context/ThemeContext'
 
 const Logo = ({w,h}) => {
+  const { isDarkMode } = useTheme()
+
   return (
-    
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
- width={w} height={h} viewBox="0 0 300.000000 116.000000"
- preserveAspectRatio="xMidYMid meet">
-<metadata>
-Created by potrace 1.10, written by Peter Selinger 2001-2011
-</metadata>
-<g transform="translate(0.000000,116.000000) scale(0.100000,-0.100000)"
-fill="#000000" stroke="none">
-<path d="M522 1053 c-17 -7 -42 -57 -42 -84 0 -13 9 -33 21 -45 17 -18 28 -21
+    <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+     width={w} height={h} viewBox="0 0 300.000000 116.000000"
+     preserveAspectRatio="xMidYMid meet">
+    <metadata>
+    Created by potrace 1.10, written by Peter Selinger 2001-2011
+    </metadata>
+    <g transform="translate(0.000000,116.000000) scale(0.100000,-0.100000)"
+    fill={isDarkMode ? '#FFFFFF' : '#000000'} stroke="none">
+    <path d="M522 1053 c-17 -7 -42 -57 -42 -84 0 -13 9 -33 21 -45 17 -18 28 -21
 55 -17 22 4 34 2 34 -6 0 -6 -12 -11 -26 -11 -23 0 -25 -2 -14 -15 9 -11 16
 -13 24 -5 20 20 26 9 26 -46 0 -51 -1 -55 -17 -43 -13 11 -17 11 -20 2 -3 -7
 -11 -13 -19 -13 -10 0 -14 15 -14 58 0 60 -11 82 -42 82 -20 0 -42 -44 -34

@@ -10,22 +10,11 @@ import SummaryApi from './common';
 import Context from './context';
 import { useDispatch } from 'react-redux';
 import { setUserDetails } from './store/userSlice';
-import { createContext, useContext } from 'react';
-
-const ThemeContext = createContext();
+import { ThemeProvider } from './context/ThemeContext';
 
 function App() {
   const dispatch = useDispatch();
   const [cartProductCount, setCartProductCount] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(prevMode => !prevMode);
-  };
-
-  useEffect(() => {
-    document.body.classList.toggle('dark-mode', isDarkMode);
-  }, [isDarkMode]);
 
   const fetchUserDetails = async () => {
     const dataResponse = await fetch(SummaryApi.current_user.url, {
@@ -55,22 +44,21 @@ function App() {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+    <ThemeProvider>
       <Context.Provider value={{
-        fetchUserDetails, // user detail fetch 
-        cartProductCount, // current user add to cart product count,
+        fetchUserDetails,
+        cartProductCount,
         fetchUserAddToCart
       }}>
         <ToastContainer position='top-center' />
-        <Header toggleDarkMode={toggleDarkMode} />
+        <Header />
         <main className='min-h-[calc(110vh-5px)] pt-16'>
           <Outlet />
         </main>
         <Footer />
       </Context.Provider>
-    </ThemeContext.Provider>
+    </ThemeProvider>
   );
 }
 
-export { ThemeContext };
 export default App;

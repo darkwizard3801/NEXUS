@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import { setUserDetails } from "../store/userSlice";
 import Context from "../context";
 import Cookies from 'js-cookie'; 
-import { ThemeContext } from "../App";
+import { useTheme } from '../context/ThemeContext';
 
 const Header = () => {
   const user = useSelector((state) => state.user.user);
@@ -18,7 +18,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [menuDisplay, setMenuDisplay] = useState(false);
   const context = useContext(Context);
-  const { isDarkMode, toggleDarkMode } = useContext(ThemeContext);
+  const { isDarkMode, toggleTheme } = useTheme();
   const searchInput = useLocation();
   const URLSearch = new URLSearchParams(searchInput?.search);
   const searchQuery = URLSearch.getAll("q");
@@ -75,7 +75,7 @@ const Header = () => {
   console.log(user)
 
   return (
-    <header className={`h-16 shadow-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} fixed w-full z-40`}>
+    <header className={`h-16 shadow-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} fixed w-full z-40 transition-colors duration-200`}>
       <div className='h-full container mx-auto flex items-center px-4 justify-between'>
         <Link to={"/"}>
           <Logo w={190} h={70} />
@@ -83,7 +83,7 @@ const Header = () => {
 
         {/* Dark Mode Toggle Button */}
         <button
-          onClick={toggleDarkMode}
+          onClick={toggleTheme}
           className={`p-2 rounded-full ${isDarkMode ? 'bg-yellow-500' : 'bg-gray-300'}`}
           title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
@@ -91,30 +91,29 @@ const Header = () => {
         </button>
 
         {/* Search Bar */}
-        {/* Desktop Search Bar */}
-        <div className='hidden md:flex items-center  rounded-full  focus-within:shadow pl-2 w-1/3 border'>
+        <div className={`hidden md:flex items-center rounded-full focus-within:shadow pl-2 w-1/3 border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <input
             type='text'
             placeholder='Search product here...'
-            className='w-full outline-none p-2'
+            className={`w-full outline-none p-2 rounded-l-full ${isDarkMode ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black'}`}
             onChange={handleSearch}
             value={search}
           />
-          <div className='text-lg min-w-[60px] h-10 bg-black flex items-center justify-center rounded-r-full text-white'>
+          <div className={`text-lg min-w-[60px] h-10 flex items-center justify-center rounded-r-full ${isDarkMode ? 'bg-gray-600' : 'bg-black'} text-white`}>
             <IoSearch />
           </div>
         </div>
 
         {/* Mobile Search Bar */}
-        <div className='md:hidden flex items-center border rounded-full focus-within:shadow pl-2 w-full '>
+        <div className={`md:hidden flex items-center rounded-full focus-within:shadow pl-2 w-full border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <input
             type='text'
             placeholder='Search...'
-            className='w-full outline-none p-2'
+            className={`w-full outline-none p-2 rounded-l-full ${isDarkMode ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black'}`}
             onChange={handleSearch}
             value={search}
           />
-          <div className='text-lg min-w-[55px] bg-black h-10  flex items-center justify-center rounded-r-full text-white'>
+          <div className={`text-lg min-w-[55px] h-10 flex items-center justify-center rounded-r-full ${isDarkMode ? 'bg-gray-600' : 'bg-black'} text-white`}>
             <IoSearch />
           </div>
         </div>
@@ -149,12 +148,12 @@ const Header = () => {
             )}
 
             {menuDisplay && (
-              <div className='absolute bg-white bottom-0 top-11 h-fit p-2 shadow-lg rounded-2xl'>
+              <div className={`absolute ${isDarkMode ? 'bg-gray-800' : 'bg-white'} bottom-0 top-11 h-fit p-2 shadow-lg rounded-2xl`}>
                 <nav>
                   {user?.role === "Vendor" && (
                     <Link
                       to={"/vendor-panel/vendor-products"}
-                      className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                      className={`whitespace-nowrap ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-slate-100'} p-2 block`}
                       onClick={() => setMenuDisplay(false)}
                     >
                       Vendor Panel
@@ -163,7 +162,7 @@ const Header = () => {
                   {user?.role === "Admin" && (
                     <Link
                       to={"/admin-panel/all-products"}
-                      className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                      className={`whitespace-nowrap ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-slate-100'} p-2 block`}
                       onClick={() => setMenuDisplay(false)}
                     >
                       Admin Panel
@@ -173,7 +172,7 @@ const Header = () => {
                     <nav>
                       <Link
                         to={"/user-panel"}
-                        className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                        className={`whitespace-nowrap ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-slate-100'} p-2 block`}
                         onClick={() => setMenuDisplay(false)}
                       >
                         My Account
@@ -181,7 +180,7 @@ const Header = () => {
                       {/* New option for My Orders */}
                       <Link
                         to={"/user-panel/orders"}
-                        className='whitespace-nowrap hover:bg-slate-100 p-2 block'
+                        className={`whitespace-nowrap ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-slate-100'} p-2 block`}
                         onClick={() => setMenuDisplay(false)}
                       >
                         My Orders
