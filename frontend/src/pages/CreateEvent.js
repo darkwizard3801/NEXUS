@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Slider from 'react-slider';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import SummaryApi from '../common';
@@ -21,6 +21,16 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+const MapController = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView([center.lat, center.lng], 13);
+    }
+  }, [center, map]);
+  return null;
+};
+
 const CreateEvent = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +48,8 @@ const CreateEvent = () => {
   const [userDetails, setUserDetails] = useState(null);
   const [userEvents, setUserEvents] = useState([]); // To store the user's events
   const [placeNames, setPlaceNames] = useState({});
-  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   // Fetch events created by the user
   const fetchUserEvents = async (email) => {
@@ -235,6 +246,44 @@ const CreateEvent = () => {
     return today.toISOString().split('T')[0];
   };
 
+  const handleSearch = async () => {
+    console.log("Search Query:", searchQuery); // Log the search query
+
+    try {
+      const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=5`);
+      console.log("API Response:", response.data); // Log the API response
+
+      if (response.data && response.data.length > 0) {
+        const firstResult = response.data[0];
+        const newLocation = {
+          lat: parseFloat(firstResult.lat),
+          lng: parseFloat(firstResult.lon)
+        };
+
+        console.log("Searched Location:", newLocation); // Log the searched location
+
+        setEventDetails(prevDetails => ({
+          ...prevDetails,
+          location: newLocation // Set the new location from search
+        }));
+
+        // Optionally, you can set the search query to the display name
+        setSearchQuery(firstResult.display_name);
+        setSearchResults([]); // Clear search results
+      } else {
+        toast.error("Location not found");
+      }
+    } catch (error) {
+      console.error('Error searching:', error);
+      if (error.response) {
+        console.error('Error details:', error.response.data); // Log the error response
+      } else {
+        console.error('Network Error:', error.message); // Log network errors
+      }
+      toast.error("Error searching for location");
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -368,21 +417,78 @@ const CreateEvent = () => {
           </div>
 
           {/* Map to select location */}
-          <div className="mb-4 ">
-            <label className=" text-sm font-medium text-gray-700">
-              Select Location
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Event Location
             </label>
-            {loadingLocation ? (
-              <p>Loading your location...</p>
-            ) : (
-              <MapContainer center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} zoom={13} style={{ height: '300px', width: '100%'}}>
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <LocationMarker />
-              </MapContainer>
-            )}
+            <div className="relative">
+              {/* Search bar positioned above map */}
+              <div className="absolute top-2 left-2 z-[1000] w-64">
+                <div className="bg-white p-2 rounded-md shadow-md">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="flex-1 p-2 border border-gray-300 rounded-md shadow-sm text-sm"
+                      placeholder="Search location..."
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearch}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      Search
+                    </button>
+                  </div>
+                  
+                  {/* Search Results Dropdown */}
+                  {searchResults.length > 0 && (
+                    <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {searchResults.map((result, index) => (
+                        <div
+                          key={index}
+                          className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          onClick={() => {
+                            const newLocation = {
+                              lat: parseFloat(result.lat),
+                              lng: parseFloat(result.lon)
+                            };
+                            setEventDetails(prevDetails => ({
+                              ...prevDetails,
+                              location: newLocation
+                            }));
+                            setSearchQuery(result.display_name);
+                            setSearchResults([]);
+                          }}
+                        >
+                          {result.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Map Container */}
+              {loadingLocation ? (
+                <p>Loading your location...</p>
+              ) : (
+                <MapContainer 
+                  center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} 
+                  zoom={13} 
+                  style={{ height: '400px', width: '100%'}}
+                  key={eventDetails.location ? `${eventDetails.location.lat}-${eventDetails.location.lng}` : 'default'}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <LocationMarker />
+                  <MapController center={eventDetails.location} />
+                </MapContainer>
+              )}
+            </div>
           </div>
 
           {/* Submit Button */}

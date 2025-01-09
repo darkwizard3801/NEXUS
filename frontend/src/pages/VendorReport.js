@@ -39,6 +39,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { useTheme } from '@mui/material/styles';
+import { Helmet } from 'react-helmet';
 
 // Register ChartJS components
 ChartJS.register(
@@ -443,633 +444,639 @@ const VendorReport = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        Vendor Dashboard
-      </Typography>
+    <>
+      <Helmet>
+        <title>Your New Title Here</title>
+        <link rel="icon" href="%PUBLIC_URL%/my-icon.ico" />
+      </Helmet>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" sx={{ mb: 3 }}>
+          Vendor Dashboard
+        </Typography>
 
-      {/* Time Filter Dropdown */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Card sx={{ mb: 3, p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <AttachMoney sx={{ color: '#1976d2' }} />
-            <Typography variant="subtitle1">Revenue Filter:</Typography>
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Select Time Period</InputLabel>
-              <Select
-                value={timeFilter}
-                label="Select Time Period"
-                onChange={(e) => setTimeFilter(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#1976d230'
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#1976d260'
-                  }
-                }}
-              >
-                <MenuItem value="all">All Time Revenue</MenuItem>
-                <MenuItem value="today">Today's Revenue</MenuItem>
-                <MenuItem value="week">Past Week Revenue</MenuItem>
-                <MenuItem value="month">Past Month Revenue</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Card>
-      </motion.div>
-
-      {/* Download Report Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, justifyContent: 'flex-end' }}>
+        {/* Time Filter Dropdown */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5 }}
         >
-          <Button
-            variant="contained"
-            startIcon={<Download />}
-            onClick={(e) => setDownloadMenuAnchor(e.currentTarget)}
-            sx={{
-              background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
-              boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
-              color: 'white',
-              padding: '10px 20px',
-              borderRadius: '25px',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #1565c0 30%, #1976d2 90%)',
-              }
-            }}
-          >
-            Download Current Filter Report
-          </Button>
-        </motion.div>
-
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Button
-            variant="outlined"
-            startIcon={<DateRange />}
-            onClick={() => setOpenDatePicker(true)}
-            sx={{
-              borderWidth: 2,
-              borderColor: '#1976d2',
-              color: '#1976d2',
-              padding: '10px 20px',
-              borderRadius: '25px',
-              '&:hover': {
-                borderWidth: 2,
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-              }
-            }}
-          >
-            Custom Date Range Report
-          </Button>
-        </motion.div>
-
-        {/* Download Format Menu */}
-        <Menu
-          anchorEl={downloadMenuAnchor}
-          open={Boolean(downloadMenuAnchor)}
-          onClose={() => setDownloadMenuAnchor(null)}
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              mt: 1
-            }
-          }}
-        >
-          <MenuItem onClick={() => {
-            const { reportData, totalRevenue } = generateReport(orders, timeFilter);
-            downloadCSV(reportData, totalRevenue, timeFilter);
-            setDownloadMenuAnchor(null);
-          }}>
-            Download as CSV
-          </MenuItem>
-          <MenuItem onClick={() => {
-            const { reportData, totalRevenue } = generateReport(orders, timeFilter);
-            downloadExcel(reportData, totalRevenue, timeFilter);
-            setDownloadMenuAnchor(null);
-          }}>
-            Download as Excel
-          </MenuItem>
-          <MenuItem onClick={() => {
-            const { reportData, totalRevenue } = generateReport(orders, timeFilter);
-            downloadPDF(reportData, totalRevenue, timeFilter);
-            setDownloadMenuAnchor(null);
-          }}>
-            Download as PDF
-          </MenuItem>
-        </Menu>
-      </Box>
-
-      {/* Enhanced Date Range Picker Dialog */}
-      <Dialog 
-        open={openDatePicker} 
-        onClose={() => setOpenDatePicker(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            minWidth: 350
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
-          color: 'white',
-          borderRadius: '12px 12px 0 0'
-        }}>
-          Select Date Range for Report
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 3,
-            p: 2 
-          }}>
-            <TextField
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button 
-            onClick={() => setOpenDatePicker(false)}
-            sx={{ 
-              color: '#666',
-              borderRadius: '20px'
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={(e) => {
-              if (startDate && endDate) {
-                setDownloadMenuAnchor(e.currentTarget);
-                setOpenDatePicker(false);
-              }
-            }}
-            variant="contained"
-            sx={{
-              background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
-              boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
-              borderRadius: '20px'
-            }}
-          >
-            Download Report
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dashboard Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Total Orders"
-            value={orders.length}
-            icon={<ShoppingCart />}
-            color="#1976d2"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Total Customers"
-            value={[...new Set(orders.map(order => order.userName))].length}
-            icon={<People />}
-            color="#2e7d32"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title={
-              timeFilter === 'all' ? 'Total Revenue' :
-              timeFilter === 'today' ? 'Today\'s Revenue' :
-              timeFilter === 'week' ? 'Past Week Revenue' :
-              'Past Month Revenue'
-            }
-            value={filteredRevenue}
-            icon={<AttachMoney />}
-            color="#ed6c02"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Pending Deliveries"
-            value={orders.filter(order => order.status === 'Processing').length}
-            icon={<LocalShipping />}
-            color="#9c27b0"
-          />
-        </Grid>
-      </Grid>
-
-      {/* Charts Section */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={8}>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card sx={{ 
-              p: 3, 
-              bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
-              border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-            }}>
-              <Typography 
-                variant="h6" 
-                gutterBottom
-                sx={{ color: isDarkMode ? 'white' : 'text.primary' }}
-              >
-                Revenue Overview
-              </Typography>
-              <Line
-                data={{
-                  labels: processRevenueData().labels,
-                  datasets: [{
-                    label: 'Revenue',
-                    data: processRevenueData().data,
-                    borderColor: '#1976d2',
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: isDarkMode 
-                      ? 'rgba(25, 118, 210, 0.2)'
-                      : 'rgba(25, 118, 210, 0.1)',
-                    pointBackgroundColor: '#1976d2',
-                    pointBorderColor: isDarkMode ? '#424242' : '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'top',
-                      labels: {
-                        color: isDarkMode ? 'white' : 'black'
-                      }
+          <Card sx={{ mb: 3, p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <AttachMoney sx={{ color: '#1976d2' }} />
+              <Typography variant="subtitle1">Revenue Filter:</Typography>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Select Time Period</InputLabel>
+                <Select
+                  value={timeFilter}
+                  label="Select Time Period"
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#1976d230'
                     },
-                    tooltip: {
-                      backgroundColor: isDarkMode ? 'rgba(97, 97, 97, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                      titleColor: 'white',
-                      bodyColor: 'white',
-                      borderColor: '#1976d2',
-                      borderWidth: 1,
-                      callbacks: {
-                        label: (context) => `Revenue: $${context.parsed.y.toFixed(2)}`,
-                      }
-                    },
-                  },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      grid: {
-                        color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                      },
-                      ticks: {
-                        color: isDarkMode ? 'white' : 'black',
-                        callback: (value) => `$${value}`
-                      }
-                    },
-                    x: {
-                      grid: {
-                        color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                      },
-                      ticks: {
-                        color: isDarkMode ? 'white' : 'black'
-                      }
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#1976d260'
                     }
-                  },
-                  interaction: {
-                    intersect: false,
-                    mode: 'index',
-                  },
-                  animation: {
-                    duration: 1000,
-                  },
-                }}
-              />
-            </Card>
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} md={4}>
+                  }}
+                >
+                  <MenuItem value="all">All Time Revenue</MenuItem>
+                  <MenuItem value="today">Today's Revenue</MenuItem>
+                  <MenuItem value="week">Past Week Revenue</MenuItem>
+                  <MenuItem value="month">Past Month Revenue</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          </Card>
+        </motion.div>
+
+        {/* Download Report Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, justifyContent: 'flex-end' }}>
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Card sx={{ 
-              p: 3, 
-              bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
-              border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-            }}>
-              <Typography 
-                variant="h6" 
-                gutterBottom
-                sx={{ color: isDarkMode ? 'white' : 'text.primary' }}
-              >
-                Order Status
-              </Typography>
-              <Pie
-                data={{
-                  labels: ['Delivered', 'Processing', 'Cancelled'],
-                  datasets: [{
-                    data: [
-                      orders.filter(order => order.status === 'Delivered').length,
-                      orders.filter(order => order.status === 'Processing').length,
-                      orders.filter(order => order.status === 'Cancelled').length,
-                    ],
-                    backgroundColor: [
-                      '#2e7d32',
-                      '#ed6c02',
-                      '#d32f2f',
-                    ],
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'bottom',
-                      labels: {
-                        color: isDarkMode ? 'white' : 'black',
-                        padding: 20
-                      }
-                    },
-                    tooltip: {
-                      backgroundColor: isDarkMode ? 'rgba(97, 97, 97, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-                      titleColor: 'white',
-                      bodyColor: 'white'
-                    }
-                  },
-                }}
-              />
-            </Card>
-          </motion.div>
-        </Grid>
-      </Grid>
-
-      {/* Orders Table Section */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-      >
-        <Card sx={{ mb: 3 }}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Recent Orders
-            </Typography>
-          </Box>
-          
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Box sx={{ p: 2, color: 'error.main' }}>
-              <Typography>{error}</Typography>
-            </Box>
-          ) : (
-            <TableContainer 
-              component={Paper} 
-              sx={{ 
-                bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
-                border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+            <Button
+              variant="contained"
+              startIcon={<Download />}
+              onClick={(e) => setDownloadMenuAnchor(e.currentTarget)}
+              sx={{
+                background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
+                boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '25px',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #1565c0 30%, #1976d2 90%)',
+                }
               }}
             >
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Order ID
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Customer
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Ordered Date
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Delivery Date
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Products
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                      align="right"
-                    >
-                      Price
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Status
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
-                        color: isDarkMode ? 'white' : 'text.primary'
-                      }}
-                    >
-                      Invoice Number
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow 
-                      key={order._id}
-                      sx={{ 
-                        '&:hover': {
-                          bgcolor: isDarkMode ? 'grey.800' : 'grey.50'
+              Download Current Filter Report
+            </Button>
+          </motion.div>
+
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Button
+              variant="outlined"
+              startIcon={<DateRange />}
+              onClick={() => setOpenDatePicker(true)}
+              sx={{
+                borderWidth: 2,
+                borderColor: '#1976d2',
+                color: '#1976d2',
+                padding: '10px 20px',
+                borderRadius: '25px',
+                '&:hover': {
+                  borderWidth: 2,
+                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                }
+              }}
+            >
+              Custom Date Range Report
+            </Button>
+          </motion.div>
+
+          {/* Download Format Menu */}
+          <Menu
+            anchorEl={downloadMenuAnchor}
+            open={Boolean(downloadMenuAnchor)}
+            onClose={() => setDownloadMenuAnchor(null)}
+            PaperProps={{
+              sx: {
+                borderRadius: 2,
+                mt: 1
+              }
+            }}
+          >
+            <MenuItem onClick={() => {
+              const { reportData, totalRevenue } = generateReport(orders, timeFilter);
+              downloadCSV(reportData, totalRevenue, timeFilter);
+              setDownloadMenuAnchor(null);
+            }}>
+              Download as CSV
+            </MenuItem>
+            <MenuItem onClick={() => {
+              const { reportData, totalRevenue } = generateReport(orders, timeFilter);
+              downloadExcel(reportData, totalRevenue, timeFilter);
+              setDownloadMenuAnchor(null);
+            }}>
+              Download as Excel
+            </MenuItem>
+            <MenuItem onClick={() => {
+              const { reportData, totalRevenue } = generateReport(orders, timeFilter);
+              downloadPDF(reportData, totalRevenue, timeFilter);
+              setDownloadMenuAnchor(null);
+            }}>
+              Download as PDF
+            </MenuItem>
+          </Menu>
+        </Box>
+
+        {/* Enhanced Date Range Picker Dialog */}
+        <Dialog 
+          open={openDatePicker} 
+          onClose={() => setOpenDatePicker(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              minWidth: 350
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
+            color: 'white',
+            borderRadius: '12px 12px 0 0'
+          }}>
+            Select Date Range for Report
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: 3,
+              p: 2 
+            }}>
+              <TextField
+                label="Start Date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+              />
+              <TextField
+                label="End Date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button 
+              onClick={() => setOpenDatePicker(false)}
+              sx={{ 
+                color: '#666',
+                borderRadius: '20px'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={(e) => {
+                if (startDate && endDate) {
+                  setDownloadMenuAnchor(e.currentTarget);
+                  setOpenDatePicker(false);
+                }
+              }}
+              variant="contained"
+              sx={{
+                background: 'linear-gradient(45deg, #1976d2 30%, #2196f3 90%)',
+                boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
+                borderRadius: '20px'
+              }}
+            >
+              Download Report
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dashboard Cards */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <DashboardCard
+              title="Total Orders"
+              value={orders.length}
+              icon={<ShoppingCart />}
+              color="#1976d2"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <DashboardCard
+              title="Total Customers"
+              value={[...new Set(orders.map(order => order.userName))].length}
+              icon={<People />}
+              color="#2e7d32"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <DashboardCard
+              title={
+                timeFilter === 'all' ? 'Total Revenue' :
+                timeFilter === 'today' ? 'Today\'s Revenue' :
+                timeFilter === 'week' ? 'Past Week Revenue' :
+                'Past Month Revenue'
+              }
+              value={filteredRevenue}
+              icon={<AttachMoney />}
+              color="#ed6c02"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <DashboardCard
+              title="Pending Deliveries"
+              value={orders.filter(order => order.status === 'Processing').length}
+              icon={<LocalShipping />}
+              color="#9c27b0"
+            />
+          </Grid>
+        </Grid>
+
+        {/* Charts Section */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={8}>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card sx={{ 
+                p: 3, 
+                bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
+                border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+              }}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ color: isDarkMode ? 'white' : 'text.primary' }}
+                >
+                  Revenue Overview
+                </Typography>
+                <Line
+                  data={{
+                    labels: processRevenueData().labels,
+                    datasets: [{
+                      label: 'Revenue',
+                      data: processRevenueData().data,
+                      borderColor: '#1976d2',
+                      tension: 0.4,
+                      fill: true,
+                      backgroundColor: isDarkMode 
+                        ? 'rgba(25, 118, 210, 0.2)'
+                        : 'rgba(25, 118, 210, 0.1)',
+                      pointBackgroundColor: '#1976d2',
+                      pointBorderColor: isDarkMode ? '#424242' : '#fff',
+                      pointBorderWidth: 2,
+                      pointRadius: 4,
+                      pointHoverRadius: 6,
+                    }],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        position: 'top',
+                        labels: {
+                          color: isDarkMode ? 'white' : 'black'
                         }
-                      }}
-                    >
+                      },
+                      tooltip: {
+                        backgroundColor: isDarkMode ? 'rgba(97, 97, 97, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: '#1976d2',
+                        borderWidth: 1,
+                        callbacks: {
+                          label: (context) => `Revenue: $${context.parsed.y.toFixed(2)}`,
+                        }
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        grid: {
+                          color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                        },
+                        ticks: {
+                          color: isDarkMode ? 'white' : 'black',
+                          callback: (value) => `$${value}`
+                        }
+                      },
+                      x: {
+                        grid: {
+                          color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                        },
+                        ticks: {
+                          color: isDarkMode ? 'white' : 'black'
+                        }
+                      }
+                    },
+                    interaction: {
+                      intersect: false,
+                      mode: 'index',
+                    },
+                    animation: {
+                      duration: 1000,
+                    },
+                  }}
+                />
+              </Card>
+            </motion.div>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card sx={{ 
+                p: 3, 
+                bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
+                border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+              }}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ color: isDarkMode ? 'white' : 'text.primary' }}
+                >
+                  Order Status
+                </Typography>
+                <Pie
+                  data={{
+                    labels: ['Delivered', 'Processing', 'Cancelled'],
+                    datasets: [{
+                      data: [
+                        orders.filter(order => order.status === 'Delivered').length,
+                        orders.filter(order => order.status === 'Processing').length,
+                        orders.filter(order => order.status === 'Cancelled').length,
+                      ],
+                      backgroundColor: [
+                        '#2e7d32',
+                        '#ed6c02',
+                        '#d32f2f',
+                      ],
+                    }],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: {
+                        position: 'bottom',
+                        labels: {
+                          color: isDarkMode ? 'white' : 'black',
+                          padding: 20
+                        }
+                      },
+                      tooltip: {
+                        backgroundColor: isDarkMode ? 'rgba(97, 97, 97, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white'
+                      }
+                    },
+                  }}
+                />
+              </Card>
+            </motion.div>
+          </Grid>
+        </Grid>
+
+        {/* Orders Table Section */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card sx={{ mb: 3 }}>
+            <Box sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Recent Orders
+              </Typography>
+            </Box>
+            
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : error ? (
+              <Box sx={{ p: 2, color: 'error.main' }}>
+                <Typography>{error}</Typography>
+              </Box>
+            ) : (
+              <TableContainer 
+                component={Paper} 
+                sx={{ 
+                  bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
+                  border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        {order._id}
+                        Order ID
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        {order.userName || 'N/A'}
+                        Customer
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        {new Date(order.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                        Ordered Date
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        {new Date(order.deliveryDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                        Delivery Date
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {order.products
-                            .filter(product => product.vendor === userEmail)
-                            .map(product => (
-                              <Box key={product._id} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <img 
-                                  src={product.image} 
-                                  alt={product.productName}
-                                  style={{
-                                    width: '50px',
-                                    height: '50px',
-                                    objectFit: 'cover',
-                                    borderRadius: '4px'
-                                  }}
-                                />
-                                <Typography>
-                                  {product.productName} (Qty: {product.quantity})
-                                </Typography>
-                              </Box>
-                            ))}
-                        </Box>
+                        Products
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-                          textAlign: 'right'
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                         align="right"
                       >
-                        {order.products
-                          .filter(product => product.vendor === userEmail)
-                          .map(product => (
-                            <Box key={product._id} sx={{ mb: 1 }}>
-                              ${(product.price * product.quantity).toFixed(2)}
-                            </Box>
-                          ))}
+                        Price
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        <Chip 
-                          label={order.status} 
-                          color={getStatusColor(order.status)}
-                          size="small"
-                        />
+                        Status
                       </TableCell>
                       <TableCell 
                         sx={{ 
-                          color: isDarkMode ? 'white' : 'text.primary',
-                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          bgcolor: isDarkMode ? 'grey.800' : 'grey.100',
+                          color: isDarkMode ? 'white' : 'text.primary'
                         }}
                       >
-                        <Typography
-                          onClick={() => handleCellClick(order._id, 'invoice')}
-                          sx={{
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '150px',
-                            ...(expandedCells[`${order._id}-invoice`] && {
-                              whiteSpace: 'normal',
-                              maxWidth: 'none'
-                            })
-                          }}
-                        >
-                          {order.invoiceNumber}
-                        </Typography>
+                        Invoice Number
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Card>
-      </motion.div>
-    </Box>
+                  </TableHead>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow 
+                        key={order._id}
+                        sx={{ 
+                          '&:hover': {
+                            bgcolor: isDarkMode ? 'grey.800' : 'grey.50'
+                          }
+                        }}
+                      >
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          {order._id}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          {order.userName || 'N/A'}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          {new Date(order.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          {new Date(order.deliveryDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {order.products
+                              .filter(product => product.vendor === userEmail)
+                              .map(product => (
+                                <Box key={product._id} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.productName}
+                                    style={{
+                                      width: '50px',
+                                      height: '50px',
+                                      objectFit: 'cover',
+                                      borderRadius: '4px'
+                                    }}
+                                  />
+                                  <Typography>
+                                    {product.productName} (Qty: {product.quantity})
+                                  </Typography>
+                                </Box>
+                              ))}
+                          </Box>
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                            textAlign: 'right'
+                          }}
+                          align="right"
+                        >
+                          {order.products
+                            .filter(product => product.vendor === userEmail)
+                            .map(product => (
+                              <Box key={product._id} sx={{ mb: 1 }}>
+                                ${(product.price * product.quantity).toFixed(2)}
+                              </Box>
+                            ))}
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          <Chip 
+                            label={order.status} 
+                            color={getStatusColor(order.status)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell 
+                          sx={{ 
+                            color: isDarkMode ? 'white' : 'text.primary',
+                            borderBottom: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+                          }}
+                        >
+                          <Typography
+                            onClick={() => handleCellClick(order._id, 'invoice')}
+                            sx={{
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '150px',
+                              ...(expandedCells[`${order._id}-invoice`] && {
+                                whiteSpace: 'normal',
+                                maxWidth: 'none'
+                              })
+                            }}
+                          >
+                            {order.invoiceNumber}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Card>
+        </motion.div>
+      </Box>
+    </>
   );
 };
 
