@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 // import { fetchLocationName } from '../helpers/fetchLocation';
 import axios from 'axios';
 import { FaTrash } from 'react-icons/fa'; // Importing delete icon from react-icons
+import { debounce } from 'lodash'; // Import lodash debounce
 
 // Custom red location icon setup
 const redIcon = new L.Icon({
@@ -50,6 +51,39 @@ const CreateEvent = () => {
   const [placeNames, setPlaceNames] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false); // Loading state
+
+  // Debounced search function
+  const debouncedSearch = debounce(async (query) => {
+    if (query) {
+      setLoading(true); // Set loading to true while fetching
+      try {
+        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=5`);
+        console.log("API Response:", response.data);
+
+        if (response.data && response.data.length > 0) {
+          setSearchResults(response.data);
+        } else {
+          setSearchResults([]);
+          toast.error("Location not found");
+        }
+      } catch (error) {
+        console.error('Error searching:', error);
+        toast.error("Error searching for location");
+      } finally {
+        setLoading(false); // Set loading to false after fetching
+      }
+    } else {
+      setSearchResults([]);
+    }
+  }, 300); // Adjust the debounce time as needed
+
+  useEffect(() => {
+    debouncedSearch(searchQuery);
+    return () => {
+      debouncedSearch.cancel(); // Cleanup on unmount
+    };
+  }, [searchQuery]);
 
   // Fetch events created by the user
   const fetchUserEvents = async (email) => {
@@ -246,42 +280,8 @@ const CreateEvent = () => {
     return today.toISOString().split('T')[0];
   };
 
-  const handleSearch = async () => {
-    console.log("Search Query:", searchQuery); // Log the search query
-
-    try {
-      const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=5`);
-      console.log("API Response:", response.data); // Log the API response
-
-      if (response.data && response.data.length > 0) {
-        const firstResult = response.data[0];
-        const newLocation = {
-          lat: parseFloat(firstResult.lat),
-          lng: parseFloat(firstResult.lon)
-        };
-
-        console.log("Searched Location:", newLocation); // Log the searched location
-
-        setEventDetails(prevDetails => ({
-          ...prevDetails,
-          location: newLocation // Set the new location from search
-        }));
-
-        // Optionally, you can set the search query to the display name
-        setSearchQuery(firstResult.display_name);
-        setSearchResults([]); // Clear search results
-      } else {
-        toast.error("Location not found");
-      }
-    } catch (error) {
-      console.error('Error searching:', error);
-      if (error.response) {
-        console.error('Error details:', error.response.data); // Log the error response
-      } else {
-        console.error('Network Error:', error.message); // Log network errors
-      }
-      toast.error("Error searching for location");
-    }
+  const handleSearch = () => {
+    // This function can be used to trigger the search manually if needed
   };
 
   if (isLoading) {
@@ -363,6 +363,11 @@ const CreateEvent = () => {
               Budget (INR)
             </label>
             <div className="relative">
+              <div className="flex justify-between">
+                <span>₹ {eventDetails.budget[0]}</span>
+                <span>to</span>
+                <span>₹ {eventDetails.budget[1]}</span>
+              </div>
               <Slider
                 value={eventDetails.budget}
                 onChange={handleSliderChange}
@@ -370,14 +375,13 @@ const CreateEvent = () => {
                 max={1000000}
                 step={200}
                 className="w-full"
-                thumbClassName="w-6 h-6 bg-blue-600 rounded-full transition-transform transform hover:scale-125"
+                thumbClassName="w-8 h-8 bg-blue-600 rounded-full shadow-lg transition-transform transform hover:scale-125"
                 trackClassName="bg-gray-300 h-2 rounded-full" // Default track color
                 minDistance={1000}
+                // Adding custom styles for the track
+                trackStyle={[{ backgroundColor: '#4A90E2' }]} // Custom track color
+                handleStyle={[{ borderColor: '#4A90E2' }]} // Custom handle border color
               />
-              <div className="flex justify-between mt-2">
-                <span>₹ {eventDetails.budget[0]}</span>
-                <span>₹ {eventDetails.budget[1]}</span>
-              </div>
             </div>
           </div>
 
