@@ -423,7 +423,7 @@ const CreateEvent = () => {
             </label>
             <div className="relative">
               {/* Search bar positioned above map */}
-              <div className="absolute top-2 left-2 z-[1000] w-64">
+              <div className="absolute top-2 right-2 z-[1000] w-64">
                 <div className="bg-white p-2 rounded-md shadow-md">
                   <div className="flex gap-2">
                     <input
