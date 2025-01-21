@@ -43,7 +43,13 @@ const {  createOrUpdateOrder, getAllOrders, updateOrderWithPayment, cancelOrder 
 const { clearCart } = require('../controller/user/cartController')
 const { addRatingReview, getRatingDetails } = require('../controller/user/ratingController')
 const { deleteUser } = require('../controller/user/userController')
- // Import the controller
+// const posterController = require('../controller/user/posterController'); // Import the poster controller
+// const upload = require('../middleware/uploadMiddleware'); // Import the upload middleware
+const { generatePoster } = require('../controller/user/generatePosterController')
+
+
+
+// Import the controller
 
 
 
@@ -100,10 +106,6 @@ router.post("/filter-product",filterProductController)
 router.post('/category-add', addCategory);
 router.put('/togle-cat/:id', toggleCategory);
 
-
-
-
-
 router.post("/upload-product",authToken,UploadProductController)
 router.get("/get-product",getProductController)
 router.post("/update-product",authToken,updateProductController)
@@ -136,9 +138,12 @@ router.put('/updateBannerStatus/:id', updateBannerStatus);
 router.get('/contact-messages', getAllContactMessages);
 
 
+  
 
 
+// generate poster 
 
+router.post('/generate-poster', generatePoster);
 
 
 

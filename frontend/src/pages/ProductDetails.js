@@ -168,8 +168,9 @@ const ProductDetails = () => {
               </div>
 
               <div>
-                <p className='text-slate-600 font-medium my-1'>Description:</p>
-                <p>{data?.description}</p>
+              <p className='text-slate-600 font-medium my-1 dark:text-white'>Description:</p>
+  <p className='text-black dark:text-white'>{data?.description}</p>
+
               </div>
             </div>
           )

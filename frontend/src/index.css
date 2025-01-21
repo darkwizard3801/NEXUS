@@ -53,6 +53,9 @@ body.dark-mode {
   @apply hover:bg-gray-700;
 }
 
+.dark-mode img {
+  @apply filter-none; /* Ensure images retain their original colors */
+}
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

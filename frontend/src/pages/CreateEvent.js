@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Slider from 'react-slider';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
@@ -10,7 +10,6 @@ import { toast } from 'react-toastify';
 // import { fetchLocationName } from '../helpers/fetchLocation';
 import axios from 'axios';
 import { FaTrash } from 'react-icons/fa'; // Importing delete icon from react-icons
-import { debounce } from 'lodash'; // Import lodash debounce
 
 // Custom red location icon setup
 const redIcon = new L.Icon({
@@ -35,6 +34,7 @@ const MapController = ({ center }) => {
 const CreateEvent = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [theme, setTheme] = useState('light'); // 'light' or 'dark'
   const [eventDetails, setEventDetails] = useState({
     eventType: '',
     occasion: '',
@@ -51,39 +51,6 @@ const CreateEvent = () => {
   const [placeNames, setPlaceNames] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false); // Loading state
-
-  // Debounced search function
-  const debouncedSearch = debounce(async (query) => {
-    if (query) {
-      setLoading(true); // Set loading to true while fetching
-      try {
-        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=5`);
-        console.log("API Response:", response.data);
-
-        if (response.data && response.data.length > 0) {
-          setSearchResults(response.data);
-        } else {
-          setSearchResults([]);
-          toast.error("Location not found");
-        }
-      } catch (error) {
-        console.error('Error searching:', error);
-        toast.error("Error searching for location");
-      } finally {
-        setLoading(false); // Set loading to false after fetching
-      }
-    } else {
-      setSearchResults([]);
-    }
-  }, 300); // Adjust the debounce time as needed
-
-  useEffect(() => {
-    debouncedSearch(searchQuery);
-    return () => {
-      debouncedSearch.cancel(); // Cleanup on unmount
-    };
-  }, [searchQuery]);
 
   // Fetch events created by the user
   const fetchUserEvents = async (email) => {
@@ -280,8 +247,42 @@ const CreateEvent = () => {
     return today.toISOString().split('T')[0];
   };
 
-  const handleSearch = () => {
-    // This function can be used to trigger the search manually if needed
+  const handleSearch = async () => {
+    console.log("Search Query:", searchQuery);
+
+    try {
+        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=5`);
+        console.log("API Response:", response.data);
+
+        if (response.data && response.data.length > 0) {
+            const firstResult = response.data[0];
+            const newLocation = {
+                lat: parseFloat(firstResult.lat),
+                lng: parseFloat(firstResult.lon)
+            };
+
+            console.log("Searched Location:", newLocation);
+
+            setEventDetails(prevDetails => ({
+                ...prevDetails,
+                location: newLocation // Set the new location from search
+            }));
+
+            setSearchQuery(firstResult.display_name);
+            setSearchResults([]); // Clear search results
+        } else {
+            toast.error("Location not found");
+        }
+    } catch (error) {
+        console.error('Error searching:', error);
+        if (error.response) {
+            toast.error(`Error: ${error.response.data.message || 'Failed to fetch data'}`);
+        } else if (error.request) {
+            toast.error("Network error: Unable to reach the API");
+        } else {
+            toast.error(`Error: ${error.message}`);
+        }
+    }
   };
 
   if (isLoading) {
@@ -289,7 +290,7 @@ const CreateEvent = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className={`flex items-center justify-center min-h-screen bg-gray-100 ${theme === 'dark' ? 'dark' : ''}`}>
       <div className="w-full max-w-4xl">
        
        
@@ -301,7 +302,7 @@ const CreateEvent = () => {
           {/* Row with Event Type, Occasion, and Expected Guests */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
-              <label htmlFor="eventType" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="eventType" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
                 Type of Event
               </label>
               <select
@@ -327,7 +328,7 @@ const CreateEvent = () => {
             </div>
 
             <div>
-              <label htmlFor="occasion" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="occasion" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
                 Occasion
               </label>
               <input
@@ -342,7 +343,7 @@ const CreateEvent = () => {
             </div>
 
             <div>
-              <label htmlFor="guests" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="guests" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
                 Expected Guests
               </label>
               <input
@@ -359,7 +360,7 @@ const CreateEvent = () => {
 
           {/* Budget */}
           <div className="mb-4 relative">
-            <label htmlFor="budget" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
               Budget (INR)
             </label>
             <div className="relative">
@@ -388,7 +389,7 @@ const CreateEvent = () => {
           {/* Phone Number and Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-black dark:text-white">
                 Phone Number
               </label>
               <input
@@ -403,7 +404,7 @@ const CreateEvent = () => {
             </div>
 
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="date" className="block text-sm font-medium text-black dark:text-white">
                 Event Date
               </label>
               <input
@@ -422,7 +423,7 @@ const CreateEvent = () => {
 
           {/* Map to select location */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Event Location
             </label>
             <div className="relative">

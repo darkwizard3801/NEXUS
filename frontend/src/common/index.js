@@ -196,7 +196,11 @@ const SummaryApi = {
         url : `${backendDomin}/api/delete-user`,
         method : 'delete'
     },
-
+    generatePoster: {
+        url: `${backendDomin}/api/generate-poster`,
+        method: 'post'
+    },
+    
 
 
   

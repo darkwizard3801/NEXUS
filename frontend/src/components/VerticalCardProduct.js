@@ -77,8 +77,12 @@ const VerticalCardProduct = ({ category, heading }) => {
                     ) : (
                         data.filter(product => !product.disabled).map((product, index) => (
                             <Link key={product._id} to={"product/" + product?._id} className='w-full min-w-[280px] md:min-w-[320px] max-w-[280px] md:max-w-[320px] bg-white rounded-sm shadow '>
-                                <div className='bg-slate-200 h-48 p-4 min-w-[280px] md:min-w-[145px] flex justify-center items-center'>
-                                    <img src={product.productImage[0]} className='object-scale-down h-full hover:scale-110 transition-all mix-blend-multiply' />
+                                <div className='bg-slate-100 h-48 p-2 min-w-[280px] md:min-w-[145px] flex justify-center items-center rounded-2xl overflow-hidden'>
+                                    <img 
+                                        src={product.productImage[0]} 
+                                        className='w-[95%] h-[95%] object-cover rounded-2xl hover:scale-110 transition-all ' 
+                                        alt={product?.productName}
+                                    />
                                 </div>
                                 <div className='p-4 grid gap-3'>
                                     <h2 className='font-medium text-base md:text-lg text-ellipsis line-clamp-1 text-black'>{product?.productName}</h2>

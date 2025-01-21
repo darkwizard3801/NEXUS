@@ -44,6 +44,7 @@ import PaymentSuccess from '../pages/PaymentSuccess'
 import Chat from '../pages/Chat'
 import RatingView from '../pages/RatingView'
 import VendorReport from '../pages/VendorReport'
+import SocialMedia from '../pages/SocialMedia'
 
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
@@ -159,9 +160,13 @@ const router = createBrowserRouter([
                 element : <PaymentSuccess/>
             },
             {
-                path : 'chat',
-                element : <Chat/>
-            },
+                    path : 'chat',
+                    element : <Chat/>
+             },
+             {
+                path : 'social-media',
+                element : <SocialMedia/>
+             },
            
           
            

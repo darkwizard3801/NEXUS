@@ -14,7 +14,7 @@ const connectDB = require('./config/db');
 const router = require('./routes');
 
 const app = express();
-
+const fileUpload = require('express-fileupload');
 
 // Middleware setup
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -31,6 +31,15 @@ app.use(session({
     resave: false, 
     saveUninitialized: true 
 }));
+// if (!process.env.HUGGING_FACE_API_KEY) {
+//     console.error('HUGGING_FACE_API_KEY is not set in environment variables');
+//     process.exit(1);
+//   }
+app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+    useTempFiles: true,
+    tempFileDir: '/tmp/'
+  }));
 
 app.use(passport.initialize());
 app.use(passport.session());

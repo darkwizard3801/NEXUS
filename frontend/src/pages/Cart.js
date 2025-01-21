@@ -5,6 +5,8 @@ import displayINRCurrency from "../helpers/displayCurrency";
 import { MdDelete } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Modal } from 'react-modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const Cart = () => {
   const [data, setData] = useState([]);
@@ -15,6 +17,24 @@ const Cart = () => {
   const context = useContext(Context);
   const navigate = useNavigate();
   const loadingCart = new Array(4).fill(null);
+  const [showSocialModal, setShowSocialModal] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventDetails, setEventDetails] = useState({
+    occasion: '',
+    theme: '',
+    keywords: '',
+    eventDate: '',
+    couplePhoto: null // for weddings only
+  });
+  const [showPosterModal, setShowPosterModal] = useState(false);
+  
+  const [posterDetails, setPosterDetails] = useState({
+    occasion: '',
+    theme: '',
+    keywords: '',
+    eventDate: '',
+    couplePhoto: null // for weddings only
+  });
 
   const getMinDeliveryDate = () => {
     const today = new Date();
@@ -181,7 +201,6 @@ const Cart = () => {
       document.body.appendChild(script);
     });
   };
-
   const handlePayment = async () => {
     const isLoaded = await loadRazorpay();
 
@@ -307,7 +326,7 @@ const Cart = () => {
           contact: phone || "9999999999",
         },
         theme: {
-          color: "#000000",
+          color: "#ffffff",
         },
         modal: {
           onClose: () => {
@@ -325,7 +344,6 @@ const Cart = () => {
       );
     }
   };
-
   const handlePlaceOrder = async () => {
     if (!userDetails || !userDetails.address) {
       alert("Please provide a valid delivery address.");
@@ -336,6 +354,13 @@ const Cart = () => {
       alert("Please select a delivery date.");
       return;
     }
+    // const generatePoster = window.confirm("Do you want to generate a poster for the event for free?");
+  
+    // if (generatePoster) {
+    //   navigate('/social-media'); // Redirect to the social media page
+    //   return; // Exit the function to prevent further execution
+    // }
+    setShowPosterModal(true);
 
     const orderDetails = {
       products: data.map((product) => ({
@@ -369,7 +394,9 @@ const Cart = () => {
 
       const responseData = await response.json();
       if (responseData.success) {
-        handlePayment(); // Trigger Razorpay payment after successful order creation
+        console.log("payment ongoing")
+        // toast.success("Order placed successfully!");
+        // handlePayment(); // Trigger Razorpay payment after successful order creation
       } else {
         alert("Failed to place the order. Please try again.");
       }
@@ -378,6 +405,11 @@ const Cart = () => {
       alert("An error occurred while placing the order. Please try again.");
     }
   };
+ 
+
+ 
+
+  
 
   return (
     <div className="container mx-auto">
@@ -529,8 +561,23 @@ const Cart = () => {
           </button>
         </div>
       </div>
+
+    
+  <ConfirmationModal 
+  isOpen={showPosterModal} 
+  onClose={() => {
+    setShowPosterModal(false); // Close the modal
+    handlePayment(); // Proceed with payment
+  }} 
+  onConfirm={() => {
+    navigate('/social-media'); // Redirect to the social media page
+    setShowPosterModal(false); // Close the modal
+  }} 
+/>
     </div>
-  );
+  
+
+);
 };
 
 export default Cart;
