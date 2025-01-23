@@ -11,6 +11,7 @@ import { setUserDetails } from "../store/userSlice";
 import Context from "../context";
 import Cookies from 'js-cookie'; 
 import { useTheme } from '../context/ThemeContext';
+import { FaSun, FaMoon, FaStar, FaCloud } from "react-icons/fa";
 
 const Header = () => {
   const user = useSelector((state) => state.user.user);
@@ -84,10 +85,52 @@ const Header = () => {
         {/* Dark Mode Toggle Button */}
         <button
           onClick={toggleTheme}
-          className={`p-2 rounded-full ${isDarkMode ? 'bg-yellow-500' : 'bg-gray-300'}`}
+          className={`
+            w-14 h-7 rounded-full relative transition-all duration-300 ease-in-out focus:outline-none
+            ${isDarkMode 
+              ? 'bg-gray-700 border-2 border-blue-400' 
+              : 'bg-blue-100 border-2 border-yellow-400'
+            }
+          `}
           title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
-          {isDarkMode ? "🌙" : "☀️"}
+          {/* Background decoration */}
+          {isDarkMode && (
+            <>
+              <FaStar className="absolute text-[8px] text-yellow-300 top-1 left-1.5" />
+              <FaStar className="absolute text-[8px] text-yellow-300 bottom-1 left-2.5" />
+              <FaStar className="absolute text-[8px] text-yellow-300 top-2 left-3.5" />
+            </>
+          )}
+          
+          {/* Toggle circle with icon */}
+          <div
+            className={`
+              absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full 
+              transition-all duration-300 ease-in-out
+              ${isDarkMode 
+                ? 'translate-x-8 bg-gray-800' 
+                : 'translate-x-1 bg-yellow-400'
+              }
+              flex items-center justify-center shadow-md
+            `}
+          >
+            {isDarkMode ? (
+              <FaMoon className="text-xs text-blue-300" />
+            ) : (
+              <FaSun className="text-xs text-yellow-600" />
+            )}
+          </div>
+
+          {/* Blue clouds filling the remaining space */}
+          {!isDarkMode && (
+            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
+              <div className="w-full h-full flex justify-between items-center px-1">
+                <FaCloud className="text-blue-500 text-xs" />
+                <FaCloud className="text-blue-500 text-xs p" />
+              </div>
+            </div>
+          )}
         </button>
 
         {/* Search Bar */}

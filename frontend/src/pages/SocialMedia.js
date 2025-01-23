@@ -100,20 +100,29 @@ const SocialMedia = () => {
     setLoading(true);
 
     try {
-      // Create complete form data object
-      const completeFormData = {
-        ...formData,
-        posterType: activeButton
-      };
+      // Create FormData object to handle file upload
+      const formDataToSend = new FormData();
+      
+      // Append all form fields
+      Object.keys(formData).forEach(key => {
+        if (key === 'photo') {
+          if (formData.photo) {
+            formDataToSend.append('photo', formData.photo);
+          }
+        } else {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+      
+      // Append poster type
+      formDataToSend.append('posterType', activeButton);
 
-      // Send to our backend API instead of directly to OpenAI
+      // Update fetch call to use FormData
       const response = await fetch(SummaryApi.generatePoster.url, {
         method: SummaryApi.generatePoster.method,
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(completeFormData) // Send the complete form data
+        // Remove Content-Type header to let browser set it with boundary for FormData
+        body: formDataToSend
       });
 
       if (!response.ok) {

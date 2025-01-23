@@ -6,7 +6,7 @@ const axios = require('axios');
 const generatePoster = async (req, res) => {
   try {
     const completeFormData = req.body;
-    const referenceImage = req.files?.photo; // Access uploaded file if exists
+    const photo = req.files?.photo; // Access uploaded file if exists
 
     // Check if API key is configured
     if (!process.env.STABILITY_API_KEY) {
@@ -54,12 +54,19 @@ const generatePoster = async (req, res) => {
       style_preset: "photographic"
     };
 
-    // If reference image exists, add it to the request
-    if (referenceImage) {
-      const base64Image = referenceImage.data.toString('base64');
-      requestBody.init_image = base64Image;
-      requestBody.init_image_mode = "IMAGE_STRENGTH";
-      requestBody.image_strength = 0.35;
+    // If photo exists, add it as an init_image
+    if (photo) {
+      // Convert the uploaded image to base64
+      const base64Image = photo.data.toString('base64');
+      
+      // Add image-specific parameters to the request
+      requestBody = {
+        ...requestBody,
+        init_image: base64Image,
+        init_image_mode: "IMAGE_STRENGTH",
+        image_strength: 0.35, // Adjust this value between 0-1 to control how much the initial image influences the result
+        steps: 50 // Increase steps for better results with image-to-image
+      };
     }
 
     console.log('Sending prompt to Stability AI:', basePrompt);

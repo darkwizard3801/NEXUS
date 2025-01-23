@@ -91,7 +91,7 @@ const router = createBrowserRouter([
                 element : <SignUp/>
             },
             {
-                path : "vendor-page",
+                path : "vendor/:vendorName", // Update to accept vendor name as a parameter
                 element : <Vendorpage/>
             },
             {
