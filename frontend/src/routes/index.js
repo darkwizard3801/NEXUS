@@ -45,6 +45,7 @@ import Chat from '../pages/Chat'
 import RatingView from '../pages/RatingView'
 import VendorReport from '../pages/VendorReport'
 import SocialMedia from '../pages/SocialMedia'
+import Portfolio from '../pages/Portfolio'
 
 // import ContactMessage from '../../../backend/models/ContactMessage'
 
@@ -239,6 +240,10 @@ const router = createBrowserRouter([
                     {
                         path : 'vendor-report',
                         element : <VendorReport/>
+                    },
+                    {
+                        path : 'portfolio',
+                        element : <Portfolio/>
                     },
                 ]
 

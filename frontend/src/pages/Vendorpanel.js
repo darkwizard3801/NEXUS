@@ -9,6 +9,7 @@ import {
   TbLayoutSidebarRightCollapse,
 } from "react-icons/tb";
 import { TbReportAnalytics } from "react-icons/tb";
+import { ImProfile } from "react-icons/im";
 
 
 import { CgProfile } from "react-icons/cg";
@@ -155,6 +156,15 @@ const VendorPanel = () => {
                   />
                   {isCollapsed ? null : "View Ratings & Reviews"}
                 </Link>
+                <Link
+                  to={"portfolio"}
+                  className="flex items-center p-2 hover:bg-blue-600 hover:text-white hover:rounded-r-full transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  <ImProfile
+                    className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
+                  />
+                  {isCollapsed ? null : "Portfolio"}
+                </Link>
               </nav>
             </aside>
           </div>
@@ -226,6 +236,14 @@ const VendorPanel = () => {
                     onClick={toggleSidebar}
                   >
                     <MdOutlineReviews className="mr-2" />
+                   Portfolio
+                  </Link>
+                  <Link
+                    to={"portfolio"}
+                    className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
+                    onClick={toggleSidebar}
+                  >
+                    <ImProfile className="mr-2" />
                    View Ratings & Reviews
                   </Link>
                 </nav>

@@ -12,6 +12,7 @@ const FacebookStrategy = require('passport-facebook').Strategy;
 const jwt = require('jsonwebtoken');
 const connectDB = require('./config/db');
 const router = require('./routes');
+const path = require('path');
 
 const app = express();
 const fileUpload = require('express-fileupload');
@@ -207,6 +208,9 @@ app.post('/api/update-role', async (req, res) => {
 
 // Initialize routes
 app.use("/api", router);
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Start server and connect to database
 const PORT = process.env.PORT || 8080;

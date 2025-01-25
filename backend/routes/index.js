@@ -46,6 +46,7 @@ const { deleteUser } = require('../controller/user/userController')
 // const posterController = require('../controller/user/posterController'); // Import the poster controller
 // const upload = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const { generatePoster } = require('../controller/user/generatePosterController')
+const portfolioController = require('../controller/user/portfolioController')
 
 
 
@@ -146,7 +147,9 @@ router.get('/contact-messages', getAllContactMessages);
 router.post('/generate-poster', generatePoster);
 
 
-
+// Portfolio routes
+router.post('/portfolio', authToken, portfolioController.storeFormData);
+router.post('/getportfolio', authToken, portfolioController.getPortfolioDetails);
 
 
 

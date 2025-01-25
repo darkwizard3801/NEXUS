@@ -201,6 +201,16 @@ const SummaryApi = {
         method: 'post'
     },
     
+    portfolio: {
+        url: `${backendDomin}/api/portfolio`,
+        method: 'post'
+    },
+    
+    get_portfolio: {
+        url: `${backendDomin}/api/getportfolio`,
+        method: 'get'
+    },
+    
 
 
   
