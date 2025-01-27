@@ -12,13 +12,18 @@ const portfolioSchema = new mongoose.Schema({
     data: String,  // Will store base64 string
     contentType: String  // Will store mime type
   },
-  portfolioFiles: [{
-    data: String,  // Will store base64 string
-    contentType: String,
-    location: String,  // Will store mime type
+  portfolioEvents: [{
+    location: String,
     eventNumber: Number,
-    createdAt: Date
-  }],
+    files: [{
+      data: String,
+      contentType: String
+    }],
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, { timestamps: true });
 
 const PortfolioData = mongoose.model('PortfolioData', portfolioSchema);

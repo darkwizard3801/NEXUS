@@ -15,35 +15,33 @@ const storeFormData = async (req, res) => {
       }
 
       if (portfolioFiles && portfolioFiles.length > 0) {
-        const currentTimestamp = new Date();
-
-        const newEventFiles = portfolioFiles.map(file => ({
-          ...file,
+        const nextEventNumber = portfolioData.portfolioEvents.length + 1;
+        
+        const newEvent = {
           location,
-          createdAt: currentTimestamp,
-          eventNumber: (portfolioData.portfolioFiles.length > 0 
-            ? Math.max(...portfolioData.portfolioFiles.map(f => f.eventNumber || 0)) + 1 
-            : 1)
-        }));
+          eventNumber: nextEventNumber,
+          files: portfolioFiles,
+          createdAt: new Date()
+        };
 
-        portfolioData.portfolioFiles = [...portfolioData.portfolioFiles, ...newEventFiles];
+        portfolioData.portfolioEvents.push(newEvent);
       }
 
       await portfolioData.save();
     } else {
-      const newEventFiles = portfolioFiles?.map(file => ({
-        ...file,
+      const firstEvent = portfolioFiles?.length > 0 ? [{
         location,
-        createdAt: new Date(),
-        eventNumber: 1
-      })) || [];
+        eventNumber: 1,
+        files: portfolioFiles,
+        createdAt: new Date()
+      }] : [];
 
       portfolioData = new PortfolioData({
         userEmail,
         tagline,
         aboutText,
         aboutFile,
-        portfolioFiles: newEventFiles
+        portfolioEvents: firstEvent
       });
 
       await portfolioData.save();
