@@ -62,6 +62,7 @@ const MyOrders = () => {
         const data = await response.json();
         const filteredOrders = data.data.filter(order => order.userEmail === currentUserEmail);
         setOrders(filteredOrders);
+        console.log("filteredOrders",filteredOrders);
         setLoading(false);
         
       } catch (error) {
