@@ -2,13 +2,14 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SummaryApi from '../common'; // Ensure this is the correct path to your API
 import AdminProductCard from '../components/AdminProductCard'; // Component to display individual product
-import { FaAngleRight, FaAngleLeft, FaStar, FaStarHalf, FaHeart } from "react-icons/fa6";
+import { FaAngleRight, FaAngleLeft, FaStar, FaStarHalf, FaHeart, FaPlus } from "react-icons/fa6";
 import { FaRegHeart  } from "react-icons/fa"; // Import icons for navigation, star icons, and heart icons
 import addToCart from '../helpers/addToCart'; // Import addToCart function
 import Context from '../context'; // Import context to access fetchUserAddToCart
 import displayINRCurrency from '../helpers/displayCurrency'; // Import displayINRCurrency function
 import { FaHeart as FaHeartIcon } from 'react-icons/fa'; // Import React icons for heart
 import { AiOutlineMail } from 'react-icons/ai';
+import { IoClose } from "react-icons/io5";
 
 const VendorPage = () => {
   const { vendorName } = useParams(); // Get the vendor name from the URL
@@ -24,6 +25,11 @@ const VendorPage = () => {
   const [currentProductImages, setCurrentProductImages] = useState({}); // State to track current image index for each product
   const { fetchUserAddToCart } = useContext(Context); // Access fetchUserAddToCart from context
   const [tagline, setTagline] = useState("");
+  const [vendorDetails, setVendorDetails] = useState({
+    tagline: "",
+    aboutText: "",
+    aboutFile: null,
+  });
   const fullTagline = "Your one-stop shop for unforgettable events!"; // Tagline text
   const [liked, setLiked] = useState(false);
   const fontStyles = [
@@ -41,6 +47,22 @@ const VendorPage = () => {
   const [currentFontStyle, setCurrentFontStyle] = useState(fontStyles[0]); // State for current font style
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [expandedImage, setExpandedImage] = useState(null);
+  const [portfolioEvents, setPortfolioEvents] = useState([]);
+  const [expandedEvent, setExpandedEvent] = useState(null);
+  const [likedImages, setLikedImages] = useState(new Set());
+  const [showTestimonialForm, setShowTestimonialForm] = useState(false);
+  const [newTestimonial, setNewTestimonial] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userData, setUserData] = useState(null);
+  const [testimonials, setTestimonials] = useState([]);
+  const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
+  const testimonialsPerPage = 4;
+  const testimonialBackgrounds = [
+    "https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/images_3_bew0wk.jpg",
+    "https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/download_5_zmwqki.jpg",
+    "https://res.cloudinary.com/du8ogkcns/image/upload/v1737707122/istockphoto-517188688-1024x1024_ud9vni.jpg",
+    "https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/images_2_yyvffo.jpg"
+  ];
 
   // Automatic font style transition
   useEffect(() => {
@@ -85,6 +107,7 @@ const VendorPage = () => {
   // Fetch all banners from the database
   const fetchBanners = async () => {
     try {
+      setLoadingBanners(true); // Set loading state
       const response = await fetch(SummaryApi.Banner_view.url, {
         method: SummaryApi.Banner_view.method,
         headers: {
@@ -97,13 +120,16 @@ const VendorPage = () => {
       }
 
       const data = await response.json();
-      console.log("data",data);
-      // Filter banners where the status is 'approved' and the vendor email matches
-      const approvedBanners = data.banners.filter(banner => 
-       banner.status === 'approved'  && banner.email === vendorEmail
-      );
-      setBanners(approvedBanners);
-      console.log("filtered banners",approvedBanners); // Set the filtered approved banners
+      console.log("All banners:", data);
+      
+      // Only set banners after filtering
+      if (vendorEmail) {
+        const approvedBanners = data.banners.filter(banner => 
+          banner.status === 'approved' && banner.email === vendorEmail
+        );
+        console.log("Filtered banners:", approvedBanners);
+        setBanners(approvedBanners);
+      }
     } catch (error) {
       setError(error.message);
       console.error('Error loading banners:', error);
@@ -114,11 +140,13 @@ const VendorPage = () => {
 
   useEffect(() => {
     fetchAllProducts(); // Fetch products when the component mounts
-    fetchBanners(); // Fetch banners when the component mounts
-  }, [vendorName]); // Re-fetch if vendorName changes
+    if (vendorEmail) {
+      fetchBanners();
+    }
+  }, [vendorName, vendorEmail]); // Re-fetch if vendorName or vendorEmail changes
 
   // Debugging log to check filtered products
-  console.log('Filtered Products:', filteredProducts);
+  // console.log('Filtered Products:', filteredProducts);
 
   // Automatic transition for banner images
   useEffect(() => {
@@ -180,17 +208,21 @@ const VendorPage = () => {
     fetchUserAddToCart(); // Update cart context or state
   };
 
+  // Fix the typewriter effect
   useEffect(() => {
+    setTagline(''); // Reset tagline
     let index = 0;
     const typeWriter = () => {
-      if (index < fullTagline.length) {
-        setTagline(prev => prev + fullTagline.charAt(index));
+      if (index <= vendorDetails.tagline.length) {  // Changed from < to <=
+        setTagline(vendorDetails.tagline.slice(0, index));  // Use slice instead of charAt
         index++;
-        setTimeout(typeWriter, 100); // Adjust typing speed here
+        setTimeout(typeWriter, 100);
       }
     };
-    typeWriter();
-  }, []); // Run once on component mount
+    if (vendorDetails.tagline) {
+      typeWriter();
+    }
+  }, [vendorDetails.tagline]);
 
   const handleImageExpand = (image) => {
     setExpandedImage(image);
@@ -199,6 +231,214 @@ const VendorPage = () => {
   const handleCloseModal = () => {
     setExpandedImage(null);
   };
+
+  // Add this function to fetch portfolio data
+  const fetchPortfolioData = async () => {
+    try {
+      const response = await fetch(SummaryApi.get_portfolio.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail: vendorEmail }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch portfolio data');
+      }
+
+      const result = await response.json();
+      console.log("Complete portfolio data:", result);
+      
+      if (result.success && result.data) {
+        setPortfolioEvents(result.data.portfolioEvents || []);
+        // Set vendor details with correct property names
+        setVendorDetails({
+          tagline: result.data.tagline || "Your one-stop shop for unforgettable events!",
+          aboutText: result.data.aboutText || "We are a leading vendor in the event management industry...",
+          aboutFile: result.data.aboutFile || "https://eventsmanagementkerala.com/wp-content/uploads/elementor/thumbs/image-blog-qxci15yoopuxkqtd5kaej3ilh2bh487t7zjqt9i10s.webp"
+        });
+        // Update the tagline for the typewriter effect
+        setTagline(""); // Reset tagline before starting new typewriter effect
+      }
+    } catch (error) {
+      console.error('Error fetching portfolio data:', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log("vendorEmail changed to:", vendorEmail);
+    if (vendorEmail) {
+      fetchPortfolioData();
+    }
+  }, [vendorEmail]);
+
+  const toggleEventExpansion = (eventNumber) => {
+    setExpandedEvent(expandedEvent === eventNumber ? null : eventNumber);
+  };
+
+  // Function to handle individual image click in expanded state
+  const handleImageClick = (event, file, fileIndex) => {
+    if (expandedEvent === event.eventNumber) {
+      // Only open modal if event is already expanded
+      setExpandedImage({
+        src: `data:${file.contentType};base64,${file.data}`,
+        alt: `Portfolio Event ${event.eventNumber} Image ${fileIndex + 1}`
+      });
+    } else {
+      toggleEventExpansion(event.eventNumber);
+    }
+  };
+
+  const toggleLike = (imageSrc, e) => {
+    e.stopPropagation(); // Prevent modal from closing
+    setLikedImages(prev => {
+      const newLiked = new Set(prev);
+      if (newLiked.has(imageSrc)) {
+        newLiked.delete(imageSrc);
+      } else {
+        newLiked.add(imageSrc);
+      }
+      return newLiked;
+    });
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      console.log('Fetching current user...'); // Debug log
+      const response = await fetch(SummaryApi.current_user.url, {
+        method: SummaryApi.current_user.method,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const userData = await response.json();
+      console.log('Current user data:', userData);
+      if (userData.success && userData.data) {
+        setUserData(userData.data); // Store all user data
+        setUserEmail(userData.data.email);
+        console.log('User data set:', userData.data);
+      } else {
+        console.error('Invalid user data format:', userData);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log('UseEffect triggered - fetching user data');
+    fetchCurrentUser();
+  }, []);
+
+  // Function to fetch testimonials
+  const fetchTestimonials = async () => {
+    try {
+      console.log('Fetching testimonials for vendor:', vendorEmail); // Debug log
+      const response = await fetch(SummaryApi.get_testimonial.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userEmail: vendorEmail })
+      });
+
+      const result = await response.json();
+      console.log("Testimonials result:", result);
+      if (result.success) {
+        setTestimonials(result.data);
+        console.log('Fetched testimonials:', result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching testimonials:', error);
+    }
+  };
+
+  // Add useEffect to fetch testimonials when vendorEmail is available
+  useEffect(() => {
+    if (vendorEmail) {
+      fetchTestimonials();
+    }
+  }, [vendorEmail]);
+
+  // Add another useEffect to fetch testimonials after they're added
+  useEffect(() => {
+    console.log('Current testimonials:', testimonials);
+  }, [testimonials]);
+
+  // Update handleTestimonialSubmit to refresh testimonials after submission
+  const handleTestimonialSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!userData || !userEmail) {
+        console.error('User data not available');
+        return;
+      }
+
+      const testimonialData = {
+        text: newTestimonial,
+        userEmail: userEmail,
+        userName: userData.name || 'Anonymous User',
+        userProfile: userData.profilePic || null,
+        timestamp: new Date().toISOString(),
+        vendorEmail: vendorEmail
+      };
+
+      console.log('Submitting testimonial data:', testimonialData);
+
+      const response = await fetch(SummaryApi.add_testimonial.url, {
+        method: SummaryApi.add_testimonial.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testimonialData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit testimonial');
+      }
+
+      const result = await response.json();
+      console.log('Testimonial submitted successfully:', result);
+
+      // Reset form and close modal
+      setNewTestimonial('');
+      setShowTestimonialForm(false);
+      
+      // Fetch updated testimonials
+      fetchTestimonials();
+    } catch (error) {
+      console.error('Error submitting testimonial:', error);
+    }
+  };
+
+  const testimonialCards = [
+    {
+      name: userData?.name || "John Doe",
+      date: new Date().toLocaleDateString(),
+      testimonial: "Amazing experience! Highly recommend this vendor!",
+      backgroundImage: "url('https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/images_3_bew0wk.jpg')",
+      profileImage: userData?.profilePic || "path/to/default-profile-image.jpg"
+    },
+    // ... other testimonials ...
+  ];
+
+  // Add function to handle testimonial sliding
+  const slideTestimonials = () => {
+    setCurrentTestimonialIndex(prevIndex => {
+      const nextIndex = prevIndex + testimonialsPerPage;
+      return nextIndex >= testimonials.length ? 0 : nextIndex;
+    });
+  };
+
+  // Add useEffect for automatic sliding
+  useEffect(() => {
+    if (testimonials.length > testimonialsPerPage) {
+      const interval = setInterval(slideTestimonials, 5000); // Slide every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [testimonials.length]);
 
   if (loading) {
     return <p>Loading products...</p>;
@@ -215,13 +455,15 @@ const VendorPage = () => {
       </h1>
       <h2 className="text-2xl font-light text-center text-gray-600">{tagline}</h2> {/* Tagline with typewriter effect */}
       
-      {/* Moved Banner Section to the top */}
+      {/* Banner Section */}
       {loadingBanners ? (
-        <p>Loading banners...</p>
+        <div className='relative h-[500px] w-full bg-slate-200 rounded-xl overflow-hidden flex items-center justify-center'>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-gray-900"></div>
+        </div>
       ) : (
         <>
-          {banners.length > 0 ? (
-            <div className='relative h-56 py-12 md:h-96 w-full bg-slate-200 rounded-xl overflow-hidden'>
+          {banners && banners.length > 0 ? (
+            <div className='relative h-[500px] py-12 w-full bg-slate-200 rounded-xl overflow-hidden'>
               {/* Buttons for manual image control */}
               <div className='absolute z-10 h-full w-full items-center hidden md:flex justify-between'>
                 <button onClick={prevImage} className='bg-white shadow-md rounded-full p-1'>
@@ -233,7 +475,7 @@ const VendorPage = () => {
               </div>
 
               {/* Banner images rendering with transition */}
-              <div className='relative h-full w-full overflow-hidden flex justify-center items-center'>
+              <div className=' h-full w-full overflow-hidden flex justify-center items-center'>
                 {banners.map((banner, index) => (
                   <div
                     key={banner.id || index}
@@ -241,7 +483,11 @@ const VendorPage = () => {
                       ${currentImage === index ? 'opacity-100' : 'opacity-0'}`}
                     style={{ transition: 'opacity 1s ease-in-out' }}
                   >
-                    <img src={banner.image} alt={banner.description} className='w-full h-full object-cover' />
+                    <img 
+                      src={banner.image} 
+                      alt={banner.description} 
+                      className='w-full h-full object-cover' 
+                    />
                   </div>
                 ))}
               </div>
@@ -252,8 +498,12 @@ const VendorPage = () => {
               </div>
             </div>
           ) : (
-            <div className='relative h-56 md:h-96 w-full bg-slate-200 rounded-xl overflow-hidden'>
-              <img src="default-banner.jpg" alt="Default Banner" className='w-full h-full object-cover' />
+            <div className='relative h-[500px] w-full bg-slate-200 rounded-xl overflow-hidden'>
+              <img 
+                src="default-banner.jpg" 
+                alt="Default Banner" 
+                className='w-full h-full object-cover' 
+              />
             </div>
           )}
         </>
@@ -301,8 +551,9 @@ const VendorPage = () => {
                 <p className="text-gray-700">Price: {displayINRCurrency(product.price)}</p>
                 
                 {/* Add to Cart Button */}
+                <div className='flex justify-center items-center'>
                 <button
-                  className='border-2 border-red-600 rounded px-3 py-1 min-w-[120px] font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white transition duration-300'
+                  className='border-2 border-red-600 rounded-full px-3 py-1 min-w-[120px] font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white transition duration-300'
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent click event from bubbling up to the card
                     handleAddToCart(e, productId); // Use productId here
@@ -310,6 +561,7 @@ const VendorPage = () => {
                 >
                   Add To Cart
                 </button>
+                </div>
 
                 <div>
                   <button 
@@ -338,125 +590,257 @@ const VendorPage = () => {
         )}
       </div>
 
-      {/* About Us Section */}
-      <div className=" p-20 rounded-lg shadow-lg mt-10">
+      {/* Modified About Us Section */}
+      <div className="p-20 rounded-lg shadow-lg mt-10">
         <h2 className="text-3xl font-semibold mb-4">About Us</h2>
         <div className="flex items-start">
-          <img src="https://eventsmanagementkerala.com/wp-content/uploads/elementor/thumbs/image-blog-qxci15yoopuxkqtd5kaej3ilh2bh487t7zjqt9i10s.webp" alt="Company" className="w-3/4 h-96 rounded-3xl mr-4" /> {/* Increased width to 1/2 */}
-          <p className="text-lg max-w-1/4 py-11">
-  <span className="text-4xl font-bold">W</span>e are a leading vendor in the event management industry, dedicated to providing top-notch services and products that transform your events into extraordinary and unforgettable experiences. Our team, comprised of seasoned professionals and creative visionaries, is deeply passionate about crafting memories that last a lifetime for our clients. With years of expertise, a steadfast commitment to excellence, and a drive to innovate, we aim to exceed expectations by delivering impeccable service, flawless execution, and unique solutions tailored to your vision. From meticulously planning every intricate detail to offering a wide array of premium products and services, we take pride in ensuring that your events run seamlessly, leaving you free to focus on cherishing your special moments with family, friends, and loved ones, all without worry or stress.
-</p>
-
+          <img 
+            src={vendorDetails.aboutFile ? 
+              `data:${vendorDetails.aboutFile.contentType};base64,${vendorDetails.aboutFile.data}` : 
+              "https://res.cloudinary.com/du8ogkcns/image/upload/v1709729991/about-us_hnhc6e.jpg"} 
+            alt="Company" 
+            className="w-3/4 h-96 rounded-3xl mr-4" 
+          />
+          <p className="text-lg max-w-1/4 py-11 whitespace-pre-line">
+            {vendorDetails.aboutText ? (
+              <>
+                <span className="text-4xl font-bold capitalize">{vendorDetails.aboutText.charAt(0)}</span>
+                {vendorDetails.aboutText.slice(1)}
+              </>
+            ) : (
+              <>
+                <span className="text-4xl font-bold">W</span>
+                e are passionate about creating unforgettable experiences. Our team of dedicated professionals brings creativity, precision, and excellence to every event we handle. With years of experience in the industry, we understand that each event is unique and deserves personalized attention. From corporate gatherings to intimate celebrations, we ensure every detail is perfect. Our commitment to quality and customer satisfaction has made us a trusted name in event management.
+              </>
+            )}
+          </p>
         </div>
       </div>
 
       {/* Testimonials Section */}
-      <div className="mt-10 p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-4 text-center">What Our Customers Say</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            {
-              name: "John Doe",
-              date: "January 1, 2023",
-              testimonial: "Amazing experience! Highly recommend this vendor!",
-              backgroundImage: "url('https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/images_3_bew0wk.jpg')", // Background image for the card
-              profileImage: "path/to/profile-image-1.jpg" // Profile image for the card
-            },
-            {
-              name: "Jane Smith",
-              date: "February 15, 2023",
-              testimonial: "The service was exceptional and the products were top-notch!",
-              backgroundImage: "url('https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/images_2_yyvffo.jpg')",
-              profileImage: "path/to/profile-image-2.jpg" // Profile image for the card
-            },
-            {
-              name: "Alice Johnson",
-              date: "March 10, 2023",
-              testimonial: "I had a fantastic experience, will definitely use them again!",
-              backgroundImage: "url('https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/download_5_zmwqki.jpg')",
-              profileImage: "path/to/profile-image-3.jpg" // Profile image for the card
-            },
-            {
-              name: "Alice Johnson",
-              date: "March 10, 2023",
-              testimonial: "I had a fantastic experience, will definitely use them again!",
-              backgroundImage: "url('https://res.cloudinary.com/du8ogkcns/image/upload/v1737707121/download_4_xtbszf.jpg')",
-              profileImage: "path/to/profile-image-4.jpg" // Profile image for the card
-            },
-            // Add more testimonials as needed
-          ].map((testimonial, index) => (
-            <div
-              key={index}
-              className="relative p-4 rounded-lg shadow-lg text-white"
-              style={{ backgroundImage: testimonial.backgroundImage, backgroundSize: 'cover', backgroundPosition: 'center' }}
-            >
-              {/* Black overlay with 25% opacity */}
-              <div className="absolute inset-0 bg-black opacity-65 rounded-lg"></div>
-              
-              <div className="relative z-10 flex">
-                <img 
-                  src={testimonial.profileImage} 
-                  alt={`${testimonial.name}'s profile`} 
-                  className="w-16 h-16 rounded-full border-2 border-white mr-4" 
-                />
-                <div>
-                  <h3 className="text-xl font-semibold">{testimonial.name}</h3>
-                  <p className="text-sm">{testimonial.date}</p>
-                  <p className="mt-2">{testimonial.testimonial}</p>
+      <div className="mt-10 p-6 rounded-lg shadow-lg relative">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-center">What Our Customers Say</h2>
+          <button 
+            onClick={() => setShowTestimonialForm(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 transition-colors duration-300"
+            title="Add Testimonial"
+          >
+            <FaPlus className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Testimonial Form Modal */}
+        {showTestimonialForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+              {!userData ? (
+                <div className="text-center py-4">
+                  <div className="mb-2">Loading user data...</div>
+                  <div className="text-sm text-gray-500">
+                    Current state: {userData ? 'User data loaded' : 'No user data'}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Email: {userEmail || 'No email'}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowTestimonialForm(false)}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                  <h3 className="text-xl font-bold mb-4">Add Your Testimonial</h3>
+                  <div className="mb-2 text-sm text-gray-600">
+                    Posting as: {userData.name || 'Anonymous'}
+                  </div>
+                  <form onSubmit={handleTestimonialSubmit}>
+                    <div className="mb-4">
+                      <textarea
+                        value={newTestimonial}
+                        onChange={(e) => setNewTestimonial(e.target.value)}
+                        placeholder="Share your experience..."
+                        className="w-full h-32 p-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+                    >
+                      Submit Testimonial
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Testimonials Display */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {testimonials && testimonials.length > 0 ? (
+            testimonials
+              .slice(currentTestimonialIndex, currentTestimonialIndex + testimonialsPerPage)
+              .map((testimonial, index) => (
+                <div
+                  key={testimonial._id || index}
+                  className="relative p-3 rounded-lg shadow-lg text-white min-h-[100px] overflow-hidden transition-all duration-500"
+                  style={{ 
+                    backgroundImage: `url('${testimonialBackgrounds[index % testimonialBackgrounds.length]}')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }}
+                >
+                  {/* Black overlay */}
+                  <div className="absolute inset-0 bg-black opacity-60 rounded-lg"></div>
+                  
+                  <div className="relative z-10 flex">
+                    <img 
+                      src={testimonial.userProfile || "https://via.placeholder.com/50"} 
+                      alt={`${testimonial.userName}'s profile`} 
+                      className="w-10 h-10 rounded-full border-2 border-white mr-2 object-cover flex-shrink-0"
+                    />
+                    <div>
+                      <h3 className="text-base font-semibold text-white">{testimonial.userName}</h3>
+                      <p className="text-xs text-gray-200">
+                        {new Date(testimonial.timestamp).toLocaleDateString()}
+                      </p>
+                      <p className="mt-1 px-3 text-s text-white leading-relaxed">{testimonial.text}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+          ) : (
+            <p className="text-gray-500 col-span-2 text-center">
+              No testimonials yet. Be the first to share your experience!
+            </p>
+          )}
+          
+          {/* Navigation dots */}
+          {testimonials.length > testimonialsPerPage && (
+            <div className="col-span-2 flex justify-center mt-1">
+              {Array.from({ length: Math.ceil(testimonials.length / testimonialsPerPage) }).map((_, index) => (
+                <button
+                  key={index}
+                  className={`h-1.5 w-1.5 rounded-full mx-1 transition-all duration-300 ${
+                    Math.floor(currentTestimonialIndex / testimonialsPerPage) === index
+                      ? 'bg-blue-500 w-3'
+                      : 'bg-gray-300'
+                  }`}
+                  onClick={() => setCurrentTestimonialIndex(index * testimonialsPerPage)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dynamic Portfolio Section */}
+      <div className="mt-10 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold mb-4 text-center text-black dark:text-white">Our Portfolio</h2>
+        <div className="grid grid-cols-3 gap-8">
+          {portfolioEvents.map((event) => (
+            <div 
+              key={event.eventNumber} 
+              className={`transition-all duration-500 relative`}
+            >
+              <h3 className="text-black dark:text-white text-lg font-medium mb-2">
+                Event {event.eventNumber}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                Location: {event.location} • {new Date(event.createdAt).toLocaleString()}
+              </p>
+              {expandedEvent === event.eventNumber && (
+                <button
+                  onClick={() => toggleEventExpansion(event.eventNumber)}
+                  className="absolute -top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center z-50 transition-all duration-300 shadow-lg"
+                >
+                  <IoClose/>
+                </button>
+              )}
+              <div 
+                className={`relative transition-all duration-500 ease-in-out ${
+                  expandedEvent === event.eventNumber 
+                    ? 'h-auto grid grid-cols-3 gap-4 px-4' 
+                    : 'h-[300px] flex items-center mb-8 ml-8'
+                }`}
+              >
+                {event.files.map((file, fileIndex) => (
+                  <div 
+                    key={fileIndex} 
+                    className={`
+                      ${expandedEvent === event.eventNumber 
+                        ? 'relative aspect-square w-full cursor-pointer transform-none hover:scale-105 mb-4'
+                        : 'absolute w-[250px] h-[250px] cursor-pointer'
+                      }
+                      bg-gray-50 dark:bg-gray-700 rounded-lg shadow-lg 
+                      transition-all duration-500 ease-in-out
+                      hover:z-10
+                    `}
+                    style={{
+                      transform: expandedEvent === event.eventNumber 
+                        ? 'none' 
+                        : `rotate(${fileIndex * 10}deg)`,
+                      zIndex: expandedEvent === event.eventNumber ? 0 : fileIndex,
+                      transformOrigin: 'center 110%',
+                      left: expandedEvent === event.eventNumber ? 'auto' : '20px'
+                    }}
+                    onClick={() => handleImageClick(event, file, fileIndex)}
+                  >
+                    <div className={`
+                      w-full h-full overflow-hidden rounded-lg
+                      transition-transform duration-500
+                      ${expandedEvent === event.eventNumber ? 'scale-100' : 'scale-100'}
+                    `}>
+                      <img 
+                        src={`data:${file.contentType};base64,${file.data}`}
+                        alt={`Portfolio Event ${event.eventNumber}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       </div>
-      <div className="mt-10 p-6 bg-gray-100 rounded-lg shadow-lg">
-  <h2 className="text-2xl font-bold mb-4 text-center">Our Portfolio</h2>
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    {[
-      "https://res.cloudinary.com/du8ogkcns/image/upload/v1737705008/images_fh6ezn.jpg",
-      "https://res.cloudinary.com/du8ogkcns/image/upload/v1737705008/download_3_xbvbcd.jpg",
-      "https://res.cloudinary.com/du8ogkcns/image/upload/v1737705008/images_1_dmge98.jpg",
-      "https://res.cloudinary.com/du8ogkcns/image/upload/v1737705008/download_2_q0vjgb.jpg",
-      "https://res.cloudinary.com/du8ogkcns/image/upload/v1737705009/Different-Types-of-Events-in-2024-Which-is-Right-for-You_zrhfsx.jpg"
-    ].map((image, index) => (
-      <div key={index} className="relative rounded-lg overflow-hidden shadow-lg" onClick={() => handleImageExpand(image)}>
-        <img src={image} alt={`Event ${index + 1}`} className="w-full h-full object-cover" />
-        
-        <button 
-          className={`absolute bottom-2 right-2 bg-transparent p-2 rounded-full shadow-md z-10 like-button transition-colors duration-300 ${selectedProductIds.includes(image) ? 'bg-red-500' : 'bg-black'}`} 
-          onClick={(e) => {
-            e.stopPropagation();
-            const updatedSelectedProductIds = selectedProductIds.includes(image)
-              ? selectedProductIds.filter((id) => id !== image)
-              : [...selectedProductIds, image];
-            setSelectedProductIds(updatedSelectedProductIds);
-          }}
-        >
-          {selectedProductIds.includes(image) && (
-            <FaHeartIcon
-              className="h-6 w-6 text-red-500"
-              style={{ stroke: "black", strokeWidth: 1 }}
-            />
-          )}
 
-          {!selectedProductIds.includes(image) && (
-            <FaRegHeart  className="h-6 w-6 text-red-600" />
-          )}
-        </button>
-        
-        {/* Add click event to expand image and show other images */}
-        {/* You can implement this functionality using a modal or a lightbox */}
-      </div>
-    ))}
-  </div>
-</div>
-
-      {/* Modal for displaying expanded image */}
+      {/* Modal for expanded image */}
       {expandedImage && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-75 z-50">
-          <div className="relative max-w-3xl w-full">
-            <button onClick={handleCloseModal} className="absolute top-2 right-2 text-white text-2xl">&times;</button>
-            <img src={expandedImage} alt="Expanded Image" className="w-full h-auto" />
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setExpandedImage(null)}
+        >
+          <div className="relative max-w-4xl w-full mx-4">
+            <button
+              onClick={() => setExpandedImage(null)}
+              className="absolute -top-10 right-0 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-lg text-xl"
+            >
+                <IoClose/>
+            </button>
+            <div className="relative">
+              <img 
+                src={expandedImage.src} 
+                alt={expandedImage.alt}
+                className="w-full h-auto rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                onClick={(e) => toggleLike(expandedImage.src, e)}
+                className="absolute bottom-4 right-4 text-2xl transition-transform duration-300 hover:scale-110"
+              >
+                {likedImages.has(expandedImage.src) ? (
+                  <FaHeart className="text-red-500" />
+                ) : (
+                  <FaRegHeart className="text-red-500" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

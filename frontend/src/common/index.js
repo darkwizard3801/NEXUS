@@ -1,5 +1,5 @@
-// const backendDomin = "https://nexus-q4sy.onrender.com"
-const backendDomin = "http://localhost:8080"
+const backendDomin = "https://nexus-backend-lpfd.onrender.com"
+// const backendDomin = "http://localhost:8080"
 
 const SummaryApi = {
     signUP : {
@@ -210,7 +210,14 @@ const SummaryApi = {
         url: `${backendDomin}/api/getportfolio`,
         method: 'get'
     },
-    
+    add_testimonial: {
+        url: `${backendDomin}/api/testimonial`,
+        method: 'post'
+    },
+    get_testimonial: {
+        url: `${backendDomin}/api/gettestimonial`,
+        method: 'post'
+    },
 
 
   

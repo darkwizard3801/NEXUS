@@ -80,10 +80,10 @@ const Footer = () => {
             <Link to='/instagram' className='text-gray-400 hover:text-white'>
               <RiInstagramFill size={20} />
             </Link>
-            <Link to='/twitter' className='text-gray-400 hover:text-white'>
+            <Link to='https://x.com/i/flow/login?lang=en&mx=2' className='text-gray-400 hover:text-white'>
               <FaSquareXTwitter size={20} />
             </Link>
-            <Link to='/youtube' className='text-gray-400 hover:text-white'>
+            <Link to='https://www.youtube.com' className='text-gray-400 hover:text-white'>
               <FaYoutube size={20} />
             </Link>
           </div>
