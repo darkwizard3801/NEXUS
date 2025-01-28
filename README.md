@@ -116,7 +116,7 @@ nexus/
 This project is licensed under the MIT License - see the LICENSE.md file for details
 
 ## Contact
-Project Link: [https://github.com/yourusername/nexus](https://github.com/yourusername/nexus)
+Project Link: [https://github.com/darkwizard3801/nexus](https://github.com/darkwizard3801/nexus)
 
 ## Acknowledgments
 - React Icons
