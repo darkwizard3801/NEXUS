@@ -449,11 +449,11 @@ const VendorPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="w-full px-0 sm:container sm:mx-auto sm:p-4">
       <h1 className={`text-4xl ${currentFontStyle} mb-2 text-center text-gradient`}>
         Welcome to {vendorName}'s Store
       </h1>
-      <h2 className="text-2xl font-light text-center text-gray-600">{tagline}</h2> {/* Tagline with typewriter effect */}
+      <h2 className="text-2xl font-light text-center text-gray-600">{tagline}</h2>
       
       {/* Banner Section */}
       {loadingBanners ? (
@@ -509,7 +509,7 @@ const VendorPage = () => {
         </>
       )}
       
-      <div className="mt-8 rounded-3xl">
+      <div className="mt-8 rounded-3xl mx-0 sm:mx-auto">
         <div className="bg-cover bg-center rounded-2xl relative" style={{ backgroundImage: `url('https://res.cloudinary.com/du8ogkcns/image/upload/v1737726667/images_4_gj4ltx.jpg')`, backgroundSize: 'cover' }}>
           <div className="bg-black bg-opacity-50 p-4 rounded-lg shadow-lg text-center">
             <h2 className="text-2xl font-bold text-white mb-4">Contact Us</h2>
@@ -522,7 +522,7 @@ const VendorPage = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-2 sm:px-0">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product, index) => {
             const productId = product._id; // Get the product ID
@@ -590,18 +590,18 @@ const VendorPage = () => {
         )}
       </div>
 
-      {/* Modified About Us Section */}
-      <div className="p-20 rounded-lg shadow-lg mt-10">
+      {/* About Us Section */}
+      <div className="p-4 md:p-20 rounded-lg shadow-lg mt-10 mx-0 w-screen md:w-auto -mx-4 md:mx-0">
         <h2 className="text-3xl font-semibold mb-4">About Us</h2>
-        <div className="flex items-start">
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
           <img 
             src={vendorDetails.aboutFile ? 
               `data:${vendorDetails.aboutFile.contentType};base64,${vendorDetails.aboutFile.data}` : 
               "https://res.cloudinary.com/du8ogkcns/image/upload/v1709729991/about-us_hnhc6e.jpg"} 
             alt="Company" 
-            className="w-3/4 h-96 rounded-3xl mr-4" 
+            className="w-full md:w-3/4 h-64 md:h-96 rounded-3xl object-cover" 
           />
-          <p className="text-lg max-w-1/4 py-11 whitespace-pre-line">
+          <p className="text-lg md:max-w-1/4 py-4 md:py-11 whitespace-pre-line">
             {vendorDetails.aboutText ? (
               <>
                 <span className="text-4xl font-bold capitalize">{vendorDetails.aboutText.charAt(0)}</span>
@@ -618,7 +618,7 @@ const VendorPage = () => {
       </div>
 
       {/* Testimonials Section */}
-      <div className="mt-10 p-6 rounded-lg shadow-lg relative">
+      <div className="mt-10 p-6 rounded-lg shadow-lg relative mx-0 sm:mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-center">What Our Customers Say</h2>
           <button 
@@ -740,13 +740,13 @@ const VendorPage = () => {
       </div>
 
       {/* Dynamic Portfolio Section */}
-      <div className="mt-10 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-lg">
+      <div className="mt-10 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-lg w-screen md:w-auto -mx-4 md:mx-0">
         <h2 className="text-2xl font-bold mb-4 text-center text-black dark:text-white">Our Portfolio</h2>
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {portfolioEvents.map((event) => (
             <div 
               key={event.eventNumber} 
-              className={`transition-all duration-500 relative`}
+              className="transition-all duration-500 relative"
             >
               <h3 className="text-black dark:text-white text-lg font-medium mb-2">
                 Event {event.eventNumber}
@@ -765,7 +765,7 @@ const VendorPage = () => {
               <div 
                 className={`relative transition-all duration-500 ease-in-out ${
                   expandedEvent === event.eventNumber 
-                    ? 'h-auto grid grid-cols-3 gap-4 px-4' 
+                    ? 'h-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 px-4' 
                     : 'h-[300px] flex items-center mb-8 ml-8'
                 }`}
               >
