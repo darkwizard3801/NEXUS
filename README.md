@@ -119,7 +119,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 Project Link: [https://github.com/darkwizard3801/nexus](https://github.com/darkwizard3801/nexus)
 
 ## Live Demo
-Live Demo [https://nexus-frontend-lpfd.onrender.com/](https://nexus-frontend-lpfd.onrender.com/)
+Live Demo [https://nexus-z8yc.onrender.com/](https://nexus-z8yc.onrender.com/)
 
 ## Acknowledgments
 - React Icons
