@@ -94,59 +94,94 @@ const Home2 = () => {
   };
 
   return (
-    <div className="container mx-auto py-5">
-      <Suspense fallback={<div>Loading...</div>}>
-        <BannerProduct />
-      </Suspense>
-      <div className="py-10">
+    <div className="w-full max-w-[1920px] mx-auto py-5">
+      {/* Banner - full width */}
+      <div className="w-full">
+        <Suspense fallback={<div>Loading...</div>}>
+          <BannerProduct />
+        </Suspense>
+      </div>
+
+      {/* Categories - full width container */}
+      <div className="py-6 md:py-10 px-4 lg:px-8 xl:px-12">
         <ComponentInView Component={CategoryList} />
       </div>
-      <div className="px-10">
-        <ComponentInView Component={() => <HorizontalCardProduct category="catering" heading="Top-Rated Caterers" />} />
-        <ComponentInView Component={() => <HorizontalCardProduct category="event-management" heading="Popular Event Management Services" />} />
-      </div>
-      <div className='px-10'>
-        <ComponentInView Component={() => <SponserCardProduct heading="Sponsored Products" />} />
-      </div>
-      
-      <div className="px-10 flex justify-between gap-6">
-        <div className="w-[60%]">
-          <ComponentInView Component={() => <VerticalCardProduct category="auditorium" heading="Find the Perfect Auditorium" />} />
-        </div>
-        <div className="w-[40%] h-[600px]">
-          <ComponentInView Component={BannerCenter1Product} />
-        </div>
-      </div>
 
-      <div className="px-10">
-        <ComponentInView Component={() => <VerticalCardProduct category="rent" heading="Rental Items for Every Occasion" />} />
-        <ComponentInView Component={() => <VerticalCardProduct category="bakers" heading="Delicious Bakes and Desserts" />} />
-        <div className="flex justify-between gap-6">
-          <div className="w-[40%] h-[650px]">
-            <ComponentInView Component={BannerCenter2Product} />
-          </div>
-          <div className="w-[60%]">
-            <ComponentInView Component={() => <VerticalCardProduct category="socia-media" heading="Social Media Marketing Experts" />} />
-          </div>
+      {/* Main content container */}
+      <div className="w-full">
+        {/* Horizontal Cards Section - full width */}
+        <div className="px-4 lg:px-8 xl:px-12 space-y-6">
+          <ComponentInView Component={() => <HorizontalCardProduct category="catering" heading="Top-Rated Caterers" />} />
+          <ComponentInView Component={() => <HorizontalCardProduct category="event-management" heading="Popular Event Management Services" />} />
         </div>
-        <ComponentInView Component={() => <VerticalCardProduct category="audio-visual-it" heading="Audio-Visual and IT Teams" />} />
-        <ComponentInView Component={() => <VerticalCardProduct category="photo-video" heading="Professional Photography and Videography" />} />
-        <div className="flex justify-between gap-6 mt-10">
-          <div className="w-[60%]">
-            <ComponentInView Component={() => <VerticalCardProduct category="logistics" heading="Reliable Logistics Solutions" />} />
-          </div>
-          <div className="w-[40%] h-[600px]">
-            <ComponentInView Component={BannerCenter3Product} />
-          </div>
-        </div>
-        <ComponentInView Component={() => <VerticalCardProduct category="decorations" heading="Stunning Decorations for Any Event" />} />
-      </div>
 
-      <div className="py-10" ref={contentRef}>
-        <h2 className="text-2xl font-semibold text-center">Discover More</h2>
-        <p className="text-center mt-4">Explore additional services and products to make your event unforgettable.</p>
-        <div className="flex justify-center mt-6">
-          <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Explore Now</button>
+        {/* Sponsored Products - full width */}
+        <div className='px-4 lg:px-8 xl:px-12 my-6'>
+          <ComponentInView Component={() => <SponserCardProduct heading="Sponsored Products" />} />
+        </div>
+        
+        {/* Split Section */}
+        <div className="px-4 lg:px-8 xl:px-12 flex flex-col md:flex-row justify-between md:gap-8 space-y-6 md:space-y-0">
+          <div className="w-full md:w-[65%]">
+            <ComponentInView Component={() => <VerticalCardProduct category="auditorium" heading="Find the Perfect Auditorium" />} />
+          </div>
+          <div className="w-full md:w-[35%] h-[300px] md:h-[600px]">
+            <ComponentInView Component={BannerCenter1Product} />
+          </div>
+        </div>
+
+        {/* Vertical Cards Section - full width */}
+        <div className="w-full px-4 lg:px-8 xl:px-12 space-y-6 mt-6">
+          <div className="w-full">
+            <ComponentInView Component={() => <VerticalCardProduct category="rent" heading="Rental Items for Every Occasion" />} />
+          </div>
+          <div className="w-full">
+            <ComponentInView Component={() => <VerticalCardProduct category="bakers" heading="Delicious Bakes and Desserts" />} />
+          </div>
+          
+          {/* Split Section 2 */}
+          <div className="flex flex-col md:flex-row justify-between md:gap-8 space-y-6 md:space-y-0">
+            <div className="w-full md:w-[35%] h-[300px] md:h-[650px]">
+              <ComponentInView Component={BannerCenter2Product} />
+            </div>
+            <div className="w-full md:w-[65%]">
+              <ComponentInView Component={() => <VerticalCardProduct category="socia-media" heading="Social Media Marketing Experts" />} />
+            </div>
+          </div>
+
+          <div className="w-full">
+            <ComponentInView Component={() => <VerticalCardProduct category="audio-visual-it" heading="Audio-Visual and IT Teams" />} />
+          </div>
+          <div className="w-full">
+            <ComponentInView Component={() => <VerticalCardProduct category="photo-video" heading="Professional Photography and Videography" />} />
+          </div>
+          
+          {/* Split Section 3 */}
+          <div className="flex flex-col md:flex-row justify-between md:gap-8 space-y-6 md:space-y-0 mt-6">
+            <div className="w-full md:w-[65%]">
+              <ComponentInView Component={() => <VerticalCardProduct category="logistics" heading="Reliable Logistics Solutions" />} />
+            </div>
+            <div className="w-full md:w-[35%] h-[300px] md:h-[600px]">
+              <ComponentInView Component={BannerCenter3Product} />
+            </div>
+          </div>
+
+          <div className="w-full">
+            <ComponentInView Component={() => <VerticalCardProduct category="decorations" heading="Stunning Decorations for Any Event" />} />
+          </div>
+        </div>
+
+        {/* Discover More Section - full width */}
+        <div className="w-full py-6 md:py-10 px-4 lg:px-8 xl:px-12" ref={contentRef}>
+          <h2 className="text-xl md:text-2xl font-semibold text-center">Discover More</h2>
+          <p className="text-center mt-3 md:mt-4 text-sm md:text-base max-w-2xl mx-auto">
+            Explore additional services and products to make your event unforgettable.
+          </p>
+          <div className="flex justify-center mt-4 md:mt-6">
+            <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm md:text-base">
+              Explore Now
+            </button>
+          </div>
         </div>
       </div>
 
