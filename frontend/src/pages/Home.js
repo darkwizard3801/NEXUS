@@ -94,7 +94,7 @@ const Home2 = () => {
   };
 
   return (
-    <div className="container mx-auto py-1">
+    <div className="container mx-auto py-5">
       <Suspense fallback={<div>Loading...</div>}>
         <BannerProduct />
       </Suspense>
