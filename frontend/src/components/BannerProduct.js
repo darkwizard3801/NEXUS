@@ -150,7 +150,7 @@ const BannerProduct = () => {
   return (
     <div className='container mx-auto px-4 rounded-xl overflow-hidden'>
       <div className='h-56 md:h-96 w-full bg-slate-200 relative'>
-        {/* Buttons for manual image control - Updated z-index and styling */}
+        {/* Buttons for manual image control */}
         <div className='absolute z-20 h-full w-full items-center hidden md:flex justify-between px-4'>
           <button onClick={handleManualPrev} className='bg-white shadow-md rounded-full p-1 hover:bg-yellow-500 hover:text-white transition-all duration-300'>
             <FaAngleLeft />
@@ -161,7 +161,7 @@ const BannerProduct = () => {
         </div>
 
         {/* Banner images rendering with transition */}
-        <div className='relative h-[40rem] w-full overflow-hidden flex justify-center items-center'>
+        <div className='relative h-[20rem] sm:h-[30rem] md:h-[40rem] w-full overflow-hidden flex justify-center items-center'>
           {banners.map((banner, index) => (
             <div
               key={banner.id || index}
@@ -173,8 +173,10 @@ const BannerProduct = () => {
               <div className="absolute inset-0 bg-black opacity-60 z-10"></div>
               
               {/* Banner Description and Button */}
-              <div className="absolute inset-y-0 right-0 z-20 flex flex-col items-end justify-start pt-20 w-2/3 pr-40">
-                <p className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
+              <div className="absolute inset-y-0 right-0 z-20 flex flex-col items-end justify-start 
+                w-full md:w-2/3 px-4 md:pr-40 pt-8 md:pt-20">
+                <p className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl 
+                  font-bold text-white leading-tight text-right">
                   {currentImage === index && (
                     <>
                       <span className="text-yellow-500">
@@ -184,16 +186,18 @@ const BannerProduct = () => {
                       {isTypingComplete ? (
                         <span className="text-blue-500">.</span>
                       ) : (
-                        <span className={`inline-block ${showCursor ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}>|</span>
+                        <span className={`inline-block ${showCursor ? 'opacity-100' : 'opacity-0'} 
+                          transition-opacity duration-200`}>|</span>
                       )}
                     </>
                   )}
                 </p>
                 
-                {/* Explore Now Button with hover animations */}
+                {/* Explore Now Button */}
                 {currentImage === index && (
                   <button 
-                    className="mt-8 px-8 py-4 bg-yellow-500 text-black font-bold text-xl rounded-full
+                    className="mt-4 md:mt-8 px-4 md:px-8 py-2 md:py-4 bg-yellow-500 
+                      text-black font-bold text-base md:text-xl rounded-full
                       relative overflow-hidden group transition-all duration-300 ease-in-out
                       hover:shadow-[0_8px_25px_rgba(255,200,0,0.4)] hover:scale-105
                       before:absolute before:top-0 before:left-0 before:w-full before:h-full
@@ -213,7 +217,7 @@ const BannerProduct = () => {
               <img 
                 src={banner.image} 
                 alt={banner.description} 
-                className='w-full h-96 object-cover relative z-0' 
+                className='w-full h-full object-cover relative z-0' 
               />
             </div>
           ))}
