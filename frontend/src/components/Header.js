@@ -83,11 +83,11 @@ const Header = () => {
           <Logo w={150} h={70} className="md:w-[190px]" />
         </Link>
 
-        <div className="hidden md:flex items-center gap-4 flex-grow justify-between">
+        <div className="hidden md:flex items-center gap-4  flex-grow justify-between pl-40">
           <button
             onClick={toggleTheme}
             className={`
-              w-14 h-7 rounded-full relative transition-all duration-300 ease-in-out focus:outline-none
+              w-14 h-7 rounded-full relative transition-all duration-300 ease-in-out focus:outline-none 
               ${isDarkMode ? 'bg-gray-700 border-2 border-blue-400' : 'bg-blue-100 border-2 border-yellow-400'}
             `}
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
@@ -245,16 +245,25 @@ const Header = () => {
           </div>
 
           <div className='relative ml-2'>
-            <div
-              className='text-2xl cursor-pointer w-10 h-10 flex items-center justify-center'
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {user?.profilePic ? (
-                <img src={user?.profilePic} className='w-8 h-8 rounded-full' alt={user?.name} />
-              ) : (
-                <FaRegCircleUser className="w-6 h-6" />
-              )}
-            </div>
+            {user?._id ? (
+              <div
+                className='text-2xl cursor-pointer w-10 h-10 flex items-center justify-center'
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {user?.profilePic ? (
+                  <img src={user?.profilePic} className='w-8 h-8 rounded-full' alt={user?.name} />
+                ) : (
+                  <FaRegCircleUser className="w-6 h-6" />
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className='px-3 py-1.5 rounded-full text-white text-sm bg-green-600 hover:bg-green-700 whitespace-nowrap'
+              >
+                Login
+              </Link>
+            )}
 
             {mobileMenuOpen && (
               <div className={`absolute right-0 top-11 w-48 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg rounded-lg p-2 z-50`}>
