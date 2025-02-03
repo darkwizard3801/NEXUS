@@ -1,5 +1,5 @@
-const backendDomin = "https://nexus-backend-lpfd.onrender.com"
-// const backendDomin = "http://localhost:8080"
+// const backendDomin = "https://nexus-backend-lpfd.onrender.com"
+const backendDomin = "http://localhost:8080"
 
 const SummaryApi = {
     signUP : {
@@ -216,6 +216,10 @@ const SummaryApi = {
     },
     get_testimonial: {
         url: `${backendDomin}/api/gettestimonial`,
+        method: 'post'
+    },
+    chat_message: {
+        url: `${backendDomin}/api/message`,
         method: 'post'
     },
 

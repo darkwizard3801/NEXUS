@@ -48,6 +48,7 @@ const { deleteUser } = require('../controller/user/userController')
 const { generatePoster } = require('../controller/user/generatePosterController')
 const portfolioController = require('../controller/user/portfolioController')
 const testimonialController = require('../controller/user/testimonialController')
+const chatController = require('../controller/user/chatController')
 
 
 
@@ -159,7 +160,7 @@ router.post('/gettestimonial', testimonialController.getVendorTestimonials);
 
 
 
-
+router.post('/message', chatController.handleMessage)
 
 
 

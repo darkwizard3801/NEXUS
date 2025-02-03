@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, lazy, Suspense, useState } from 'react';
 import { gsap } from 'gsap';
 import { useInView } from 'react-intersection-observer';
-import { FaComments } from 'react-icons/fa'; // Import an icon from react-icons
+import { FaComments, FaPaperPlane } from 'react-icons/fa';
+import SummaryApi from '../common';
 
 // Lazy load your components
 const CategoryList = lazy(() => import('../components/CategoryList'));
@@ -13,48 +14,171 @@ const BannerCenter2Product = lazy(() => import('../components/BannerCenter2Produ
 const BannerCenter3Product = lazy(() => import('../components/BannerCenter3Product'));
 const SponserCardProduct = lazy(() => import('../components/SponserCardProduct'));
 
+// Add these styles to your CSS or use inline
+const chatStyles = {
+  chatWindow: {
+    position: 'fixed',
+    bottom: '80px',
+    right: '20px',
+    width: '380px',
+    height: '600px',
+    backgroundColor: 'white',
+    borderRadius: '20px',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    border: '1px solid #e2e8f0',
+    zIndex: 50,
+    transition: 'all 0.3s ease'
+  },
+  chatHeader: {
+    padding: '20px',
+    background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+    color: 'white',
+    borderTopLeftRadius: '20px',
+    borderTopRightRadius: '20px'
+  },
+  chatBody: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '20px',
+    backgroundColor: '#f8fafc'
+  },
+  messageContainer: {
+    marginBottom: '16px',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#4F46E5',
+    color: 'white',
+    padding: '12px 16px',
+    borderRadius: '16px 16px 4px 16px',
+    maxWidth: '80%',
+    marginBottom: '8px'
+  },
+  botMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'white',
+    color: '#1F2937',
+    padding: '12px 16px',
+    borderRadius: '16px 16px 16px 4px',
+    maxWidth: '80%',
+    marginBottom: '8px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+  },
+  inputContainer: {
+    padding: '16px',
+    backgroundColor: 'white',
+    borderTop: '1px solid #e2e8f0'
+  }
+};
+
 const Home2 = () => {
   const contentRef = useRef(null);
   const [chatVisible, setChatVisible] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
-  const [isTyping, setIsTyping] = useState(false); // State to handle typing animation
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const chatRef = useRef(null);
 
-  const predefinedQuestions = [
-    "What services do you offer?",
-    "How can I book a service?",
-    "Do you offer discounts?",
-    "How do I contact customer support?",
-    "What are your working hours?",
-  ];
+  // const predefinedQuestions = [
+  //   "What services do you offer?",
+  //   "How can I book a service?",
+  //   "Do you offer discounts?",
+  //   "How do I contact customer support?",
+  //   "What are your working hours?",
+  // ];
 
-  const handleQuestionClick = (question) => {
-    // Simulate predefined answers
-    const answers = {
-      "What services do you offer?": "We offer a variety of event management services including catering, venue rentals, decorations, and more.",
-      "How can I book a service?": "You can book a service directly through our website by selecting the service and clicking 'Book Now'.",
-      "Do you offer discounts?": "Yes, we offer seasonal discounts. Please subscribe to our newsletter for the latest offers.",
-      "How do I contact customer support?": "You can reach out to our support team through the contact form on our website or call us at +123-456-7890.",
-      "What are your working hours?": "Our services are available 7 days a week from 9 AM to 8 PM."
-    };
+  // const handleQuestionClick = (question) => {
+  //   // Simulate predefined answers
+  //   const answers = {
+  //     "What services do you offer?": "We offer a variety of event management services including catering, venue rentals, decorations, and more.",
+  //     "How can I book a service?": "You can book a service directly through our website by selecting the service and clicking 'Book Now'.",
+  //     "Do you offer discounts?": "Yes, we offer seasonal discounts. Please subscribe to our newsletter for the latest offers.",
+  //     "How do I contact customer support?": "You can reach out to our support team through the contact form on our website or call us at +123-456-7890.",
+  //     "What are your working hours?": "Our services are available 7 days a week from 9 AM to 8 PM."
+  //   };
 
-    setChatMessages((prevMessages) => [
-      ...prevMessages,
-      { sender: 'user', text: question }
-    ]);
+  //   setChatMessages((prevMessages) => [
+  //     ...prevMessages,
+  //     { sender: 'user', text: question }
+  //   ]);
     
-    setIsTyping(true);
-    setTimeout(() => {
-      setChatMessages((prevMessages) => [
-        ...prevMessages,
-        { sender: 'bot', text: answers[question] }
-      ]);
-      setIsTyping(false);
-    }, 1500); // Simulate typing delay
-  };
+  //   setIsTyping(true);
+  //   setTimeout(() => {
+  //     setChatMessages((prevMessages) => [
+  //       ...prevMessages,
+  //       { sender: 'bot', text: answers[question] }
+  //     ]);
+  //     setIsTyping(false);
+  //   }, 1500); // Simulate typing delay
+  // };
 
   const toggleChat = () => {
     setChatVisible(!chatVisible);
   };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim()) return;
+
+    // Add user message to chat
+    setChatMessages(prev => [...prev, { 
+        sender: 'user', 
+        text: inputMessage 
+    }]);
+
+    setIsTyping(true);
+    const messageToSend = inputMessage;
+    setInputMessage('');
+
+    try {
+        const response = await fetch(SummaryApi.chat_message.url, {
+            method: SummaryApi.chat_message.method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: messageToSend })
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+
+        // Format and clean the response text
+        const formattedReply = data.reply
+            ? data.reply.trim().replace(/^"|"$/g, '') // Remove any extra quotes
+            : "I'm sorry, I couldn't process that request. Please try again.";
+
+        setTimeout(() => {
+            setChatMessages(prev => [...prev, { 
+                sender: 'bot', 
+                text: formattedReply
+            }]);
+            setIsTyping(false);
+        }, 500);
+
+    } catch (error) {
+        console.error('Chat error:', error);
+        setChatMessages(prev => [...prev, { 
+            sender: 'bot', 
+            text: 'I apologize, but I encountered an error. Please try asking your question again.'
+        }]);
+        setIsTyping(false);
+    }
+  };
+
+  // Scroll to bottom of chat when new messages arrive
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     gsap.fromTo(
@@ -185,100 +309,84 @@ const Home2 = () => {
         </div>
       </div>
 
-      {/* Chatbot Icon */}
+      {/* Chat Icon */}
       <div 
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          backgroundColor: '#39ac31',
-          padding: '15px',
-          borderRadius: '50%',
-          boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-          cursor: 'pointer',
-          zIndex: 1000,
-        }}
+        className="fixed bottom-5 right-5 bg-gradient-to-r from-indigo-600 to-purple-600 p-4 rounded-full shadow-lg cursor-pointer hover:shadow-xl transform hover:scale-105 transition-all duration-300 z-50"
         onClick={toggleChat}
       >
-        <FaComments size={24} color="#fff" />
+        <FaComments className="text-white text-2xl" />
       </div>
 
       {/* Chatbot Window */}
       {chatVisible && (
-        <div 
-          style={{
-            position: 'fixed',
-            bottom: '80px',
-            right: '20px',
-            width: '350px',
-            maxHeight: '500px',
-            backgroundColor: '#fff',
-            borderRadius: '15px',
-            boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.2)',
-            overflow: 'hidden',
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ backgroundColor: '#39ac31', padding: '10px', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
-            Chat with us
+        <div style={chatStyles.chatWindow}>
+          {/* Chat Header */}
+          <div style={chatStyles.chatHeader}>
+            <h3 className="text-xl font-semibold mb-1">Event Assistant</h3>
+            <p className="text-sm opacity-90">Ask me anything about our platform</p>
           </div>
-          <div style={{ padding: '10px', maxHeight: '400px', overflowY: 'auto' }}>
+
+          {/* Chat Messages */}
+          <div 
+            ref={chatRef}
+            style={chatStyles.chatBody}
+            className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+          >
+            {/* Welcome Message */}
+            {chatMessages.length === 0 && (
+              <div style={chatStyles.messageContainer}>
+                <div style={chatStyles.botMessage}>
+                  <p>👋 Hi! How can I help you with event planning today?</p>
+                </div>
+              </div>
+            )}
+
+            {/* Chat Messages */}
             {chatMessages.map((msg, index) => (
-              <div key={index} style={{ margin: '10px 0', textAlign: msg.sender === 'user' ? 'right' : 'left' }}>
-                <div
-                  style={{
-                    display: 'inline-block',
-                    backgroundColor: msg.sender === 'user' ? '#007bff' : '#f0f0f0',
-                    color: msg.sender === 'user' ? '#fff' : '#000',
-                    borderRadius: '10px',
-                    padding: '8px 12px',
-                    maxWidth: '75%',
-                  }}
-                >
-                  {msg.text}
+              <div key={index} style={chatStyles.messageContainer}>
+                <div style={msg.sender === 'user' ? chatStyles.userMessage : chatStyles.botMessage}>
+                  <p>{msg.text}</p>
                 </div>
               </div>
             ))}
-            {/* Display typing animation when the bot is typing */}
+
+            {/* Typing Indicator */}
             {isTyping && (
-              <div style={{ margin: '10px 0', textAlign: 'left' }}>
-                <div
-                  style={{
-                    display: 'inline-block',
-                    backgroundColor: '#f0f0f0',
-                    borderRadius: '10px',
-                    padding: '8px 12px',
-                    maxWidth: '75%',
-                  }}
-                >
-                  <span className="typing-indicator">Bot is typing</span>
-                  <span className="dot">.</span>
-                  <span className="dot">.</span>
-                  <span className="dot">.</span>
+              <div style={chatStyles.messageContainer}>
+                <div style={chatStyles.botMessage} className="flex space-x-2 w-16">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
                 </div>
               </div>
             )}
           </div>
-          <div style={{ padding: '10px', borderTop: '1px solid #ddd' }}>
-            <p style={{ marginBottom: '5px', fontWeight: 'bold' }}>Frequently Asked Questions:</p>
-            {predefinedQuestions.map((question, index) => (
+
+          {/* Chat Input */}
+          <div style={chatStyles.inputContainer}>
+            <form 
+              onSubmit={handleSendMessage}
+              className="flex items-center space-x-2"
+            >
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              />
               <button
-                key={index}
-                onClick={() => handleQuestionClick(question)}
-                style={{
-                  backgroundColor: '#f0f0f0',
-                  border: 'none',
-                  borderRadius: '5px',
-                  padding: '8px 10px',
-                  margin: '5px',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
-                }}
+                type="submit"
+                disabled={!inputMessage.trim() || isTyping}
+                className={`p-2 rounded-full transition-colors duration-200 ${
+                  inputMessage.trim() && !isTyping
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
               >
-                {question}
+                <FaPaperPlane className="text-lg" />
               </button>
-            ))}
+            </form>
           </div>
         </div>
       )}
