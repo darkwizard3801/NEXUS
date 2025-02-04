@@ -1,28 +1,8 @@
 // const backendDomin = "https://nexus-backend-lpfd.onrender.com"
-import axios from "axios"
+const backendDomin = "http://localhost:8080"
 
-const domain = () => {
-    let domainAddress;
-    try {
-        const url = "https://nexus-backend-lpfd.onrender.com"
-        const response =  axios.get(url);
-        if (response.status === 404) {
-            domainAddress = "https://nexus-backend-lpfd.onrender.com"
-            return domainAddress
-            // console.log(`${url} is NOT available (404 Not Found) ❌`);
-        } else {
-            domainAddress = "http://localhost:8080"
-            return domainAddress
-        }
-    } catch (error) {
-        console.error('Error fetching domain:', error);
-        domainAddress = "http://localhost:8080"
-        return domainAddress; // Fallback to the default backendDomin
-    }
-    
-}
-const backendDomin = domain();
-console.log("Backend url"+backendDomin);
+
+
 
 const SummaryApi = {
     signUP : {
