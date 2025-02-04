@@ -861,6 +861,23 @@ const RatingView = () => {
   // Get current vendor's reviews
   const vendorReviews = getCurrentVendorReviews();
 
+  // Function to analyze reviews and get sentiment counts
+  const getReviewSentimentCounts = () => {
+    if (!Array.isArray(vendorReviews)) return { positive: 0, negative: 0 };
+
+    return vendorReviews.reduce((counts, review) => {
+      // Consider ratings 4 and 5 as positive, 1 and 2 as negative, 3 as neutral
+      if (review.rating >= 3) {
+        counts.positive += 1;
+      } else if (review.rating <= 2) {
+        counts.negative += 1;
+      }
+      return counts;
+    }, { positive: 0, negative: 0 });
+  };
+
+  const sentimentCounts = getReviewSentimentCounts();
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="bg-white rounded-lg shadow-lg">
@@ -884,13 +901,13 @@ const RatingView = () => {
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 rounded-lg shadow text-white">
               <h3 className="text-sm font-semibold opacity-90">Positive Reviews</h3>
               <div className="text-2xl font-bold mt-1">
-                {Object.values(analytics.sentimentBreakdown.positive).reduce((a, b) => a + b, 0)}
+                {sentimentCounts.positive}
               </div>
             </div>
             <div className="bg-gradient-to-r from-red-500 to-red-600 p-4 rounded-lg shadow text-white">
-              <h3 className="text-sm font-semibold opacity-90">Issues Found</h3>
+              <h3 className="text-sm font-semibold opacity-90">Negative Reviews</h3>
               <div className="text-2xl font-bold mt-1">
-                {analytics.improvements.length}
+                {sentimentCounts.negative}
               </div>
             </div>
           </div>
