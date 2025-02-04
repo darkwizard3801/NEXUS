@@ -655,7 +655,7 @@ const RatingView = () => {
     return stars;
   };
 
-  // Chart configurations
+  // Default sentiment chart data
   const sentimentChartData = {
     labels: ['High', 'Medium', 'Low'],
     datasets: [
@@ -680,6 +680,48 @@ const RatingView = () => {
         borderColor: 'rgba(255, 99, 132, 1)',
       }
     ]
+  };
+
+  // Chart options for sentiment analysis
+  const sentimentChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: 'currentColor'
+        }
+      },
+      title: {
+        display: true,
+        text: 'Sentiment Distribution',
+        color: 'currentColor',
+        font: {
+          size: 16
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: {
+          color: 'rgba(200, 200, 200, 0.2)'
+        },
+        ticks: {
+          color: 'currentColor'
+        }
+      },
+      y: {
+        stacked: true,
+        grid: {
+          color: 'rgba(200, 200, 200, 0.2)'
+        },
+        ticks: {
+          color: 'currentColor'
+        }
+      }
+    }
   };
 
   // Default emotion chart data
@@ -861,41 +903,62 @@ const RatingView = () => {
   // Get current vendor's reviews
   const vendorReviews = getCurrentVendorReviews();
 
-  // Function to analyze reviews and get sentiment counts
+  // Function to safely get sentiment counts with null checks
   const getReviewSentimentCounts = () => {
     if (!Array.isArray(vendorReviews)) return { positive: 0, negative: 0 };
 
     return vendorReviews.reduce((counts, review) => {
-      // Consider ratings 4 and 5 as positive, 1 and 2 as negative, 3 as neutral
-      if (review.rating >= 3) {
-        counts.positive += 1;
-      } else if (review.rating <= 2) {
-        counts.negative += 1;
+      if (review && typeof review.rating === 'number') {
+        if (review.rating >= 3) {
+          counts.positive += 1;
+        } else if (review.rating <= 2) {
+          counts.negative += 1;
+        }
       }
       return counts;
     }, { positive: 0, negative: 0 });
   };
 
+  // Ensure analytics has default values
+  const defaultAnalytics = {
+    averageRating: 0,
+    sentimentBreakdown: { 
+      positive: { high: 0, medium: 0, low: 0 },
+      neutral: 0,
+      negative: { high: 0, medium: 0, low: 0 }
+    },
+    emotionTrends: {
+      satisfaction: 0,
+      frustration: 0,
+      trust: 0,
+      urgency: 0
+    },
+    themeAnalysis: {},
+    improvements: []
+  };
+
+  // Merge analytics with default values
+  const safeAnalytics = { ...defaultAnalytics, ...analytics };
   const sentimentCounts = getReviewSentimentCounts();
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="bg-white rounded-lg shadow-lg">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <div className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Analytics Dashboard</h2>
+          <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Analytics Dashboard</h2>
 
           {/* Stats Cards Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg shadow text-white">
               <h3 className="text-sm font-semibold opacity-90">Average Rating</h3>
               <div className="text-2xl font-bold mt-1">
-                {analytics.averageRating.toFixed(1)}/5
+                {safeAnalytics.averageRating.toFixed(1)}/5
               </div>
             </div>
             <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-lg shadow text-white">
               <h3 className="text-sm font-semibold opacity-90">Total Reviews</h3>
               <div className="text-2xl font-bold mt-1">
-                {vendorReviews.length}
+                {Array.isArray(vendorReviews) ? vendorReviews.length : 0}
               </div>
             </div>
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 rounded-lg shadow text-white">
@@ -915,29 +978,19 @@ const RatingView = () => {
           {/* Charts Grid - 2x2 Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Sentiment Analysis Chart */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <h3 className="text-sm font-semibold mb-3 text-gray-700">Sentiment Analysis</h3>
-              <div className="h-[200px]"> {/* Fixed height container */}
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">Sentiment Analysis</h3>
+              <div className="h-[200px]">
                 <Bar 
                   data={sentimentChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { position: 'top', labels: { boxWidth: 12, padding: 8 } },
-                      title: { display: false }
-                    },
-                    scales: {
-                      y: { beginAtZero: true }
-                    }
-                  }}
+                  options={sentimentChartOptions}
                 />
               </div>
             </div>
 
             {/* Emotion Distribution Chart */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">
                 <span className="mr-2">😊</span>
                 Customer Emotion Distribution
               </h3>
@@ -951,11 +1004,11 @@ const RatingView = () => {
                 {defaultEmotionData.labels.map((emotion, index) => (
                   <div 
                     key={emotion}
-                    className="bg-gray-50 rounded-lg p-4 text-center"
+                    className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center"
                     style={{ borderLeft: `4px solid ${defaultEmotionData.datasets[0].backgroundColor[index]}` }}
                   >
-                    <div className="text-sm text-gray-600 capitalize">{emotion}</div>
-                    <div className="text-xl font-semibold mt-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 capitalize">{emotion}</div>
+                    <div className="text-xl font-semibold mt-1 text-gray-800 dark:text-white">
                       {defaultEmotionData.datasets[0].data[index]}%
                     </div>
                   </div>
@@ -964,8 +1017,8 @@ const RatingView = () => {
             </div>
 
             {/* Theme Analysis Chart */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">
                 <span className="mr-2">📊</span>
                 Theme Analysis
               </h3>
@@ -978,8 +1031,8 @@ const RatingView = () => {
             </div>
 
             {/* Rating Trends Chart */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">
                 <span className="mr-2">📈</span>
                 Rating Trends
               </h3>
@@ -993,15 +1046,15 @@ const RatingView = () => {
           </div>
 
           {/* Key Improvements - Horizontal Scrollable */}
-          {analytics.improvements.length > 0 && (
+          {safeAnalytics.improvements.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-3 text-gray-700">Key Improvements Needed</h3>
+              <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">Key Improvements Needed</h3>
               <div className="flex overflow-x-auto gap-4 pb-2">
-                {analytics.improvements.slice(0, 4).map((improvement, index) => (
-                  <div key={index} className="min-w-[300px] p-4 bg-red-50 rounded-lg border border-red-100">
-                    <div className="font-semibold text-red-700">{improvement.productName}</div>
-                    <div className="text-sm text-gray-600 mt-1 line-clamp-2">{improvement.review}</div>
-                    <div className="text-sm text-red-600 mt-2">
+                {safeAnalytics.improvements.slice(0, 4).map((improvement, index) => (
+                  <div key={index} className="min-w-[300px] p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+                    <div className="font-semibold text-red-700 dark:text-red-400">{improvement.productName}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{improvement.review}</div>
+                    <div className="text-sm text-red-600 dark:text-red-400 mt-2">
                       {Array.isArray(improvement.suggestions) 
                         ? improvement.suggestions.slice(0, 2).map((s, i) => (
                             <div key={i} className="flex items-center gap-2">
@@ -1020,8 +1073,8 @@ const RatingView = () => {
       </div>
 
       {/* Smart Suggestions Section */}
-      <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-6 text-gray-800">
+      <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 className="text-xl font-bold mb-6 text-black dark:text-white">
           Smart Insights & Recommendations
         </h2>
         
