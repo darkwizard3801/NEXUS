@@ -68,49 +68,71 @@ const VendorProductCard = ({ data, fetchdata }) => {
   };
 
   return (
-    <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} p-4 rounded ${isDisabled ? 'opacity-50' : ''}`}>
-      <div className='w-40'>
-        <div className='w-34 h-32 flex justify-center items-center'>
-          <img src={data?.productImage[0]} className='mx-auto object-fill h-full w-fit' alt={data.productName} />
-        </div>
-        <h1 className='text-ellipsis line-clamp-2'>{data.productName}</h1>
-
-        <div>
-          <p className='font-semibold'>
-            {displayINRCurrency(data.price)}
-          </p>
-
-          <div className='flex items-center gap-3 py-3'>
-            <div
-              className={`p-2 ${isDarkMode ? 'bg-green-900 hover:bg-green-700' : 'bg-green-100 hover:bg-green-600'} rounded-full hover:text-white cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
-              onClick={() => !isDisabled && setEditProduct(true)}
-            >
-              <MdModeEditOutline className={isDarkMode ? 'text-green-400' : ''} />
-            </div>
-
-            {isDisabled ? (
-              <div
-                className={`p-2 ${isDarkMode ? 'bg-blue-900 hover:bg-blue-700' : 'bg-blue-100 hover:bg-blue-600'} rounded-full hover:text-white cursor-pointer`}
-                onClick={handleEnable}
-              >
-                <FaRecycle className={isDarkMode ? 'text-blue-400' : ''} />
-              </div>
-            ) : (
-              <div
-                className={`p-2 ${isDarkMode ? 'bg-red-900 hover:bg-red-700' : 'bg-red-100 hover:bg-red-600'} rounded-full hover:text-white cursor-pointer`}
-                onClick={handleDisable}
-              >
-                <MdDelete className={isDarkMode ? 'text-red-400' : ''} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {editProduct && !isDisabled && (
-          <VendorEditProduct productData={data} onClose={() => setEditProduct(false)} fetchdata={fetchdata}
-          />
-        )}
+    <div className={`
+      ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}
+      w-[220px] h-[260px] // Reduced width from 240px to 220px
+      rounded-lg shadow-md
+      p-2.5 // Slightly reduced padding
+      ${isDisabled ? 'opacity-50' : ''}
+      flex flex-col
+      m-2 // Reduced margin for tighter spacing
+    `}>
+      {/* Image Container */}
+      <div className='w-full h-32 mb-2'> {/* Reduced height from 36 to 32 */}
+        <img 
+          src={data?.productImage[0]} 
+          className='w-full h-full object-cover rounded-md'
+          alt={data.productName} 
+        />
       </div>
+
+      {/* Product Details */}
+      <div className='flex-1 flex flex-col'>
+        <h2 className='text-sm font-semibold mb-1 line-clamp-2'> {/* Slightly reduced text size */}
+          {data.productName}
+        </h2>
+
+        <p className='font-bold mb-1.5 text-sm'> {/* Reduced margin-bottom */}
+          {displayINRCurrency(data.price)}
+        </p>
+
+        {/* Action Buttons */}
+        <div className='flex items-center gap-2 mt-auto'>
+          <div
+            className={`p-1.5 ${isDarkMode ? 'bg-green-900 hover:bg-green-700' : 'bg-green-100 hover:bg-green-600'} 
+            rounded-full hover:text-white cursor-pointer ${isDisabled ? 'pointer-events-none' : ''}`}
+            onClick={() => !isDisabled && setEditProduct(true)}
+          >
+            <MdModeEditOutline className={`${isDarkMode ? 'text-green-400' : ''} w-4 h-4`} />
+          </div>
+
+          {isDisabled ? (
+            <div
+              className={`p-1.5 ${isDarkMode ? 'bg-blue-900 hover:bg-blue-700' : 'bg-blue-100 hover:bg-blue-600'} 
+              rounded-full hover:text-white cursor-pointer`}
+              onClick={handleEnable}
+            >
+              <FaRecycle className={`${isDarkMode ? 'text-blue-400' : ''} w-4 h-4`} />
+            </div>
+          ) : (
+            <div
+              className={`p-1.5 ${isDarkMode ? 'bg-red-900 hover:bg-red-700' : 'bg-red-100 hover:bg-red-600'} 
+              rounded-full hover:text-white cursor-pointer`}
+              onClick={handleDisable}
+            >
+              <MdDelete className={`${isDarkMode ? 'text-red-400' : ''} w-4 h-4`} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {editProduct && !isDisabled && (
+        <VendorEditProduct 
+          productData={data} 
+          onClose={() => setEditProduct(false)} 
+          fetchdata={fetchdata}
+        />
+      )}
     </div>
   );
 };
