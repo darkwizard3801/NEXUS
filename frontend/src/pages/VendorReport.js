@@ -443,6 +443,11 @@ const VendorReport = () => {
     doc.save(`sales-report-${reportType}-${new Date().toLocaleDateString()}.pdf`);
   };
 
+  // Inside the component, before rendering the table
+  const sortedOrders = [...orders].sort((a, b) => {
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
   return (
     <>
       <Helmet>
@@ -939,7 +944,7 @@ const VendorReport = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {orders.map((order) => (
+                    {sortedOrders.map((order) => (
                       <TableRow 
                         key={order._id}
                         sx={{ 

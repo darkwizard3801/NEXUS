@@ -346,21 +346,14 @@ const Cart = () => {
   };
   const handlePlaceOrder = async () => {
     if (!userDetails || !userDetails.address) {
-      alert("Please provide a valid delivery address.");
+      toast.error("Please provide a valid delivery address.");
       return;
     }
 
     if (!deliveryDate) {
-      alert("Please select a delivery date.");
+      toast.error("Please select a delivery date.");
       return;
     }
-    // const generatePoster = window.confirm("Do you want to generate a poster for the event for free?");
-  
-    // if (generatePoster) {
-    //   navigate('/social-media'); // Redirect to the social media page
-    //   return; // Exit the function to prevent further execution
-    // }
-    setShowPosterModal(true);
 
     const orderDetails = {
       products: data.map((product) => ({
@@ -368,18 +361,17 @@ const Cart = () => {
         productName: product.productId.productName,
         quantity: product.quantity,
         price: product.productId.price,
-        vendor:product.productId.user,
-        vendorName:product.productId.brandName,
-        image:product.productId.productImage[0],
+        vendor: product.productId.user,
+        vendorName: product.productId.brandName,
+        image: product.productId.productImage[0],
       })),
       address: userDetails.address,
       totalPrice,
       discount,
       finalAmount,
-      
       userEmail: userDetails.email,
       userName: userDetails.name,
-      deliveryDate: deliveryDate, // Add delivery date to order details
+      deliveryDate: deliveryDate,
     };
 
     try {
@@ -394,32 +386,51 @@ const Cart = () => {
 
       const responseData = await response.json();
       if (responseData.success) {
-        console.log("payment ongoing")
-        // toast.success("Order placed successfully!");
-        // handlePayment(); // Trigger Razorpay payment after successful order creation
+        handlePayment(); // Directly proceed to payment
       } else {
-        alert("Failed to place the order. Please try again.");
+        toast.error("Failed to place the order. Please try again.");
       }
     } catch (error) {
       console.error("Error placing the order:", error);
-      alert("An error occurred while placing the order. Please try again.");
+      toast.error("An error occurred while placing the order. Please try again.");
     }
   };
- 
 
- 
+  const handlePosterCreation = () => {
+    navigate('/social-media');
+  };
 
-  
+  const handleAddressChange = () => {
+    // Check user role from userDetails
+    if (userDetails && userDetails.role) {
+      switch (userDetails.role.toLowerCase()) {
+        case 'vendor':
+          navigate('/vendor-panel/my-profile');
+          break;
+        case 'customer':
+          navigate('/user-panel/my-profile');
+          break;
+        case 'admin':
+          navigate('/admin-panel/my-profile');
+          break;
+        default:
+          toast.error('Unable to determine user role');
+          break;
+      }
+    } else {
+      toast.error('Please login to change address');
+    }
+  };
 
   return (
     <div className="container mx-auto">
-      {/* Address Section */}
-      <div className="bg-white p-4 mb-4">
+      {/* Address Section with role-based redirect */}
+      <div className="bg-white p-4 mb-1">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Delivery Address</h2>
           <button
-            className="text-blue-500 hover:underline"
-            onClick={() => console.log("Edit Address")}
+            className="text-blue-500 hover:text-blue-700 hover:underline transition-colors duration-200"
+            onClick={handleAddressChange}
           >
             Change
           </button>
@@ -429,21 +440,67 @@ const Cart = () => {
           : "No address available"}
       </div>
 
-      {/* Cart Items and Summary */}
-      <div className="flex flex-col lg:flex-row gap-10 lg:justify-between p-4">
+      {/* Poster Creation Button */}
+      <div className="w-full flex justify-end pr-[8%] mb-2">
+        <button
+          className="group relative bg-gradient-to-r from-blue-600 to-blue-500 
+          hover:from-blue-500 hover:to-blue-600 text-white px-8 py-3 rounded-full
+          font-semibold text-lg shadow-lg transform hover:scale-105 transition-all duration-300
+          overflow-hidden"
+          onClick={handlePosterCreation}
+        >
+          {/* Animated background effect */}
+          <div className="absolute inset-0 w-full h-full">
+            <div className="absolute w-2 h-full bg-white/20 skew-x-12 
+              animate-[shimmer_2s_infinite] group-hover:pause"></div>
+          </div>
+
+          {/* Button content with glow effect */}
+          <div className="relative flex items-center gap-2">
+            <span className="relative">
+              Create a Poster for Free
+              {/* Glowing dot */}
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full rounded-full 
+                  bg-white opacity-75 animate-[ping_1.5s_infinite]"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 
+                  bg-white"></span>
+              </span>
+            </span>
+            {/* Animated arrow */}
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5 transform group-hover:translate-x-1 transition-transform"
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M17 8l4 4m0 0l-4 4m4-4H3" 
+              />
+            </svg>
+          </div>
+        </button>
+      </div>
+
+      {/* Cart Items and Summary - Moved up */}
+      <div className="flex flex-col lg:flex-row gap-8 lg:justify-between p-4 -mt-4">
         {/* Product List */}
         <div className="w-full max-w-3xl">
           {loading
             ? loadingCart.map((el, index) => (
                 <div
                   key={el + "Add To Cart Loading" + index}
-                  className="w-full bg-slate-200 h-32 my-2 border border-slate-300 animate-pulse rounded"
+                  className="w-full bg-slate-200 h-32 my-1.5 border border-slate-300 animate-pulse rounded"
                 ></div>
               ))
             : data.map((product, index) => (
                 <div
                   key={product?._id + "Add To Cart Loading"}
-                  className="w-full bg-white h-32 my-2 border border-slate-300 rounded grid grid-cols-[128px,1fr]"
+                  className="w-full bg-white h-32 my-1.5 border border-slate-300 rounded grid grid-cols-[128px,1fr]"
                 >
                   <div className="w-32 h-32 bg-slate-200">
                     <img
@@ -553,12 +610,16 @@ const Cart = () => {
               {displayINRCurrency(finalAmount)}
             </span>
           </div>
-          <button
-            className="bg-red-600 hover:bg-red-700 transition-all duration-300 text-white w-full p-2 rounded mt-4"
-            onClick={handlePlaceOrder}
-          >
-            Place Order
-          </button>
+
+          {/* Place Order Button */}
+          <div className="mt-4">
+            <button
+              className="bg-red-600 hover:bg-red-700 transition-all duration-300 text-white w-full p-2 rounded"
+              onClick={handlePlaceOrder}
+            >
+              Place Order
+            </button>
+          </div>
         </div>
       </div>
 
