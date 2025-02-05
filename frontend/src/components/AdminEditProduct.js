@@ -78,33 +78,40 @@ const AdminEditProduct = ({
 
 
   {/**upload product */}
-  const handleSubmit = async(e) =>{
-    e.preventDefault()
+  const handleSubmit = async(e) => {
+    e.preventDefault();
     
-    const response = await fetch(SummaryApi.updateProduct.url,{
-      method : SummaryApi.updateProduct.method,
-      credentials : 'include',
-      headers : {
-        "content-type" : "application/json"
-      },
-      body : JSON.stringify(data)
-    })
+    try {
+      console.log("Sending update request with data:", data); // Debug log
 
-    const responseData = await response.json()
+      const response = await fetch(SummaryApi.updateProduct.url, {
+        method: SummaryApi.updateProduct.method,
+        credentials: 'include',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          ...data,
+          _id: productData._id // Ensure we're sending the product ID
+        })
+      });
 
-    if(responseData.success){
-        toast.success(responseData?.message)
-        onClose()
-        fetchdata()
+      const responseData = await response.json();
+      console.log("Update response:", responseData); // Debug log
+
+      if (responseData.success) {
+        toast.success(responseData?.message);
+        onClose();
+        await fetchdata(); // Refresh the product list
+      } else {
+        toast.error(responseData?.message || "Failed to update product");
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      toast.error("An error occurred while updating the product");
     }
+  };
 
-
-    if(responseData.error){
-      toast.error(responseData?.message)
-    }
-  
-
-  }
   const fetchCategoryProduct = async () => {
     setLoadingCategories(true);
     try {
@@ -137,158 +144,175 @@ const AdminEditProduct = ({
     }
   };
 
+  // Initialize data with all required fields
+  useEffect(() => {
+    if (productData) {
+      setData({
+        _id: productData._id,
+        productName: productData.productName || "",
+        brandName: productData.brandName || "",
+        category: productData.category || "",
+        productImage: productData.productImage || [],
+        description: productData.description || "",
+        price: productData.price || "",
+        user: productData.user || ""
+      });
+    }
+  }, [productData]);
 
   return (
-    <div className='fixed w-full  h-full bg-slate-200 bg-opacity-35 top-0 left-0 right-0 bottom-0 flex justify-center items-center'>
-    <div className='bg-white p-4 rounded w-full max-w-2xl h-full max-h-[80%] overflow-hidden'>
+    <div className='fixed w-full h-full bg-black bg-opacity-50 top-0 left-0 right-0 bottom-0 flex justify-center items-center z-[9999]'>
+      <div className='bg-white p-4 rounded-lg w-full max-w-xl h-full max-h-[80%] overflow-hidden relative shadow-2xl'>
+        {/* Header */}
+        <div className='flex justify-between items-center pb-3 border-b'>
+          <h2 className='font-bold text-xl text-gray-800'>Edit Product</h2>
+          <button 
+            className='w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors' 
+            onClick={onClose}
+          >
+            <CgClose className="text-2xl text-gray-600 hover:text-red-600" />
+          </button>
+        </div>
 
-      <div className='flex justify-between items-center pb-3'>
+        {/* Form Container with Padding Bottom for Button */}
+        <div className='h-[calc(100%-4rem)] overflow-y-auto'>
+          <form id="editProductForm" className='grid gap-6 p-4 pb-24' onSubmit={handleSubmit}> {/* Added form id here */}
+            {/* Form Fields */}
+            <div className="space-y-6"> {/* Added container for form fields with spacing */}
+              <div>
+                <label htmlFor='productName' className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                <input
+                  type='text'
+                  id='productName'
+                  placeholder='Enter product/package/service name'
+                  name='productName'
+                  value={data.productName}
+                  onChange={handleOnChange}
+                  className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500'
+                  required
+                />
+              </div>
 
-        <h2 className='font-bold text-lg'>Upload Product</h2>
-        <div className='w-fit ml-auto text-2xl hover:text-red-600 cursor-pointer' onClick={onClose} >
-          <CgClose />
+              <div>
+                <label htmlFor='brandName' className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                <input
+                  type='text'
+                  id='brandName'
+                  placeholder='Enter company name'
+                  value={data.brandName}
+                  name='brandName'
+                  onChange={handleOnChange}
+                  className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500'
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor='category' className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  required
+                  value={data.category}
+                  name='category'
+                  onChange={handleOnChange}
+                  className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500'
+                >
+                  <option value="" disabled>Select Category</option>
+                  {loadingCategories ? (
+                    <option>Loading categories...</option>
+                  ) : (
+                    categories.length > 0 ? (
+                      categories.map((category) => (
+                        <option key={category._id} value={category.category}>
+                          {category.label}
+                        </option>
+                      ))
+                    ) : (
+                      <option>No categories available</option>
+                    )
+                  )}
+                </select>
+              </div>
+
+              {/* Image Upload Section */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
+                <div className='border-2 border-dashed border-gray-300 rounded-lg p-4 text-center'>
+                  <input type='file' id='uploadImageInput' className='hidden' accept='image/*' onChange={handleUploadProduct}/>
+                  <label htmlFor='uploadImageInput' className='cursor-pointer'>
+                    <FaCloudUploadAlt className="mx-auto text-4xl text-gray-400 mb-2" />
+                    <p className='text-sm text-gray-500'>Click to upload product images</p>
+                  </label>
+                </div>
+                {/* Image Preview */}
+                {data.productImage.length > 0 && (
+                  <div className='flex gap-2 mt-2 flex-wrap'>
+                    {data.productImage.map((img, idx) => (
+                      <div key={idx} className='relative group'>
+                        <img src={img} alt="" className='w-20 h-20 object-cover rounded' />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProductImage(idx)}
+                          className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity'
+                        >
+                          <MdDelete size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor='price' className="block text-sm font-medium text-gray-700 mb-2">Price</label>
+                <input
+                  type='number'
+                  id='price'
+                  placeholder='Enter price'
+                  value={data.price}
+                  name='price'
+                  onChange={handleOnChange}
+                  className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500'
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">*For caters, logistics and bakers price is per head/plate/trip</p>
+              </div>
+
+              <div>
+                <label htmlFor='description' className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  id='description'
+                  placeholder='Enter product description'
+                  name='description'
+                  value={data.description}
+                  onChange={handleOnChange}
+                  rows={4}
+                  className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none'
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* Fixed Update Button at Bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
+          <button 
+            type="submit"
+            form="editProductForm"
+            className='w-full px-4 py-3 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors font-medium'
+          >
+            Update Product
+          </button>
         </div>
       </div>
 
-      <form className='grid p-4 gap-2 overflow-y-scroll h-full pb-5' >
-        <label htmlFor='productName'>Product Name :</label>
-        <input
-          type='text'
-          id='productName'
-          placeholder='enter product/package/service name'
-          name='productName'
-          value={data.productName}
-          onChange={handleOnChange}
-          className='p-2 bg-slate-100 border rounded'
-          required
-        />
-        <label htmlFor='brandName' className='mt-3'>Company Name :</label>
-        <input
-          type='text'
-          id='brandName'
-          placeholder='enter company name'
-          value={data.brandName}
-          name='brandName'
-          onChange={handleOnChange}
-          className='p-2 bg-slate-100 border rounded'
-          required
-        />
-       <label htmlFor='category' className='mt-3'>Category :</label>
-          <select
-            required
-            value={data.category}
-            name='category'
-            onChange={handleOnChange}
-            className='p-2 bg-slate-100 border rounded'
-          >
-            <option value="" disabled>Select Category</option>
-            {loadingCategories ? (
-              <option>Loading categories...</option>
-            ) : (
-              categories.length > 0 ? (
-                categories.map((category) => (
-                  <option key={category._id} value={category.category}>
-                    {category.label}
-                  </option>
-                ))
-              ) : (
-                <option>No categories available</option>
-              )
-            )}
-          </select>
-
-        <label htmlFor='productImage' className='mt-3'>Product Image :</label>
-        <label htmlFor='uploadImageInput'>
-          <div className='p-2 bg-slate-100 border rounded h-22 w-full flex justify-center items-center cursor-pointer'>
-            <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
-              <span className='text-4xl'><FaCloudUploadAlt /></span>
-              <p className='text-sm'>Upload Product/Service Image</p>
-              <input type='file' id='uploadImageInput' className='hidden' accept='image/*' onChange={handleUploadProduct}/>
-            </div>
-          </div>
-        </label>
-
-        <div>
-                {
-                  data?.productImage[0] ? (
-                      <div className='flex items-center gap-2'>
-                          {
-                            data.productImage.map((el,index)=>{
-                              return(
-                                <div className='relative group'>
-                                    <img 
-                                      src={el} 
-                                      alt={el} 
-                                      width={80} 
-                                      height={80}  
-                                      className='bg-slate-100 border cursor-pointer'  
-                                      onClick={()=>{
-                                        setOpenFullScreenImage(true)
-                                        setFullScreenImage(el)
-                                      }}/>
-
-                                      <div className='absolute bottom-0 right-0 p-1 text-white bg-red-600 rounded-full hidden group-hover:block cursor-pointer' onClick={()=>handleDeleteProductImage(index)} >
-                                        <MdDelete/>  
-                                      </div>
-                                </div>
-                                
-                              )
-                            })
-                          }
-                      </div>
-                  ) : (
-                    <p className='text-red-600 text-xs'>*Please upload product image</p>
-                  )
-                }
-                
-            </div>
-
-            <label htmlFor='price' className='mt-3'>Price :</label>
-
-            <label htmlFor='for' className='text-xs text-blue-500'>*For caters,logistics and bakers price is price per head/plate/trip</label>
-
-
-            <label htmlFor='for' className='text-xs text-pink-600'>*For others price is for the package</label>
-          
-            <input 
-              type='number' 
-              id='price' 
-              placeholder='enter price' 
-              value={data.price} 
-              name='price'
-              onChange={handleOnChange}
-              className='p-2 bg-slate-100 border rounded'
-              required
-            />
-
-            <label htmlFor='description' className='mt-3'>Description :</label>
-            <textarea 
-              className='h-28 bg-slate-100 border resize-none p-1 rounded' 
-              placeholder='enter product description' 
-              rows={3} 
-              onChange={handleOnChange} 
-              name='description'
-              value={data.description}
-            >
-            </textarea>
-
-            <button className='px-3 py-2 bg-red-600 text-white mb-10 hover:bg-red-700 rounded-2xl' onClick={handleSubmit}>Upload Product</button>
-
-
-
-      </form>
-
-
+      {/***display image full screen */}
+      {
+        openFullScreenImage && (
+          <DisplayImage onClose={()=>setOpenFullScreenImage(false)} imgUrl={fullScreenImage}/>
+        )
+       }
+        
     </div>
-
-    {/***display image full screen */}
-    {
-      openFullScreenImage && (
-        <DisplayImage onClose={()=>setOpenFullScreenImage(false)} imgUrl={fullScreenImage}/>
-      )
-     }
-      
-  </div>
   )
 }
 

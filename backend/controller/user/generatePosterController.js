@@ -8,9 +8,33 @@ const generatePoster = async (req, res) => {
     const completeFormData = req.body;
     const photo = req.files?.photo; // Access uploaded file if exists
 
-    // Check if API key is configured
+    // Debug log to check if API key is being read
+    console.log('API Key:', process.env.STABILITY_API_KEY ? 'Present' : 'Missing');
+
+    // Check if API key is configured and properly formatted
     if (!process.env.STABILITY_API_KEY) {
       throw new Error('Stability API key is not configured');
+    }
+
+    // Validate API key format (assuming it should be a non-empty string)
+    if (typeof process.env.STABILITY_API_KEY !== 'string' || process.env.STABILITY_API_KEY.trim() === '') {
+      throw new Error('Invalid API key format');
+    }
+
+    // Test API key with a simple validation request
+    try {
+      const validationResponse = await axios.get(
+        'https://api.stability.ai/v1/user/balance',
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
+          },
+        }
+      );
+      console.log('API Key validation successful:', validationResponse.status === 200);
+    } catch (validationError) {
+      console.error('API Key validation failed:', validationError.response?.data || validationError.message);
+      throw new Error('Invalid API key or authentication failed');
     }
 
     // Build base prompt based on event type
@@ -78,7 +102,7 @@ const generatePoster = async (req, res) => {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
+          Authorization: `Bearer ${process.env.STABILITY_API_KEY.trim()}`, // Ensure no whitespace
         },
       }
     );
@@ -95,13 +119,20 @@ const generatePoster = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error generating poster:', error.response?.data || error.message);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers
+    });
+
     res.status(500).json({ 
       success: false,
       error: error.response?.data?.message || error.message,
       details: process.env.NODE_ENV === 'development' ? {
         message: error.message,
-        prompt: basePrompt
+        response: error.response?.data,
+        apiKeyPresent: !!process.env.STABILITY_API_KEY
       } : undefined
     });
   }

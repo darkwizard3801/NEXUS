@@ -8,7 +8,10 @@ module.exports = {
     extend: {
       animation: {
         'spin-slow': 'spin 3s linear infinite',
-      }
+      },
+      fontFamily: {
+        'merienda': ['Merienda', 'cursive'],
+      },
     },
   },
   plugins: [],

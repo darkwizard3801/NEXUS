@@ -2,14 +2,15 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SummaryApi from '../common'; // Ensure this is the correct path to your API
 import AdminProductCard from '../components/AdminProductCard'; // Component to display individual product
-import { FaAngleRight, FaAngleLeft, FaStar, FaStarHalf, FaHeart, FaPlus } from "react-icons/fa6";
-import { FaRegHeart  } from "react-icons/fa"; // Import icons for navigation, star icons, and heart icons
+import { FaAngleRight, FaAngleLeft, FaStar, FaStarHalf, FaHeart, FaPlus, FaWhatsapp } from "react-icons/fa6";
+import { FaRegHeart } from "react-icons/fa"; // Import icons for navigation, star icons, and heart icons
 import addToCart from '../helpers/addToCart'; // Import addToCart function
 import Context from '../context'; // Import context to access fetchUserAddToCart
 import displayINRCurrency from '../helpers/displayCurrency'; // Import displayINRCurrency function
 import { FaHeart as FaHeartIcon } from 'react-icons/fa'; // Import React icons for heart
 import { AiOutlineMail } from 'react-icons/ai';
 import { IoClose } from "react-icons/io5";
+import { toast } from 'react-hot-toast';
 
 const VendorPage = () => {
   const { vendorName } = useParams(); // Get the vendor name from the URL
@@ -25,11 +26,9 @@ const VendorPage = () => {
   const [currentProductImages, setCurrentProductImages] = useState({}); // State to track current image index for each product
   const { fetchUserAddToCart } = useContext(Context); // Access fetchUserAddToCart from context
   const [tagline, setTagline] = useState("");
-  const [vendorDetails, setVendorDetails] = useState({
-    tagline: "",
-    aboutText: "",
-    aboutFile: null,
-  });
+  const [vendorDetails, setVendorDetails] = useState(null);
+  const [displayVendorName, setDisplayVendorName] = useState(vendorName); // Add this state variable
+  const [brandName, setBrandName] = useState("");
   const fullTagline = "Your one-stop shop for unforgettable events!"; // Tagline text
   const [liked, setLiked] = useState(false);
   const fontStyles = [
@@ -88,14 +87,17 @@ const VendorPage = () => {
       const dataResponse = await response.json();
       console.log('Fetched products:', dataResponse);
 
-      // Set all products and filter them based on the vendor name
+      // Set all products
       setProducts(dataResponse?.data || []);
-      const vendorProducts = dataResponse?.data?.filter(product => product.brandName === vendorName); // Assuming brandName is the vendor name
+
+      // Filter products based on the vendor's email instead of brandName
+      const vendorProducts = dataResponse?.data?.filter(product => product.user === vendorEmail);
+      console.log('Filtered vendor products:', vendorProducts);
       setFilteredProducts(vendorProducts || []);
 
-      // Set vendor email from the first filtered product
-      if (vendorProducts.length > 0) {
-        setVendorEmail(vendorProducts[0].user); // Assuming vendorEmail is a property in the product
+      // Set vendor email if not already set
+      if (!vendorEmail && vendorProducts && vendorProducts.length > 0) {
+        setVendorEmail(vendorProducts[0].user);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -103,6 +105,74 @@ const VendorPage = () => {
       setLoading(false);
     }
   };
+
+  // Fetch products when component mounts or vendorEmail changes
+  useEffect(() => {
+    if (vendorEmail) {
+      fetchAllProducts();
+    }
+  }, [vendorEmail]);
+
+  // Function to fetch all users and filter vendor details
+  const fetchVendorDetails = async () => {
+    try {
+      console.log("Fetching vendor details with email:", vendorEmail); // Debug log
+      const fetchData = await fetch(SummaryApi.allUser.url, {
+        method: SummaryApi.allUser.method,
+        credentials: 'include'
+      });
+
+      const dataResponse = await fetchData.json();
+
+      if (dataResponse.success) {
+        // Find the vendor using vendorEmail
+        const vendor = dataResponse.data.find(user => user.email === vendorEmail);
+        if (vendor) {
+          setVendorDetails(vendor);
+          console.log("Found vendor details:", vendorDetails); // Debug log
+          setBrandName(vendor.brandName || vendor.name || vendorName);
+          setDisplayVendorName(vendor.brandName || vendor.name || vendorName);
+        } else {
+          console.log("No vendor found with email:", vendorEmail); // Debug log
+        }
+      }
+
+      if (dataResponse.error) {
+        toast.error(dataResponse.message);
+      }
+    } catch (error) {
+      console.error('Error fetching vendor details:', error);
+    }
+  };
+
+  // Fetch vendor details when vendorEmail is available
+  useEffect(() => {
+    console.log("vendorEmail changed to:", vendorEmail); // Debug log
+    if (vendorEmail) {
+      fetchVendorDetails();
+    }
+  }, [vendorEmail]);
+
+  // Initial fetch to get vendor email from URL parameter
+  useEffect(() => {
+    const fetchVendorEmail = async () => {
+      try {
+        const response = await fetch(SummaryApi.allProduct.url);
+        const dataResponse = await response.json();
+        
+        // Find the first product with matching brandName to get the vendor's email
+        const vendorProduct = dataResponse?.data?.find(product => product.brandName === vendorName);
+        if (vendorProduct) {
+          setVendorEmail(vendorProduct.user);
+          console.log("Found vendor email:", vendorProduct.user); // Debug log
+        }
+      } catch (error) {
+        console.error('Error fetching vendor email:', error);
+      }
+    };
+
+    fetchVendorEmail();
+  }, [vendorName]);
 
   // Fetch all banners from the database
   const fetchBanners = async () => {
@@ -213,16 +283,16 @@ const VendorPage = () => {
     setTagline(''); // Reset tagline
     let index = 0;
     const typeWriter = () => {
-      if (index <= vendorDetails.tagline.length) {  // Changed from < to <=
-        setTagline(vendorDetails.tagline.slice(0, index));  // Use slice instead of charAt
+      if (index <= vendorDetails?.tagline.length) {  // Changed from < to <=
+        setTagline(vendorDetails?.tagline.slice(0, index));  // Use slice instead of charAt
         index++;
         setTimeout(typeWriter, 100);
       }
     };
-    if (vendorDetails.tagline) {
+    if (vendorDetails?.tagline) {
       typeWriter();
     }
-  }, [vendorDetails.tagline]);
+  }, [vendorDetails?.tagline]);
 
   const handleImageExpand = (image) => {
     setExpandedImage(image);
@@ -440,6 +510,44 @@ const VendorPage = () => {
     }
   }, [testimonials.length]);
 
+  // Function to group products by category
+  const groupProductsByCategory = (products) => {
+    return products.reduce((groups, product) => {
+      const category = product.category || 'Other';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(product);
+      return groups;
+    }, {});
+  };
+
+  // Get grouped products
+  const groupedProducts = groupProductsByCategory(filteredProducts);
+
+  // Function to handle scrolling
+  const scroll = (direction, categoryId) => {
+    const container = document.getElementById(`scroll-container-${categoryId}`);
+    if (container) {
+      const scrollAmount = direction === 'left' ? -container.offsetWidth : container.offsetWidth;
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // Update WhatsApp click handler
+  const handleWhatsAppClick = () => {
+    if (!vendorDetails?.phoneNumber) {
+      toast.error("Vendor's contact number is not available");
+      return;
+    }
+    
+    const message = `Hi, I'm interested in your products from ${brandName}'s store.`;
+    const phoneNumber = vendorDetails.phoneNumber
+    console.log("Phone number2 :", phoneNumber);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (loading) {
     return <p>Loading products...</p>;
   }
@@ -449,9 +557,9 @@ const VendorPage = () => {
   }
 
   return (
-    <div className="w-full px-0 sm:container sm:mx-auto sm:p-4">
+    <div className="w-full px-0 sm:container sm:mx-auto sm:p-4 relative">
       <h1 className={`text-4xl ${currentFontStyle} mb-2 text-center text-gradient`}>
-        Welcome to {vendorName}'s Store
+        Welcome to {brandName}'s Store
       </h1>
       <h2 className="text-2xl font-light text-center text-gray-600">{tagline}</h2>
       
@@ -522,71 +630,125 @@ const VendorPage = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-2 sm:px-0">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product, index) => {
-            const productId = product._id; // Get the product ID
+      {/* Products by Category */}
+      <div className="mt-8 px-4">
+        {Object.entries(groupedProducts).map(([category, products]) => (
+          <div key={category} className="mb-12">
+            {/* Category Header */}
+            <div className="flex items-center mb-6">
+              <h2 className="text-2xl font-bold text-black dark:text-white capitalize">
+                {category}
+              </h2>
+              <div className="ml-4 h-0.5 flex-grow bg-gradient-to-r from-red-500 to-transparent"></div>
+            </div>
 
-            const currentImageIndex = product.productImage && product.productImage.length > 0 
-              ? currentProductImages[productId] % product.productImage.length 
-              : 0; // Default to 0 if images are not available
-
-            return (
-              <div 
-                key={index} 
-                className="border rounded-lg my-4 p-4 shadow-lg transition-transform transform hover:scale-105 cursor-pointer bg-white hover:shadow-xl"
-                onClick={() => handleProductClick(productId)} // Add click handler
-              >
-                {product.productImage && product.productImage.length > 0 ? (
-                  <img 
-                    src={product.productImage[currentImageIndex]} 
-                    alt={product.productName} 
-                    className='w-full h-48 object-cover mb-2 rounded transition-transform duration-300 transform hover:scale-110' 
-                    loading="lazy" // Optimize image loading
-                  />
-                ) : (
-                  <p>No images available for this product.</p> // Fallback message
-                )}
-                <h2 className="text-xl font-semibold">{product.productName}</h2>
-                <p className="text-gray-700">Price: {displayINRCurrency(product.price)}</p>
-                
-                {/* Add to Cart Button */}
-                <div className='flex justify-center items-center'>
-                <button
-                  className='border-2 border-red-600 rounded-full px-3 py-1 min-w-[120px] font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white transition duration-300'
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent click event from bubbling up to the card
-                    handleAddToCart(e, productId); // Use productId here
-                  }}
+            {/* Scrollable Products Row with Navigation Buttons */}
+            <div className="relative group">
+              {/* Left Arrow */}
+              {products.length > 3 && (
+                <button 
+                  onClick={() => scroll('left', category)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 shadow-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -translate-x-1/2"
                 >
-                  Add To Cart
+                  <FaAngleLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
                 </button>
-                </div>
+              )}
 
-                <div>
-                  <button 
-                    className={`absolute bottom-2 right-2 bg-transparent p-2 rounded-full shadow-md z-10 like-button transition-colors duration-300 ${selectedProductIds.includes(productId) ? 'bg-red-500' : 'bg-black'}`} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const updatedSelectedProductIds = selectedProductIds.includes(productId)
-                        ? selectedProductIds.filter((id) => id !== productId)
-                        : [...selectedProductIds, productId];
-                      setSelectedProductIds(updatedSelectedProductIds);
-                    }}
+              {/* Scroll Container - Removed pb-6 and added custom scrollbar hiding */}
+              <div 
+                id={`scroll-container-${category}`}
+                className="flex overflow-x-auto gap-6 no-scrollbar scroll-smooth"
+                style={{
+                  msOverflowStyle: 'none',  /* IE and Edge */
+                  scrollbarWidth: 'none',   /* Firefox */
+                  WebkitOverflowScrolling: 'touch'
+                }}
+              >
+                {products.map((product, index) => (
+                  <div 
+                    key={product._id || index}
+                    className="flex-none w-72 border rounded-lg shadow-md transition-transform transform hover:scale-105 cursor-pointer bg-white dark:bg-gray-800 hover:shadow-xl"
+                    onClick={() => handleProductClick(product._id)}
                   >
-                    {selectedProductIds.includes(productId) && (
-                      <FaHeartIcon className="h-6 w-6 text-red-500" />
-                    )}
-                    {!selectedProductIds.includes(productId) && (
-                      <FaHeartIcon className="h-6 w-6" />
-                    )}
-                  </button>
-                </div>
+                    {/* Product Image */}
+                    <div className="relative overflow-hidden rounded-t-lg h-48">
+                      {product.productImage && product.productImage.length > 0 ? (
+                        <img 
+                          src={product.productImage[currentProductImages[product._id] % product.productImage.length]} 
+                          alt={product.productName} 
+                          className='w-full h-full object-cover transition-transform duration-300 transform hover:scale-110' 
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                          <p className="text-gray-500 dark:text-gray-400">No image</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Details */}
+                    <div className="p-4 space-y-2">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white truncate">
+                        {product.productName}
+                      </h3>
+                      <p className="text-base text-gray-600 dark:text-gray-300">
+                        {displayINRCurrency(product.price)}
+                      </p>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-between mt-4">
+                        <button
+                          className='border-2 border-red-600 rounded-full px-4 py-1.5 font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white transition duration-300'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(e, product._id);
+                          }}
+                        >
+                          Add To Cart
+                        </button>
+                        
+                        <button 
+                          className={`p-2 rounded-full shadow-md transition-colors duration-300 ${
+                            selectedProductIds.includes(product._id) 
+                              ? 'bg-red-500 text-white' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updatedSelectedProductIds = selectedProductIds.includes(product._id)
+                              ? selectedProductIds.filter((id) => id !== product._id)
+                              : [...selectedProductIds, product._id];
+                            setSelectedProductIds(updatedSelectedProductIds);
+                          }}
+                        >
+                          <FaHeartIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          })
-        ) : (
-          <p>No products found for this vendor.</p>
+
+              {/* Right Arrow */}
+              {products.length > 3 && (
+                <button 
+                  onClick={() => scroll('right', category)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 shadow-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-x-1/2"
+                >
+                  <FaAngleRight className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* No Products Message */}
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-600 dark:text-gray-400">
+              No products found for this vendor.
+            </p>
+          </div>
         )}
       </div>
 
@@ -595,14 +757,14 @@ const VendorPage = () => {
         <h2 className="text-3xl font-semibold mb-4">About Us</h2>
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <img 
-            src={vendorDetails.aboutFile ? 
+            src={vendorDetails?.aboutFile ? 
               `data:${vendorDetails.aboutFile.contentType};base64,${vendorDetails.aboutFile.data}` : 
-              "https://res.cloudinary.com/du8ogkcns/image/upload/v1709729991/about-us_hnhc6e.jpg"} 
+              "https://res.cloudinary.com/du8ogkcns/image/upload/v1738733668/DALL_E_2025-02-05_10.56.05_-_A_visually_engaging_About_Us_image_representing_a_company_specializing_in_event_management_services._The_image_features_a_collage_of_various_event_asp_xhqafc.webp"} 
             alt="Company" 
             className="w-full md:w-3/4 h-64 md:h-96 rounded-3xl object-cover" 
           />
           <p className="text-lg md:max-w-1/4 py-4 md:py-11 whitespace-pre-line">
-            {vendorDetails.aboutText ? (
+            {vendorDetails?.aboutText ? (
               <>
                 <span className="text-4xl font-bold capitalize">{vendorDetails.aboutText.charAt(0)}</span>
                 {vendorDetails.aboutText.slice(1)}
@@ -845,8 +1007,43 @@ const VendorPage = () => {
         </div>
       )}
 
+      {/* WhatsApp Icon */}
+      <div 
+        onClick={handleWhatsAppClick}
+        className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 rounded-full p-4 cursor-pointer shadow-lg transition-all duration-300 hover:scale-110 z-[1000] group"
+      >
+        <FaWhatsapp className="text-white text-3xl" />
+        
+        {/* Tooltip */}
+        <span className="absolute bottom-full right-0 mb-2 w-auto p-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+          Chat with {brandName || 'Vendor'} on WhatsApp
+        </span>
+
+        {/* Pulse Effect */}
+        <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-25"></span>
+      </div>
+
     </div>
   );
 };
+
+// Add these styles to your global CSS file or style component
+const styles = `
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+`;
+
+// You can add this to your CSS file or use a styled-components approach
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default VendorPage;

@@ -21,6 +21,8 @@ const ProductDetails = () => {
   const [activeImage, setActiveImage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [rating, setRating] = useState({ fullStars: 0, hasHalfStar: false }); // New state for rating
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const maxLength = 300; // Show first 300 characters initially
 
   const { fetchUserAddToCart } = useContext(Context);
   const navigate = useNavigate();
@@ -67,6 +69,49 @@ const ProductDetails = () => {
 
   const handleImageHover = (img) => {
     setActiveImage(img);
+  };
+
+  // Function to handle description display
+  const renderDescription = (description) => {
+    if (!description) return null;
+
+    const lines = description.split('\n');
+    const fullText = lines.join('\n');
+    
+    if (fullText.length <= maxLength || showFullDescription) {
+      // Show full description
+      return (
+        <div className='text-black dark:text-white space-y-2'>
+          {lines.map((line, index) => (
+            line.trim() && (
+              <p key={index} className={`${line.startsWith('•') ? 'pl-4' : ''}`}>
+                {line}
+              </p>
+            )
+          ))}
+        </div>
+      );
+    } else {
+      // Show truncated description
+      const truncatedText = fullText.slice(0, maxLength);
+      const lastSpaceIndex = truncatedText.lastIndexOf(' ');
+      const displayText = truncatedText.slice(0, lastSpaceIndex);
+      
+      return (
+        <div className='text-black dark:text-white'>
+          <div className='space-y-2'>
+            {displayText.split('\n').map((line, index) => (
+              line.trim() && (
+                <p key={index} className={`${line.startsWith('•') ? 'pl-4' : ''}`}>
+                  {line}
+                </p>
+              )
+            ))}
+          </div>
+          <span className='text-gray-500'>...</span>
+        </div>
+      );
+    }
   };
 
   return (
@@ -170,9 +215,26 @@ const ProductDetails = () => {
               </div>
 
               <div>
-              <p className='text-slate-600 font-medium my-1 dark:text-white'>Description:</p>
-  <p className='text-black dark:text-white'>{data?.description}</p>
-
+                <p className='text-slate-600 font-medium my-1 dark:text-white'>Description:</p>
+                {renderDescription(data?.description)}
+                
+                {/* Show More/Less Button */}
+                {data?.description && data.description.length > maxLength && (
+                  <button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    className='text-red-600 hover:text-red-700 font-medium mt-2 flex items-center gap-1'
+                  >
+                    {showFullDescription ? 'Show Less' : 'Show More'}
+                    <svg 
+                      className={`w-4 h-4 transform transition-transform ${showFullDescription ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           )

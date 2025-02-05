@@ -1277,9 +1277,7 @@ const RatingView = () => {
                       <h3 className="text-lg font-semibold">
                         Product Name: {product.productName}
                       </h3>
-                      <p className="text-gray-600">
-                        <b>Description:</b> {product.description}
-                      </p>
+                    
                       <p className="text-gray-600"><b>Price: </b>₹{product.price}</p>
                       <p className="text-gray-600">
                         <b>Category:</b> {product.category}
