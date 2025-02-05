@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { MdModeEditOutline } from "react-icons/md";
+import { MdModeEditOutline, MdDelete } from "react-icons/md";
 import AdminEditProduct from './AdminEditProduct';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { toast } from 'react-toastify';
 import SummaryApi from '../common/index';
-import { MdDelete } from 'react-icons/md';
 import { FaRecycle } from "react-icons/fa";
 
 const AdminProductCard = ({ data, fetchdata }) => {
@@ -106,8 +105,10 @@ const AdminProductCard = ({ data, fetchdata }) => {
           />
         </div>
 
-        {/* Product Name */}
-        <h1 className='text-center text-sm font-medium text-gray-700 truncate mb-1'>{data.productName}</h1>
+        {/* Product Name - Modified for two lines */}
+        <h1 className='w-full text-center text-sm font-medium text-gray-700 overflow-hidden line-clamp-2 min-h-[40px] mb-1'>
+          {data.productName}
+        </h1>
 
         {/* Product Price */}
         <p className='text-center font-semibold text-md text-green-600 mb-1'>
@@ -142,7 +143,7 @@ const AdminProductCard = ({ data, fetchdata }) => {
               className='p-2 bg-red-100 hover:bg-red-600 rounded-full hover:text-white cursor-pointer'
               onClick={handleDisable}
             >
-                <MdDelete size={20} />
+              <MdDelete size={20} />
             </div>
           )}
         </div>

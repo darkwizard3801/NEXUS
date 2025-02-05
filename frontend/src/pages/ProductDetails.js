@@ -6,6 +6,7 @@ import CategroyWiseProductDisplay from '../components/CategoryWiseProductDisplay
 import addToCart from '../helpers/addToCart';
 import Context from '../context';
 import { FaStar, FaStarHalf } from "react-icons/fa";
+import { toast } from 'react-toastify';
 
 const ProductDetails = () => {
   const [data, setData] = useState({
@@ -23,6 +24,9 @@ const ProductDetails = () => {
   const [rating, setRating] = useState({ fullStars: 0, hasHalfStar: false }); // New state for rating
   const [showFullDescription, setShowFullDescription] = useState(false);
   const maxLength = 300; // Show first 300 characters initially
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [selectedDishes, setSelectedDishes] = useState({});
+  const [currentConfiguration, setCurrentConfiguration] = useState(null); // Store configuration here
 
   const { fetchUserAddToCart } = useContext(Context);
   const navigate = useNavigate();
@@ -56,16 +60,127 @@ const ProductDetails = () => {
     fetchProductDetails();
   }, [params]);
 
+  // Initialize selectedDishes with empty arrays for each course
+  useEffect(() => {
+    if (data?.catering?.courses) {
+      const initialSelection = {};
+      data.catering.courses.forEach(course => {
+        initialSelection[course.courseType] = [];
+      });
+      setSelectedDishes(initialSelection);
+    }
+  }, [data?.catering?.courses]);
+
+  const handleConfigurationSave = () => {
+    const hasEmptySelection = Object.values(selectedDishes).some(dishes => 
+      !Array.isArray(dishes) || dishes.length === 0
+    );
+    
+    if (hasEmptySelection) {
+      toast.error('Please select at least one dish from each course');
+      return;
+    }
+    
+    // Save configuration to state
+    setCurrentConfiguration(selectedDishes);
+    console.log('Configuration Saved:', selectedDishes); // Log when saving
+    toast.success('Configuration saved!');
+    setIsConfigModalOpen(false);
+  };
+
+  const addToCartWithConfig = async (productId, quantity, configuration) => {
+    try {
+      // Log the data being sent
+      console.log('Sending to backend:', {
+        productId,
+        quantity,
+        configuration
+      });
+
+      const response = await fetch(SummaryApi.addToCartWithConfig.url, {
+        method: SummaryApi.addToCartWithConfig.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          productId,
+          quantity,
+          configuration
+        })
+      });
+
+      const data = await response.json();
+      console.log('Backend Response:', data); // Log the response
+
+      if (data.success) {
+        toast.success(data.message);
+        fetchUserAddToCart();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Add to Cart Error:', error);
+      toast.error('Failed to add item to cart');
+    }
+  };
+
   const handleAddToCart = async (e, id) => {
-    await addToCart(e, id, quantity);
-    fetchUserAddToCart();
+    e.preventDefault();
+    if (data?.category === "catering") {
+      if (!currentConfiguration) {
+        toast.error('Please configure your platter before adding to cart');
+        setIsConfigModalOpen(true);
+        return;
+      }
+      console.log('Sending to addToCartWithConfig:', {
+        id,
+        quantity,
+        configuration: currentConfiguration
+      });
+      await addToCartWithConfig(id, quantity, currentConfiguration);
+    } else {
+      // Use regular addToCart for non-catering items
+      console.log('Sending to regular addToCart:', {
+        id,
+        quantity
+      });
+      await addToCart(e, id, quantity);
+      fetchUserAddToCart();
+    }
   };
 
   const handleBuyProduct = async (e, id) => {
-    await addToCart(e, id, quantity);
-    fetchUserAddToCart();
+    e.preventDefault();
+    if (data?.category === "catering") {
+      if (!currentConfiguration) {
+        toast.error('Please configure your platter before proceeding');
+        setIsConfigModalOpen(true);
+        return;
+      }
+      console.log('Buying with configuration:', {
+        id,
+        quantity,
+        configuration: currentConfiguration
+      });
+      await addToCartWithConfig(id, quantity, currentConfiguration);
+    } else {
+      console.log('Buying without configuration:', {
+        id,
+        quantity
+      });
+      await addToCart(e, id, quantity);
+      fetchUserAddToCart();
+    }
     navigate("/cart");
   };
+
+  // Optional: Log whenever configuration changes
+  useEffect(() => {
+    if (currentConfiguration) {
+      console.log('Current Configuration State:', currentConfiguration);
+    }
+  }, [currentConfiguration]);
 
   const handleImageHover = (img) => {
     setActiveImage(img);
@@ -112,6 +227,10 @@ const ProductDetails = () => {
         </div>
       );
     }
+  };
+
+  const handleConfigureClick = () => {
+    setIsConfigModalOpen(true);
   };
 
   return (
@@ -200,14 +319,30 @@ const ProductDetails = () => {
 
               {/* Action Buttons */}
               <div className='flex items-center gap-3 my-2'>
+                {data?.category === "catering" && (
+                  <button
+                    className='border-2 border-blue-600 rounded px-3 py-1 min-w-[160px] 
+                      text-blue-600 font-medium hover:bg-blue-600 hover:text-white
+                      transition-all duration-300'
+                    onClick={handleConfigureClick}
+                  >
+                    Configure Your Platter
+                  </button>
+                )}
+                
                 <button
-                  className='border-2 border-red-600 rounded px-3 py-1 min-w-[120px] text-red-600 font-medium hover:bg-red-600 hover:text-white'
+                  className='border-2 border-red-600 rounded px-3 py-1 min-w-[120px] 
+                    text-red-600 font-medium hover:bg-red-600 hover:text-white
+                    transition-all duration-300'
                   onClick={(e) => handleBuyProduct(e, data?._id)}
                 >
                   Book Now
                 </button>
+                
                 <button
-                  className='border-2 border-red-600 rounded px-3 py-1 min-w-[120px] font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white'
+                  className='border-2 border-red-600 rounded px-3 py-1 min-w-[120px] 
+                    font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white
+                    transition-all duration-300'
                   onClick={(e) => handleAddToCart(e, data?._id)}
                 >
                   Add To Cart
@@ -240,6 +375,152 @@ const ProductDetails = () => {
           )
         }
       </div>
+
+      {/* Catering Configuration Modal */}
+      {isConfigModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[90%] max-w-3xl max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b pb-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-800">{data?.productName}</h2>
+                <p className="text-gray-600">Configure your catering preferences</p>
+              </div>
+              <button 
+                onClick={() => setIsConfigModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Catering Content */}
+            <div className="mt-6">
+              {/* Course Type Header */}
+              <div className="text-center mb-8">
+                <span className="bg-blue-100 text-blue-800 text-xl font-semibold px-6 py-2 rounded-full">
+                  {data?.catering?.courseType} Course Meal
+                </span>
+              </div>
+
+              {/* Courses Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {data?.catering?.courses?.map((course, index) => (
+                  <div key={index} className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                    {/* Course Header */}
+                    <div className="text-center mb-4">
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        {course.courseName}
+                      </h3>
+                    </div>
+
+                    {/* Dropdown with Radio Buttons and Scrollbar */}
+                    <details className="group">
+                      <summary className="flex justify-between items-center p-3 bg-gray-50 rounded-md cursor-pointer hover:bg-gray-100">
+                        <span className="font-medium text-gray-700">Select {course.courseName}</span>
+                        <svg 
+                          className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="mt-2 p-2 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div className="space-y-2">
+                          {course.dishes.map((dish, dishIndex) => (
+                            <label 
+                              key={dishIndex}
+                              className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedDishes[course.courseType]?.includes(dish)}
+                                onChange={(e) => {
+                                  setSelectedDishes(prev => ({
+                                    ...prev,
+                                    [course.courseType]: e.target.checked
+                                      ? [...(prev[course.courseType] || []), dish]
+                                      : prev[course.courseType].filter(d => d !== dish)
+                                  }));
+                                }}
+                                className="w-4 h-4 text-blue-600 rounded"
+                              />
+                              <span className="text-gray-700">{dish}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer with Selected Items */}
+            <div className="mt-8 border-t pt-4">
+              {/* Show Selected Items */}
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-700 mb-2">Your Selection:</h4>
+                <div className="space-y-3">
+                  {Object.entries(selectedDishes).map(([courseType, dishes]) => {
+                    // Define colors based on course type
+                    let colorClasses = {
+                      horsOeuvre: "bg-pink-100 text-pink-800 border-pink-200 hover:bg-pink-200",
+                      mainCourse: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+                      dessert: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200",
+                      starter: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200",
+                      soup: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+                      salad: "bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200",
+                      beverage: "bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-200"
+                    }[courseType] || "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200";
+
+                    return (
+                      <div key={courseType}>
+                        <span className="font-medium text-gray-700">{courseType}:</span>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {Array.isArray(dishes) && dishes.length > 0 ? (
+                            dishes.map((dish, index) => (
+                              <span
+                                key={index}
+                                className={`inline-flex items-center px-3 py-1 rounded-full text-sm
+                                  border transition-colors ${colorClasses}`}
+                              >
+                                {dish}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500 italic">
+                              No dishes selected
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setIsConfigModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfigurationSave}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Confirm Selection
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {data.category && (
         <CategroyWiseProductDisplay category={data?.category} heading={"Recommended Products"} />

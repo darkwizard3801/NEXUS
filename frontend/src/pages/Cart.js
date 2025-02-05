@@ -36,6 +36,8 @@ const Cart = () => {
     couplePhoto: null // for weddings only
   });
 
+  const [showConfigDetails, setShowConfigDetails] = useState({});
+
   const getMinDeliveryDate = () => {
     const today = new Date();
     today.setDate(today.getDate() + 2); // Add 2 days to today
@@ -78,7 +80,7 @@ const Cart = () => {
     const userDetailsData = await userDetailsResponse.json();
     if (userDetailsData.success) {
       setUserDetails(userDetailsData.data);
-      console.log(userDetailsData)
+      console.log("User Details:", userDetailsData.data);
     }
   };
 
@@ -94,8 +96,15 @@ const Cart = () => {
     const responseData = await response.json();
     if (responseData.success) {
       setData(responseData.data);
-      console.log("data",data)
-   
+      console.log("Cart Data:", {
+        fullData: responseData.data,
+        items: responseData.data.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          configuration: item.configuration,
+          price: item.productId?.price
+        }))
+      });
     }
   };
 
@@ -109,6 +118,10 @@ const Cart = () => {
     handleLoading();
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    console.log("Current Cart State:", data);
+  }, [data]);
 
   const increaseQty = async (id, qty) => {
     const response = await fetch(SummaryApi.updateCartProduct.url, {
@@ -422,6 +435,14 @@ const Cart = () => {
     }
   };
 
+  // Toggle configuration details for a specific product
+  const toggleConfigDetails = (productId) => {
+    setShowConfigDetails(prev => ({
+      ...prev,
+      [productId]: !prev[productId]
+    }));
+  };
+
   return (
     <div className="container mx-auto">
       {/* Address Section with role-based redirect */}
@@ -500,53 +521,82 @@ const Cart = () => {
             : data.map((product, index) => (
                 <div
                   key={product?._id + "Add To Cart Loading"}
-                  className="w-full bg-white h-32 my-1.5 border border-slate-300 rounded grid grid-cols-[128px,1fr]"
+                  className="w-full bg-white my-1.5 border border-slate-300 rounded"
                 >
-                  <div className="w-32 h-32 bg-slate-200">
-                    <img
-                      src={product?.productId?.productImage[0]}
-                      className="w-full h-full object-scale-down mix-blend-multiply"
-                      alt={product?.productId?.productName}
-                    />
-                  </div>
-                  <div className="px-4 py-2 relative">
-                    <div
-                      className="absolute right-0 text-red-600 rounded-full p-2 hover:bg-red-600 hover:text-white cursor-pointer"
-                      onClick={() => deleteCartProduct(product?._id)}
-                    >
-                      <MdDelete />
+                  <div className="grid grid-cols-[128px,1fr]">
+                    <div className="w-32 h-32 bg-slate-200">
+                      <img
+                        src={product?.productId?.productImage[0]}
+                        className="w-full h-full object-scale-down mix-blend-multiply"
+                        alt={product?.productId?.productName}
+                      />
                     </div>
-                    <h2 className="text-lg lg:text-xl text-ellipsis line-clamp-1">
-                      {product?.productId?.productName}
-                    </h2>
+                    <div className="px-4 py-2 relative">
+                      <div
+                        className="absolute right-0 text-red-600 rounded-full p-2 hover:bg-red-600 hover:text-white cursor-pointer"
+                        onClick={() => deleteCartProduct(product?._id)}
+                      >
+                        <MdDelete />
+                      </div>
+                      <h2 className="text-lg lg:text-xl text-ellipsis line-clamp-1">
+                        {product?.productId?.productName}
+                      </h2>
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-red-600 font-medium text-lg">
-                        {displayINRCurrency(
-                          product?.productId?.price * product?.quantity
-                        )}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <button
-                        className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-6 h-6 flex justify-center items-center rounded"
-                        onClick={() =>
-                          decraseQty(product?._id, product.quantity)
-                        }
-                      >
-                        -
-                      </button>
-                      <span className="w-6 text-center">
-                        {product.quantity}
-                      </span>
-                      <button
-                        className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-6 h-6 flex justify-center items-center rounded"
-                        onClick={() =>
-                          increaseQty(product?._id, product.quantity)
-                        }
-                      >
-                        +
-                      </button>
+                      <div className="flex items-center justify-between">
+                        <p className="text-red-600 font-medium text-lg">
+                          {displayINRCurrency(product?.productId?.price * product?.quantity)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <button
+                          className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-6 h-6 flex justify-center items-center rounded"
+                          onClick={() => decraseQty(product?._id, product.quantity)}
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center">{product.quantity}</span>
+                        <button
+                          className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-6 h-6 flex justify-center items-center rounded"
+                          onClick={() => increaseQty(product?._id, product.quantity)}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Show configuration details for catering items */}
+                      {product?.productId?.category === "catering" && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => toggleConfigDetails(product._id)}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium float-right"
+                          >
+                            {showConfigDetails[product._id] ? "Hide Details" : "Show Details"}
+                          </button>
+                          
+                          {/* Configuration Details */}
+                          {showConfigDetails[product._id] && product.configuration && (
+                            <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                              <h4 className="text-sm font-semibold mb-2">Selected Items:</h4>
+                              {Object.entries(product.configuration).map(([courseType, dishes]) => (
+                                <div key={courseType} className="mb-2">
+                                  <span className="text-sm font-medium text-gray-700">{courseType}:</span>
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {Array.isArray(dishes) && dishes.map((dish, index) => (
+                                      <span
+                                        key={index}
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs
+                                          bg-blue-100 text-blue-800 border border-blue-200"
+                                      >
+                                        {dish}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
