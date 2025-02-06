@@ -19,7 +19,8 @@ const ProductDetails = () => {
   });
   const params = useParams();
   const [loading, setLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState("");
+  const [activeImages, setActiveImages] = useState([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [rating, setRating] = useState({ fullStars: 0, hasHalfStar: false }); // New state for rating
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -46,7 +47,8 @@ const ProductDetails = () => {
     setLoading(false);
     const dataResponse = await response.json();
     setData(dataResponse?.data);
-    setActiveImage(dataResponse?.data?.productImage[0]);
+    setActiveImages(dataResponse?.data?.productImage || []);
+    setActiveImageIndex(0);
     
     // Generate a random rating: 2, 3, or 4 full stars
     const randomFullStars = Math.floor(Math.random() * 3) + 2; // Generates 2, 3, or 4
@@ -224,8 +226,8 @@ const ProductDetails = () => {
     }
   }, [currentConfiguration]);
 
-  const handleImageHover = (img) => {
-    setActiveImage(img);
+  const handleImageHover = (index) => {
+    setActiveImageIndex(index);
   };
 
   // Function to handle description display
@@ -278,48 +280,50 @@ const ProductDetails = () => {
   // Handle variant selection
   const handleVariantSelect = (variant) => {
     setSelectedVariant(variant);
+    setActiveImages(variant.images || []);
+    setActiveImageIndex(0); // Reset to first image when variant changes
   };
 
   return (
     <div className='container mx-auto p-4'>
       <div className='min-h-[200px] flex flex-col lg:flex-row gap-4'>
-        {/* Product Image */}
+        {/* Product Images Section */}
         <div className='h-96 flex flex-col lg:flex-row-reverse gap-4'>
+          {/* Main Image Display */}
           <div className='h-[300px] w-[300px] lg:h-96 lg:w-96 bg-slate-200 relative p-2 overflow-hidden'>
             <div className='relative w-full h-full overflow-hidden'>
               <img
-                src={activeImage}
+                src={activeImages[activeImageIndex]}
                 className='h-full w-full object-cover transition-transform duration-300 transform hover:scale-125'
                 alt="Active product"
               />
             </div>
           </div>
+
+          {/* Thumbnail Images */}
           <div className='h-full'>
-            {
-              loading ? (
-                <div className='flex gap-2 lg:flex-col overflow-scroll scrollbar-none h-full'>
-                  {/* Placeholder */}
-                </div>
-              ) : (
-                <div className='flex gap-2 lg:flex-col overflow-scroll scrollbar-none h-full'>
-                  {
-                    data?.productImage?.map((imgURL, index) => (
-                      <div 
-                        className='h-20 w-20 bg-slate-200 rounded p-1' 
-                        key={index}
-                        onMouseEnter={() => handleImageHover(imgURL)} // Change image on hover
-                      >
-                        <img
-                          src={imgURL}
-                          className='w-full h-full object-scale-down mix-blend-multiply cursor-pointer'
-                          alt={`Thumbnail ${index}`}
-                        />
-                      </div>
-                    ))
-                  }
-                </div>
-              )
-            }
+            {loading ? (
+              <div className='flex gap-2 lg:flex-col overflow-scroll scrollbar-none h-full'>
+                {/* Loading placeholders */}
+              </div>
+            ) : (
+              <div className='flex gap-2 lg:flex-col overflow-scroll scrollbar-none h-full'>
+                {activeImages.map((imgURL, index) => (
+                  <div 
+                    className={`h-20 w-20 bg-slate-200 rounded p-1 cursor-pointer transition-all duration-200
+                      ${activeImageIndex === index ? 'ring-2 ring-red-600' : ''}`}
+                    key={index}
+                    onMouseEnter={() => handleImageHover(index)}
+                  >
+                    <img
+                      src={imgURL}
+                      className='w-full h-full object-scale-down mix-blend-multiply'
+                      alt={`Thumbnail ${index}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

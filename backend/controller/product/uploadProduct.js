@@ -80,11 +80,28 @@ async function UploadProductController(req, res) {
                 if (!variant.price || variant.price < 0) {
                     throw new Error(`Valid price is required for ${variant.itemName}`);
                 }
+                // Validate images
+                if (!Array.isArray(variant.images)) {
+                    throw new Error(`Images must be an array for variant ${variant.itemName}`);
+                }
+                if (variant.images.length === 0) {
+                    throw new Error(`At least one image is required for variant ${variant.itemName}`);
+                }
+                variant.images.forEach((image, imageIndex) => {
+                    if (!image || typeof image !== 'string') {
+                        throw new Error(`Invalid image URL at position ${imageIndex + 1} for variant ${variant.itemName}`);
+                    }
+                });
             });
 
-            // Remove the main price field for rental products
+            // For rental products, we'll use the first variant's first image as the main product image
+            productData.productImage = productData.rentalVariants[0].images;
+            
+            // Remove any standalone price for rental products
             delete productData.price;
         }
+
+        console.log('Saving product with data:', productData);
 
         const uploadProduct = new productModel(productData)
         const saveProduct = await uploadProduct.save()

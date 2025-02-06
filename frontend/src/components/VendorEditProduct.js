@@ -22,10 +22,12 @@ const VendorEditProduct = ({
     productName : productData?.productName,
     brandName : productData?.brandName,
     category : productData?.category,
-    productImage : productData?.productImage || [],
     description : productData?.description,
     price : productData?.price,
-    user: productData?.user
+    user: productData?.user,
+    ...(productData?.category?.toLowerCase() !== 'rent' && {
+      productImage : productData?.productImage || []
+    })
   })
   const [openFullScreenImage,setOpenFullScreenImage] = useState(false)
   const [fullScreenImage,setFullScreenImage] = useState("")
@@ -46,10 +48,15 @@ const VendorEditProduct = ({
     }), {}) || {}
   );
 
-  // Add state for rental variants
-  const [rentalVariants, setRentalVariants] = useState(
-    productData?.rentalVariants || [{ itemName: '', stock: '', price: '' }]
-  );
+  // Initialize rentalVariants with proper check
+  const [rentalVariants, setRentalVariants] = useState(() => {
+    // Check if productData has rentalVariants and it's not empty
+    if (productData?.rentalVariants && productData.rentalVariants.length > 0) {
+      return productData.rentalVariants;
+    }
+    // Return default variant if no existing variants
+    return [{ itemName: '', stock: '', price: '', images: [] }];
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -221,15 +228,51 @@ const VendorEditProduct = ({
     setRentalVariants(newVariants);
   };
 
-  // Add new variant
-  const addNewVariant = () => {
-    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '' }]);
+  // Handle variant image upload
+  const handleVariantImageUpload = async (e, variantIndex) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        const uploadImageCloudinary = await uploadImage(file);
+        setRentalVariants(prev => {
+          const newVariants = [...prev];
+          newVariants[variantIndex] = {
+            ...newVariants[variantIndex],
+            images: [...newVariants[variantIndex].images, uploadImageCloudinary.url]
+          };
+          return newVariants;
+        });
+      } catch (error) {
+        console.error('Image upload error:', error);
+        toast.error('Failed to upload image');
+      }
+    }
   };
 
-  // Remove variant
+  // Handle variant image deletion
+  const handleDeleteVariantImage = (variantIndex, imageIndex) => {
+    setRentalVariants(prev => {
+      const newVariants = [...prev];
+      newVariants[variantIndex] = {
+        ...newVariants[variantIndex],
+        images: newVariants[variantIndex].images.filter((_, i) => i !== imageIndex)
+      };
+      return newVariants;
+    });
+  };
+
+  // Add new variant
+  const addNewVariant = () => {
+    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '', images: [] }]);
+  };
+
+  // Update removeVariant function with safety check
   const removeVariant = (index) => {
-    const newVariants = rentalVariants.filter((_, i) => i !== index);
-    setRentalVariants(newVariants);
+    if (!rentalVariants || rentalVariants.length <= 1) {
+      toast.error('At least one variant is required');
+      return;
+    }
+    setRentalVariants(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -247,11 +290,12 @@ const VendorEditProduct = ({
 
     const finalData = {
       ...data,
-      ...(data.category.toLowerCase() === "rent" && {
-        rentalVariants: rentalVariants
-      }),
+      _id: productData._id,
       ...(data.category.toLowerCase() === "catering" && {
         catering: cateringData
+      }),
+      ...(data.category.toLowerCase() === "rent" && {
+        rentalVariants: rentalVariants
       })
     };
 
@@ -376,256 +420,307 @@ const VendorEditProduct = ({
             )}
           </select>
 
-        <label htmlFor='productImage' className='mt-3'>Product Image :</label>
-        <label htmlFor='uploadImageInput'>
-          <div className='p-2 bg-slate-100 border rounded h-22 w-full flex justify-center items-center cursor-pointer'>
-            <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
-              <span className='text-4xl'><FaCloudUploadAlt /></span>
-              <p className='text-sm'>Upload Product/Service Image</p>
-              <input type='file' id='uploadImageInput' className='hidden' accept='image/*' onChange={handleUploadProduct}/>
-            </div>
-          </div>
-        </label>
-        
-
-        <div>
-                {
-                  data?.productImage[0] ? (
-                      <div className='flex items-center gap-2'>
-                          {
-                            data.productImage.map((el,index)=>{
-                              return(
-                                <div className='relative group'>
-                                    <img 
-                                      src={el} 
-                                      alt={el} 
-                                      width={80} 
-                                      height={80}  
-                                      className='bg-slate-100 border cursor-pointer'  
-                                      onClick={()=>{
-                                        setOpenFullScreenImage(true)
-                                        setFullScreenImage(el)
-                                      }}/>
-
-                                      <div className='absolute bottom-0 right-0 p-1 text-white bg-red-600 rounded-full hidden group-hover:block cursor-pointer' onClick={()=>handleDeleteProductImage(index)} >
-                                        <MdDelete/>  
-                                      </div>
-                                </div>
-                                
-                              )
-                            })
-                          }
-                      </div>
-                  ) : (
-                    <p className='text-red-600 text-xs'>*Please upload product image</p>
-                  )
-                }
-                
-            </div>
-
-            {/* Only show price field if category is NOT rent */}
-            {data.category.toLowerCase() !== "rent" && (
-              <>
-                <label htmlFor='price' className='mt-3'>Price :</label>
-                <label htmlFor='for' className='text-xs text-blue-500'>
-                  *For caters,logistics and bakers price is price per head/plate/Trip
-                </label>
-                <label htmlFor='for' className='text-xs text-pink-600'>
-                  *For others price is for the package
-                </label>
-                <input 
-                  type='number' 
-                  id='price' 
-                  placeholder='enter price' 
-                  value={data.price} 
-                  name='price'
-                  onChange={handleOnChange}
-                  className='p-2 bg-slate-100 border rounded'
-                  required
-                />
-              </>
-            )}
-
-            <label htmlFor='description' className='mt-3'>Description :</label>
-            <textarea 
-              className='h-28 bg-slate-100 border resize-none p-1 rounded' 
-              placeholder='enter product description' 
-              rows={3} 
-              onChange={handleOnChange} 
-              name='description'
-              value={data.description}
-            >
-            </textarea>
-
-            {data.category.toLowerCase() === "catering" && (
-              <div className="space-y-6 border-t pt-4 mt-4">
-                <h3 className="text-lg font-semibold text-gray-800">Course Details</h3>
-                
-                <div className="space-y-3">
-                  <p className="font-medium text-gray-700">Select Course Type:</p>
-                  <div className="flex flex-wrap gap-6">
-                    {['3', '5', '7', '10'].map((type) => (
-                      <label key={type} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="courseType"
-                          value={type}
-                          checked={courseType === type}
-                          onChange={handleCourseTypeChange}
-                          className="w-4 h-4 text-red-600"
-                        />
-                        <span>{type} Course Meal</span>
-                      </label>
-                    ))}
-                  </div>
+        {/* Only show main image upload if NOT rent category */}
+        {data.category.toLowerCase() !== "rent" && (
+          <>
+            <label htmlFor='productImage' className='mt-3'>
+              Product Images
+              <span className="text-xs text-gray-500 ml-2">
+                (You can select multiple images)
+              </span>
+            </label>
+            <label htmlFor='uploadImageInput'>
+              <div className='p-2 bg-slate-100 border rounded h-22 w-full flex justify-center items-center cursor-pointer hover:bg-slate-200 transition-colors'>
+                <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
+                  <span className='text-4xl'><FaCloudUploadAlt /></span>
+                  <p className='text-sm'>Upload Product/Service Images</p>
+                  <input 
+                    type='file' 
+                    id='uploadImageInput' 
+                    className='hidden' 
+                    multiple
+                    accept="image/*"
+                    onChange={handleUploadProduct}
+                  />
                 </div>
+              </div>
+            </label>
 
-                {courseType && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {getCourseFields().map((course, index) => (
-                      <div key={course.name} className="bg-white p-4 rounded-lg border">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="w-7 h-7 flex items-center justify-center bg-red-100 text-red-600 rounded-full font-medium">
-                            {index + 1}
-                          </span>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-800">{course.label}</h4>
-                            <p className="text-xs text-gray-500">{course.description}</p>
-                          </div>
-                        </div>
+            {/* Image Preview Grid */}
+            {data.productImage && data.productImage.length > 0 && (
+              <div className='mt-4'>
+                <div className='grid grid-cols-4 gap-2'>
+                  {data.productImage.map((image, index) => (
+                    <div key={index} className='relative group aspect-square'>
+                      <img
+                        src={image}
+                        alt={`Product ${index + 1}`}
+                        className='w-full h-full object-cover rounded-lg'
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProductImage(index)}
+                        className='absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                      >
+                        <MdDelete size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Image Count Display */}
+                <p className="text-sm text-gray-500 mt-2">
+                  {data.productImage.length} image{data.productImage.length !== 1 ? 's' : ''} uploaded
+                </p>
+              </div>
+            )}
+          </>
+        )}
 
-                        <div className="relative mb-3">
-                          <input
-                            type="text"
-                            placeholder={`Add a dish to ${course.label.toLowerCase()}`}
-                            value={newDishes[course.name] || ''}
-                            onChange={(e) => handleNewDishChange(course.name, e.target.value)}
-                            onKeyPress={(e) => handleKeyPress(e, course.name)}
-                            className="w-full pl-3 pr-12 py-2 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
-                          />
+        {/* Only show price field if category is NOT rent */}
+        {data.category.toLowerCase() !== "rent" && (
+          <>
+            <label htmlFor='price' className='mt-3'>Price :</label>
+            <label htmlFor='for' className='text-xs text-blue-500'>
+              *For caters,logistics and bakers price is price per head/plate/Trip
+            </label>
+            <label htmlFor='for' className='text-xs text-pink-600'>
+              *For others price is for the package
+            </label>
+            <input 
+              type='number' 
+              id='price' 
+              placeholder='enter price' 
+              value={data.price} 
+              name='price'
+              onChange={handleOnChange}
+              className='p-2 bg-slate-100 border rounded'
+              required
+            />
+          </>
+        )}
+
+        <label htmlFor='description' className='mt-3'>Description :</label>
+        <textarea 
+          className='h-28 bg-slate-100 border resize-none p-1 rounded' 
+          placeholder='enter product description' 
+          rows={3} 
+          onChange={handleOnChange} 
+          name='description'
+          value={data.description}
+        >
+        </textarea>
+
+        {data.category.toLowerCase() === "catering" && (
+          <div className="space-y-6 border-t pt-4 mt-4">
+            <h3 className="text-lg font-semibold text-gray-800">Course Details</h3>
+            
+            <div className="space-y-3">
+              <p className="font-medium text-gray-700">Select Course Type:</p>
+              <div className="flex flex-wrap gap-6">
+                {['3', '5', '7', '10'].map((type) => (
+                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="courseType"
+                      value={type}
+                      checked={courseType === type}
+                      onChange={handleCourseTypeChange}
+                      className="w-4 h-4 text-red-600"
+                    />
+                    <span>{type} Course Meal</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {courseType && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {getCourseFields().map((course, index) => (
+                  <div key={course.name} className="bg-white p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-7 h-7 flex items-center justify-center bg-red-100 text-red-600 rounded-full font-medium">
+                        {index + 1}
+                      </span>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-800">{course.label}</h4>
+                        <p className="text-xs text-gray-500">{course.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="relative mb-3">
+                      <input
+                        type="text"
+                        placeholder={`Add a dish to ${course.label.toLowerCase()}`}
+                        value={newDishes[course.name] || ''}
+                        onChange={(e) => handleNewDishChange(course.name, e.target.value)}
+                        onKeyPress={(e) => handleKeyPress(e, course.name)}
+                        className="w-full pl-3 pr-12 py-2 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddDish(course.name)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5 mb-3 max-h-32 overflow-y-auto">
+                      {courseDishes[course.name]?.map((dish, dishIndex) => (
+                        <div 
+                          key={dishIndex}
+                          className="flex items-center justify-between bg-gray-50 px-3 py-1.5 rounded-md text-sm group"
+                        >
+                          <span className="text-gray-700">{dish}</span>
                           <button
                             type="button"
-                            onClick={() => handleAddDish(course.name)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                            onClick={() => handleRemoveDish(course.name, dishIndex)}
+                            className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
                         </div>
-
-                        <div className="space-y-1.5 mb-3 max-h-32 overflow-y-auto">
-                          {courseDishes[course.name]?.map((dish, dishIndex) => (
-                            <div 
-                              key={dishIndex}
-                              className="flex items-center justify-between bg-gray-50 px-3 py-1.5 rounded-md text-sm group"
-                            >
-                              <span className="text-gray-700">{dish}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveDish(course.name, dishIndex)}
-                                className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-
-                        <textarea
-                          name={course.name}
-                          value={cateringCourses[course.name]}
-                          onChange={handleCateringChange}
-                          className="w-full p-2 bg-gray-50 border rounded-lg resize-none text-sm"
-                          rows="2"
-                          placeholder="Additional notes (optional)"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Rental Variants Section */}
-            {data.category.toLowerCase() === "rent" && (
-              <div className="space-y-4 mt-4 border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-800">Item Variants</h3>
-                  <button
-                    type="button"
-                    onClick={addNewVariant}
-                    className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                  >
-                    <span className="text-xl">+</span> Add Variant
-                  </button>
-                </div>
-
-                {rentalVariants.map((item, index) => (
-                  <div key={index} className="flex items-end gap-4 bg-gray-50 p-3 rounded-lg">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Item Name
-                      </label>
-                      <input
-                        type="text"
-                        value={item.itemName}
-                        onChange={(e) => handleVariantChange(index, 'itemName', e.target.value)}
-                        placeholder="e.g., Plastic Chair, Wooden Chair"
-                        className="p-2 bg-white border rounded w-full"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="w-24">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock
-                      </label>
-                      <input
-                        type="number"
-                        value={item.stock}
-                        onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
-                        placeholder="Qty"
-                        className="p-2 bg-white border rounded w-full"
-                        required
-                        min="1"
-                      />
+                      ))}
                     </div>
 
-                    <div className="w-32">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={item.price}
-                        onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
-                        placeholder="Price"
-                        className="p-2 bg-white border rounded w-full"
-                        required
-                        min="0"
-                      />
-                    </div>
-
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(index)}
-                        className="text-red-500 hover:text-red-700 p-2"
-                      >
-                        <MdDelete size={20} />
-                      </button>
-                    )}
+                    <textarea
+                      name={course.name}
+                      value={cateringCourses[course.name]}
+                      onChange={handleCateringChange}
+                      className="w-full p-2 bg-gray-50 border rounded-lg resize-none text-sm"
+                      rows="2"
+                      placeholder="Additional notes (optional)"
+                    />
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
 
-            <button className='px-3 py-2 bg-red-600 text-white mb-10 hover:bg-red-700 rounded-2xl' onClick={handleSubmit}>
-              Update Product
-            </button>
+        {/* Rental Variants Section */}
+        {data.category.toLowerCase() === "rent" && rentalVariants && (
+          <div className="space-y-4 mt-4 border-t pt-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-800">Item Variants</h3>
+              <button
+                type="button"
+                onClick={addNewVariant}
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <span className="text-xl">+</span> Add Variant
+              </button>
+            </div>
+
+            {rentalVariants.map((variant, variantIndex) => (
+              <div key={variantIndex} className="p-4 bg-gray-50 rounded-lg space-y-4">
+                {/* Variant Details */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Item Name
+                    </label>
+                    <input
+                      type="text"
+                      value={variant.itemName}
+                      onChange={(e) => handleVariantChange(variantIndex, 'itemName', e.target.value)}
+                      className="p-2 bg-white border rounded w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      value={variant.stock}
+                      onChange={(e) => handleVariantChange(variantIndex, 'stock', e.target.value)}
+                      className="p-2 bg-white border rounded w-full"
+                      required
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={variant.price}
+                      onChange={(e) => handleVariantChange(variantIndex, 'price', e.target.value)}
+                      className="p-2 bg-white border rounded w-full"
+                      required
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Variant Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Variant Images
+                  </label>
+                  <label className="block">
+                    <div className='p-2 bg-white border rounded h-22 w-full flex justify-center items-center cursor-pointer hover:bg-gray-50'>
+                      <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
+                        <span className='text-4xl'><FaCloudUploadAlt /></span>
+                        <p className='text-sm'>Upload Images for {variant.itemName || 'this variant'}</p>
+                        <input
+                          type='file'
+                          className='hidden'
+                          onChange={(e) => handleVariantImageUpload(e, variantIndex)}
+                        />
+                      </div>
+                    </div>
+                  </label>
+
+                  {/* Variant Images Preview with safety check */}
+                  {variant.images && variant.images.length > 0 && (
+                    <div className='flex flex-wrap items-center gap-2 mt-2'>
+                      {variant.images.map((image, imageIndex) => (
+                        <div key={imageIndex} className='relative group'>
+                          <img
+                            src={image}
+                            alt={`${variant.itemName} - ${imageIndex + 1}`}
+                            className='w-20 h-20 object-cover rounded'
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteVariantImage(variantIndex, imageIndex)}
+                            className='absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                          >
+                            <MdDelete size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Remove Variant Button with safety check */}
+                {rentalVariants && rentalVariants.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(variantIndex)}
+                    className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
+                  >
+                    <MdDelete size={16} /> Remove Variant
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button className='px-3 py-2 bg-red-600 text-white mb-10 hover:bg-red-700 rounded-2xl' onClick={handleSubmit}>
+          Update Product
+        </button>
 
       </form>
 

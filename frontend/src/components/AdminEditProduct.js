@@ -22,10 +22,12 @@ const AdminEditProduct = ({
     productName : productData?.productName,
     brandName : productData?.brandName,
     category : productData?.category,
-    productImage : productData?.productImage || [],
     description : productData?.description,
     price : productData?.price,
-    user: productData?.user
+    user: productData?.user,
+    ...(productData?.category?.toLowerCase() !== 'rent' && {
+      productImage: productData?.productImage || []
+    })
   })
   const [openFullScreenImage,setOpenFullScreenImage] = useState(false)
   const [fullScreenImage,setFullScreenImage] = useState("")
@@ -46,10 +48,15 @@ const AdminEditProduct = ({
     }), {}) || {}
   );
 
-  // Add state for rental variants
-  const [rentalVariants, setRentalVariants] = useState(
-    productData?.rentalVariants || [{ itemName: '', stock: '', price: '' }]
-  );
+  // Initialize rentalVariants with proper check
+  const [rentalVariants, setRentalVariants] = useState(() => {
+    // Check if productData has rentalVariants and it's not empty
+    if (productData?.rentalVariants && productData.rentalVariants.length > 0) {
+      return productData.rentalVariants;
+    }
+    // Return default variant if no existing variants
+    return [{ itemName: '', stock: '', price: '', images: [] }];
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -329,15 +336,64 @@ const AdminEditProduct = ({
     setRentalVariants(newVariants);
   };
 
-  // Add new variant
-  const addNewVariant = () => {
-    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '' }]);
+  // Handle multiple variant image upload
+  const handleVariantImageUpload = async (e, variantIndex) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    try {
+      const loadingToast = toast.loading(`Uploading ${files.length} images...`);
+      const uploadPromises = files.map(file => uploadImage(file));
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      setRentalVariants(prev => {
+        const newVariants = [...prev];
+        newVariants[variantIndex] = {
+          ...newVariants[variantIndex],
+          images: [
+            ...newVariants[variantIndex].images,
+            ...uploadedImages.map(result => result.url)
+          ]
+        };
+        return newVariants;
+      });
+
+      toast.update(loadingToast, {
+        render: `Successfully uploaded ${files.length} images`,
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload some images');
+    }
   };
 
-  // Remove variant
+  // Handle variant image deletion
+  const handleDeleteVariantImage = (variantIndex, imageIndex) => {
+    setRentalVariants(prev => {
+      const newVariants = [...prev];
+      newVariants[variantIndex] = {
+        ...newVariants[variantIndex],
+        images: newVariants[variantIndex].images.filter((_, i) => i !== imageIndex)
+      };
+      return newVariants;
+    });
+  };
+
+  // Add new variant
+  const addNewVariant = () => {
+    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '', images: [] }]);
+  };
+
+  // Remove variant with safety check
   const removeVariant = (index) => {
-    const newVariants = rentalVariants.filter((_, i) => i !== index);
-    setRentalVariants(newVariants);
+    if (!rentalVariants || rentalVariants.length <= 1) {
+      toast.error('At least one variant is required');
+      return;
+    }
+    setRentalVariants(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -414,33 +470,52 @@ const AdminEditProduct = ({
               </div>
 
               {/* Image Upload Section */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
-                <div className='border-2 border-dashed border-gray-300 rounded-lg p-4 text-center'>
-                  <input type='file' id='uploadImageInput' className='hidden' accept='image/*' onChange={handleUploadProduct}/>
-                  <label htmlFor='uploadImageInput' className='cursor-pointer'>
-                    <FaCloudUploadAlt className="mx-auto text-4xl text-gray-400 mb-2" />
-                    <p className='text-sm text-gray-500'>Click to upload product images</p>
+              {data.category.toLowerCase() !== "rent" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Product Images
+                    <span className="text-xs text-gray-500 ml-2">
+                      (You can select multiple images)
+                    </span>
                   </label>
-                </div>
-                {/* Image Preview */}
-                {data.productImage.length > 0 && (
-                  <div className='flex gap-2 mt-2 flex-wrap'>
-                    {data.productImage.map((img, idx) => (
-                      <div key={idx} className='relative group'>
-                        <img src={img} alt="" className='w-20 h-20 object-cover rounded' />
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProductImage(idx)}
-                          className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity'
-                        >
-                          <MdDelete size={16} />
-                        </button>
-                      </div>
-                    ))}
+                  <div className='border-2 border-dashed border-gray-300 rounded-lg p-4 text-center'>
+                    <input 
+                      type='file' 
+                      id='uploadImageInput' 
+                      className='hidden' 
+                      accept='image/*'
+                      multiple
+                      onChange={handleUploadProduct}
+                    />
+                    <label htmlFor='uploadImageInput' className='cursor-pointer'>
+                      <FaCloudUploadAlt className="mx-auto text-4xl text-gray-400 mb-2" />
+                      <p className='text-sm text-gray-500'>Click to upload product images</p>
+                    </label>
                   </div>
-                )}
-              </div>
+                  
+                  {/* Image Preview */}
+                  {data.productImage && data.productImage.length > 0 && (
+                    <div className='grid grid-cols-4 gap-2 mt-2'>
+                      {data.productImage.map((img, idx) => (
+                        <div key={idx} className='relative group aspect-square'>
+                          <img 
+                            src={img} 
+                            alt="" 
+                            className='w-full h-full object-cover rounded-lg'
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProductImage(idx)}
+                            className='absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                          >
+                            <MdDelete size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Only show price field if category is NOT rent */}
               {data.category.toLowerCase() !== "rent" && (
@@ -475,7 +550,7 @@ const AdminEditProduct = ({
             </div>
 
             {/* Rental Variants Section */}
-            {data.category.toLowerCase() === "rent" && (
+            {data.category.toLowerCase() === "rent" && rentalVariants && (
               <div className="space-y-4 mt-4 border-t pt-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-gray-800">Item Variants</h3>
@@ -488,59 +563,118 @@ const AdminEditProduct = ({
                   </button>
                 </div>
 
-                {rentalVariants.map((item, index) => (
-                  <div key={index} className="flex items-end gap-4 bg-gray-50 p-3 rounded-lg">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Item Name
-                      </label>
-                      <input
-                        type="text"
-                        value={item.itemName}
-                        onChange={(e) => handleVariantChange(index, 'itemName', e.target.value)}
-                        placeholder="e.g., Plastic Chair, Wooden Chair"
-                        className="p-2 bg-white border rounded w-full"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="w-24">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock
-                      </label>
-                      <input
-                        type="number"
-                        value={item.stock}
-                        onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
-                        placeholder="Qty"
-                        className="p-2 bg-white border rounded w-full"
-                        required
-                        min="1"
-                      />
+                {rentalVariants.map((variant, variantIndex) => (
+                  <div key={variantIndex} className="p-4 bg-gray-50 rounded-lg space-y-4">
+                    {/* Variant Details */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Item Name
+                        </label>
+                        <input
+                          type="text"
+                          value={variant.itemName}
+                          onChange={(e) => handleVariantChange(variantIndex, 'itemName', e.target.value)}
+                          placeholder="e.g., Plastic Chair, Wooden Chair"
+                          className="p-2 bg-white border rounded w-full"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="w-24">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Stock
+                        </label>
+                        <input
+                          type="number"
+                          value={variant.stock}
+                          onChange={(e) => handleVariantChange(variantIndex, 'stock', e.target.value)}
+                          placeholder="Qty"
+                          className="p-2 bg-white border rounded w-full"
+                          required
+                          min="1"
+                        />
+                      </div>
+
+                      <div className="w-32">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Price (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={variant.price}
+                          onChange={(e) => handleVariantChange(variantIndex, 'price', e.target.value)}
+                          placeholder="Price"
+                          className="p-2 bg-white border rounded w-full"
+                          required
+                          min="0"
+                        />
+                      </div>
                     </div>
 
-                    <div className="w-32">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Price (₹)
+                    {/* Variant Image Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Variant Images
+                        <span className="text-xs text-gray-500 ml-2">
+                          (You can select multiple images)
+                        </span>
                       </label>
-                      <input
-                        type="number"
-                        value={item.price}
-                        onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
-                        placeholder="Price"
-                        className="p-2 bg-white border rounded w-full"
-                        required
-                        min="0"
-                      />
+                      <div className='border-2 border-dashed border-gray-300 rounded-lg p-4 text-center'>
+                        <input
+                          type='file'
+                          multiple
+                          accept="image/*"
+                          className='hidden'
+                          id={`variant-images-${variantIndex}`}
+                          onChange={(e) => handleVariantImageUpload(e, variantIndex)}
+                        />
+                        <label htmlFor={`variant-images-${variantIndex}`} className='cursor-pointer'>
+                          <FaCloudUploadAlt className="mx-auto text-4xl text-gray-400 mb-2" />
+                          <p className='text-sm text-gray-500'>
+                            Upload Images for {variant.itemName || 'this variant'}
+                          </p>
+                        </label>
+                      </div>
+
+                      {/* Variant Images Preview */}
+                      {variant.images && variant.images.length > 0 && (
+                        <div className='mt-2'>
+                          <div className='grid grid-cols-4 gap-2'>
+                            {variant.images.map((image, imageIndex) => (
+                              <div key={imageIndex} className='relative group aspect-square'>
+                                <img
+                                  src={image}
+                                  alt={`${variant.itemName} - ${imageIndex + 1}`}
+                                  className='w-full h-full object-cover rounded-lg'
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteVariantImage(variantIndex, imageIndex)}
+                                  className='absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                                >
+                                  <MdDelete size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Image Count */}
+                          <p className="text-sm text-gray-500 mt-2">
+                            {variant.images.length} image{variant.images.length !== 1 ? 's' : ''} uploaded
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    {index > 0 && (
+                    {/* Remove Variant Button */}
+                    {rentalVariants.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => removeVariant(index)}
-                        className="text-red-500 hover:text-red-700 p-2"
+                        onClick={() => removeVariant(variantIndex)}
+                        className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
                       >
-                        <MdDelete size={20} />
+                        <MdDelete size={16} /> Remove Variant
                       </button>
                     )}
                   </div>

@@ -42,6 +42,16 @@ const rentalVariantSchema = new mongoose.Schema({
         type: Number,
         required: true,
         min: 0
+    },
+    images: {
+        type: [String],
+        required: true,
+        validate: {
+            validator: function(v) {
+                return v.length > 0;
+            },
+            message: 'At least one image is required for each variant'
+        }
     }
 });
 
@@ -94,6 +104,12 @@ const productSchema = mongoose.Schema({
         type: [rentalVariantSchema],
         required: function() {
             return this.category === 'rent';
+        },
+        validate: {
+            validator: function(v) {
+                return this.category !== 'rent' || (Array.isArray(v) && v.length > 0);
+            },
+            message: 'At least one variant is required for rental products'
         }
     }
 }, {

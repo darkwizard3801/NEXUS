@@ -39,7 +39,7 @@ const UploadProduct = ({ onClose, fetchData }) => {
   const [newDishes, setNewDishes] = useState({}); // Object to store new dish input for each course
   const [courseDishes, setCourseDishes] = useState({});
   const [rentalVariants, setRentalVariants] = useState([
-    { itemName: '', stock: '', price: '' }  // Added price to initial variant
+    { itemName: '', stock: '', price: '', images: [] }  // Added images array
   ]);
 
   useEffect(() => {
@@ -127,19 +127,40 @@ const UploadProduct = ({ onClose, fetchData }) => {
     }));
   };
 
+  // Handle multiple product images upload
   const handleUploadProduct = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const uploadImageCloudinary = await uploadImage(file);
-      setData((prev) => ({
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading(`Uploading ${files.length} images...`);
+
+      // Upload all images concurrently
+      const uploadPromises = files.map(file => uploadImage(file));
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      setData(prev => ({
         ...prev,
-        productImage: [...prev.productImage, uploadImageCloudinary.url]
+        productImage: [...prev.productImage, ...uploadedImages.map(result => result.url)]
       }));
+
+      // Update loading toast to success
+      toast.update(loadingToast, {
+        render: `Successfully uploaded ${files.length} images`,
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload some images');
     }
   };
 
+  // Handle product image deletion
   const handleDeleteProductImage = (index) => {
-    setData((prev) => ({
+    setData(prev => ({
       ...prev,
       productImage: prev.productImage.filter((_, i) => i !== index)
     }));
@@ -152,7 +173,7 @@ const UploadProduct = ({ onClose, fetchData }) => {
   };
 
   const addNewVariant = () => {
-    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '' }]);
+    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '', images: [] }]);
   };
 
   const removeVariant = (index) => {
@@ -341,6 +362,56 @@ const UploadProduct = ({ onClose, fetchData }) => {
     }));
   };
 
+  // Handle multiple variant image upload
+  const handleVariantImageUpload = async (e, variantIndex) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading(`Uploading ${files.length} images...`);
+
+      // Upload all images concurrently
+      const uploadPromises = files.map(file => uploadImage(file));
+      const uploadedImages = await Promise.all(uploadPromises);
+
+      setRentalVariants(prev => {
+        const newVariants = [...prev];
+        newVariants[variantIndex] = {
+          ...newVariants[variantIndex],
+          images: [
+            ...newVariants[variantIndex].images,
+            ...uploadedImages.map(result => result.url)
+          ]
+        };
+        return newVariants;
+      });
+
+      // Update loading toast to success
+      toast.update(loadingToast, {
+        render: `Successfully uploaded ${files.length} images`,
+        type: "success",
+        isLoading: false,
+        autoClose: 2000
+      });
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload some images');
+    }
+  };
+
+  // Handle variant image deletion
+  const handleDeleteVariantImage = (variantIndex, imageIndex) => {
+    setRentalVariants(prev => {
+      const newVariants = [...prev];
+      newVariants[variantIndex] = {
+        ...newVariants[variantIndex],
+        images: newVariants[variantIndex].images.filter((_, i) => i !== imageIndex)
+      };
+      return newVariants;
+    });
+  };
+
   return (
     <div className='fixed  w-full h-full bg-slate-200 bg-opacity-35 top-0 left-0 right-0 bottom-0 flex justify-center items-center'>
       <div className='bg-white p-4 rounded w-full max-w-2xl h-full max-h-[80%] overflow-hidden'>
@@ -402,43 +473,67 @@ const UploadProduct = ({ onClose, fetchData }) => {
             Current category: {data.category}
           </div>
 
-          <label htmlFor='productImage' className='mt-3'>Product Image :</label>
-          <label htmlFor='uploadImageInput'>
-            <div className='p-2 bg-slate-100 border rounded h-22 w-full flex justify-center items-center cursor-pointer'>
-              <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
-                <span className='text-4xl'><FaCloudUploadAlt /></span>
-                <p className='text-sm'>Upload Product/Service Image</p>
-                <input type='file' id='uploadImageInput' className='hidden' onChange={handleUploadProduct} />
-              </div>
-            </div>
-          </label>
-
-          <div>
-            {data.productImage.length > 0 ? (
-              <div className='flex items-center gap-2'>
-                {data.productImage.map((el, index) => (
-                  <div className='relative group' key={index}>
-                    <img
-                      src={el}
-                      alt={el}
-                      width={80}
-                      height={80}
-                      className='bg-slate-100 border cursor-pointer'
-                      onClick={() => {
-                        setOpenFullScreenImage(true);
-                        setFullScreenImage(el);
-                      }}
+          {/* Only show main image upload if NOT rent category */}
+          {data.category.toLowerCase() !== "rent" && (
+            <>
+              <label htmlFor='productImage' className='mt-3'>
+                Product Images
+                <span className="text-xs text-gray-500 ml-2">
+                  (You can select multiple images)
+                </span>
+              </label>
+              <label htmlFor='uploadImageInput'>
+                <div className='p-2 bg-slate-100 border rounded h-22 w-full flex justify-center items-center cursor-pointer hover:bg-slate-200 transition-colors'>
+                  <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
+                    <span className='text-4xl'><FaCloudUploadAlt /></span>
+                    <p className='text-sm'>Upload Product/Service Images</p>
+                    <input 
+                      type='file' 
+                      id='uploadImageInput' 
+                      className='hidden' 
+                      multiple
+                      accept="image/*"
+                      onChange={handleUploadProduct} 
                     />
-                    <div className='absolute bottom-0 right-0 p-1 text-white bg-red-600 rounded-full hidden group-hover:block cursor-pointer' onClick={() => handleDeleteProductImage(index)}>
-                      <MdDelete />
-                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className='text-red-600 text-xs'>*Please upload product image</p>
-            )}
-          </div>
+                </div>
+              </label>
+
+              {/* Image Preview Grid */}
+              {data.productImage.length > 0 && (
+                <div className='mt-4'>
+                  <div className='grid grid-cols-4 gap-2'>
+                    {data.productImage.map((image, index) => (
+                      <div key={index} className='relative group aspect-square'>
+                        <img
+                          src={image}
+                          alt={`Product ${index + 1}`}
+                          className='w-full h-full object-cover rounded-lg'
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProductImage(index)}
+                          className='absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                        >
+                          <MdDelete size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Image Count Display */}
+                  <p className="text-sm text-gray-500 mt-2">
+                    {data.productImage.length} image{data.productImage.length !== 1 ? 's' : ''} uploaded
+                  </p>
+
+                  {/* Validation Message */}
+                  {data.productImage.length === 0 && (
+                    <p className='text-red-600 text-xs mt-1'>*Please upload at least one product image</p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           {/* Only show price field if category is NOT rent */}
           {data.category.toLowerCase() !== "rent" && (
@@ -607,66 +702,124 @@ const UploadProduct = ({ onClose, fetchData }) => {
                 <h3 className="text-lg font-semibold text-gray-800">Item Variants</h3>
                 <button
                   type="button"
-                  onClick={addNewVariant}
+                  onClick={() => setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '', images: [] }])}
                   className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
                 >
                   <span className="text-xl">+</span> Add Variant
                 </button>
               </div>
 
-              {rentalVariants.map((item, index) => (
-                <div key={index} className="flex items-end gap-4 bg-gray-50 p-3 rounded-lg">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Item Name
-                    </label>
-                    <input
-                      type="text"
-                      value={item.itemName}
-                      onChange={(e) => handleVariantChange(index, 'itemName', e.target.value)}
-                      placeholder="e.g., Plastic Chair, Wooden Chair"
-                      className="p-2 bg-white border rounded w-full"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="w-24">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Stock
-                    </label>
-                    <input
-                      type="number"
-                      value={item.stock}
-                      onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
-                      placeholder="Qty"
-                      className="p-2 bg-white border rounded w-full"
-                      required
-                      min="1"
-                    />
+              {rentalVariants.map((variant, variantIndex) => (
+                <div key={variantIndex} className="p-4 bg-gray-50 rounded-lg space-y-4">
+                  {/* Variant Details */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Item Name
+                      </label>
+                      <input
+                        type="text"
+                        value={variant.itemName}
+                        onChange={(e) => handleVariantChange(variantIndex, 'itemName', e.target.value)}
+                        placeholder="e.g., Plastic Chair, Wooden Chair"
+                        className="p-2 bg-white border rounded w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock
+                      </label>
+                      <input
+                        type="number"
+                        value={variant.stock}
+                        onChange={(e) => handleVariantChange(variantIndex, 'stock', e.target.value)}
+                        placeholder="Qty"
+                        className="p-2 bg-white border rounded w-full"
+                        required
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={variant.price}
+                        onChange={(e) => handleVariantChange(variantIndex, 'price', e.target.value)}
+                        placeholder="Price"
+                        className="p-2 bg-white border rounded w-full"
+                        required
+                        min="0"
+                      />
+                    </div>
                   </div>
 
-                  <div className="w-32">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (₹)
+                  {/* Updated Image Upload Section */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Variant Images
+                      <span className="text-xs text-gray-500 ml-2">
+                        (You can select multiple images)
+                      </span>
                     </label>
-                    <input
-                      type="number"
-                      value={item.price}
-                      onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
-                      placeholder="Price"
-                      className="p-2 bg-white border rounded w-full"
-                      required
-                      min="0"
-                    />
+                    <label className="block">
+                      <div className='p-2 bg-white border rounded h-22 w-full flex justify-center items-center cursor-pointer hover:bg-gray-50'>
+                        <div className='text-slate-500 flex justify-center items-center flex-col gap-2'>
+                          <span className='text-4xl'><FaCloudUploadAlt /></span>
+                          <p className='text-sm'>Upload Images for {variant.itemName || 'this variant'}</p>
+                          <input
+                            type='file'
+                            multiple // Enable multiple file selection
+                            accept="image/*" // Accept only images
+                            className='hidden'
+                            onChange={(e) => handleVariantImageUpload(e, variantIndex)}
+                          />
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Image Preview Grid */}
+                    {variant.images && variant.images.length > 0 && (
+                      <div className='grid grid-cols-4 gap-2 mt-2'>
+                        {variant.images.map((image, imageIndex) => (
+                          <div key={imageIndex} className='relative group aspect-square'>
+                            <img
+                              src={image}
+                              alt={`${variant.itemName} - ${imageIndex + 1}`}
+                              className='w-full h-full object-cover rounded'
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariantImage(variantIndex, imageIndex)}
+                              className='absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                            >
+                              <MdDelete size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Image Count Display */}
+                    {variant.images && variant.images.length > 0 && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        {variant.images.length} image{variant.images.length !== 1 ? 's' : ''} uploaded
+                      </p>
+                    )}
                   </div>
 
-                  {index > 0 && (
+                  {/* Remove Variant Button */}
+                  {variantIndex > 0 && (
                     <button
                       type="button"
-                      onClick={() => removeVariant(index)}
-                      className="text-red-500 hover:text-red-700 p-2"
+                      onClick={() => {
+                        setRentalVariants(prev => prev.filter((_, i) => i !== variantIndex));
+                      }}
+                      className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
                     >
-                      <MdDelete size={20} />
+                      <MdDelete size={16} /> Remove Variant
                     </button>
                   )}
                 </div>

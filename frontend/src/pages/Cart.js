@@ -448,6 +448,19 @@ const Cart = () => {
     }));
   };
 
+  // Helper function to get the appropriate image for the product
+  const getProductImage = (product) => {
+    if (product?.productId?.category?.toLowerCase() === 'rent' && product?.rentalVariant) {
+      // For rental products, use the first image from the matching variant
+      const variant = product.productId.rentalVariants.find(
+        v => v._id === product.rentalVariant.variantId
+      );
+      return variant?.images?.[0] || product?.productId?.productImage[0];
+    }
+    // For non-rental products, use the first product image
+    return product?.productId?.productImage[0];
+  };
+
   return (
     <div className="container mx-auto">
       {/* Address Section with role-based redirect */}
@@ -529,11 +542,13 @@ const Cart = () => {
                   className="w-full bg-white my-1.5 border border-slate-300 rounded"
                 >
                   <div className="grid grid-cols-[128px,1fr]">
-                    <div className="w-32 h-32 bg-slate-200">
+                    <div className="w-32 h-32 bg-slate-200 overflow-hidden">
                       <img
-                        src={product?.productId?.productImage[0]}
-                        className="w-full h-full object-scale-down mix-blend-multiply"
-                        alt={product?.productId?.productName}
+                        src={getProductImage(product)}
+                        className="w-full h-full object-cover"
+                        alt={`${product?.productId?.productName} ${
+                          product?.rentalVariant ? `- ${product.rentalVariant.variantName}` : ''
+                        }`}
                       />
                     </div>
                     <div className="px-4 py-2 relative">
@@ -613,18 +628,9 @@ const Cart = () => {
 
                       {/* Show rental variant details */}
                       {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant && (
-                        <div className="mt-2">
-                          <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                            <h4 className="text-sm font-semibold mb-2">Selected Option:</h4>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-700">
-                                {product.rentalVariant.variantName}
-                              </span>
-                              <span className="text-sm font-medium text-red-600">
-                                {displayINRCurrency(product.rentalVariant.variantPrice)} per item
-                              </span>
-                            </div>
-                          </div>
+                        <div className="mt-2 text-sm text-gray-600">
+                          <p>Option: {product.rentalVariant.variantName}</p>
+                          <p>Price per item: {displayINRCurrency(product.rentalVariant.variantPrice)}</p>
                         </div>
                       )}
                     </div>
