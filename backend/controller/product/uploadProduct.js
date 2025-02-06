@@ -12,8 +12,9 @@ async function UploadProductController(req, res) {
         // Extract data from request body
         const productData = {
             ...req.body
-            
         };
+
+        console.log('Received Data:', productData);
 
         // If it's a catering product, validate and structure the catering data
         if (productData.category === "Catering" && productData.catering) {
@@ -57,6 +58,32 @@ async function UploadProductController(req, res) {
                     throw new Error(`Additional notes must be text for course ${index + 1}`);
                 }
             });
+        }
+
+        // If it's a rental product, validate and structure the rental data
+        if (productData.category === "rent" && productData.rentalVariants) {
+            console.log('Processing rental variants:', productData.rentalVariants);
+            
+            // Validate rental variants
+            if (!Array.isArray(productData.rentalVariants)) {
+                throw new Error("Rental variants must be an array");
+            }
+
+            // Validate each variant
+            productData.rentalVariants.forEach((variant, index) => {
+                if (!variant.itemName) {
+                    throw new Error(`Item name is required for variant ${index + 1}`);
+                }
+                if (!variant.stock || variant.stock < 0) {
+                    throw new Error(`Valid stock quantity is required for ${variant.itemName}`);
+                }
+                if (!variant.price || variant.price < 0) {
+                    throw new Error(`Valid price is required for ${variant.itemName}`);
+                }
+            });
+
+            // Remove the main price field for rental products
+            delete productData.price;
         }
 
         const uploadProduct = new productModel(productData)

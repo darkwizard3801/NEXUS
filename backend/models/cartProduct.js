@@ -10,6 +10,14 @@ const addToCart = mongoose.Schema({
    configuration: {
         type: Object,  // This will store the configuration object
         default: null  // Default to null for non-catering items
+   },
+   rentalVariant: {
+        type: {
+            variantId: String,
+            variantName: String,
+            variantPrice: Number
+        },
+        default: null
    }
 },{
     timestamps : true

@@ -30,6 +30,23 @@ const AdminProductCard = ({ data, fetchdata }) => {
     return user ? user.name : 'User not found'; // Use 'name' instead of 'username'
   };
 
+  // Function to get price range for rental items
+  const getRentalPriceRange = () => {
+    if (!data.rentalVariants || data.rentalVariants.length === 0) {
+      return "Price not available";
+    }
+
+    const prices = data.rentalVariants.map(item => item.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (minPrice === maxPrice) {
+      return displayINRCurrency(minPrice);
+    }
+
+    return `${displayINRCurrency(minPrice)} - ${displayINRCurrency(maxPrice)}`;
+  };
+
   useEffect(() => {
     const fetchUsersAndSetUsername = async () => {
       const allUsers = await fetchAllUsers();
@@ -110,9 +127,12 @@ const AdminProductCard = ({ data, fetchdata }) => {
           {data.productName}
         </h1>
 
-        {/* Product Price */}
+        {/* Product Price - Conditional based on category */}
         <p className='text-center font-semibold text-md text-green-600 mb-1'>
-          {displayINRCurrency(data.price)}
+          {data.category.toLowerCase() === 'rent' 
+            ? getRentalPriceRange()
+            : displayINRCurrency(data.price)
+          }
         </p>
 
         {/* Added by Username */}

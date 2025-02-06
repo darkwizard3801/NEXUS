@@ -197,7 +197,12 @@ const Cart = () => {
     //  && categoriesWithDeliveryFee.includes(productCategory);
 
   const totalQty = data.reduce((previousValue, currentValue) => previousValue + currentValue.quantity,0);
-  const totalPrice = data.reduce((preve, curr) => preve + curr.quantity * curr?.productId?.price,0);
+  const totalPrice = data.reduce((prev, curr) => {
+    const itemPrice = curr?.productId?.category.toLowerCase() === 'rent' && curr?.rentalVariant
+      ? curr.rentalVariant.variantPrice
+      : curr?.productId?.price;
+    return prev + (curr.quantity * itemPrice);
+  }, 0);
 
 
   const shouldApplyDeliveryFee =totalPrice > 5000
@@ -540,11 +545,19 @@ const Cart = () => {
                       </div>
                       <h2 className="text-lg lg:text-xl text-ellipsis line-clamp-1">
                         {product?.productId?.productName}
+                        {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant && (
+                          <span className="text-sm text-gray-600 ml-2">
+                            ({product.rentalVariant.variantName})
+                          </span>
+                        )}
                       </h2>
 
                       <div className="flex items-center justify-between">
                         <p className="text-red-600 font-medium text-lg">
-                          {displayINRCurrency(product?.productId?.price * product?.quantity)}
+                          {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant
+                            ? displayINRCurrency(product.rentalVariant.variantPrice * product.quantity)
+                            : displayINRCurrency(product?.productId?.price * product?.quantity)
+                          }
                         </p>
                       </div>
                       <div className="flex items-center gap-3 mt-1">
@@ -595,6 +608,23 @@ const Cart = () => {
                               ))}
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Show rental variant details */}
+                      {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant && (
+                        <div className="mt-2">
+                          <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                            <h4 className="text-sm font-semibold mb-2">Selected Option:</h4>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-700">
+                                {product.rentalVariant.variantName}
+                              </span>
+                              <span className="text-sm font-medium text-red-600">
+                                {displayINRCurrency(product.rentalVariant.variantPrice)} per item
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

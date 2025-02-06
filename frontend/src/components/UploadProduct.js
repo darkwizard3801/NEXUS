@@ -38,6 +38,9 @@ const UploadProduct = ({ onClose, fetchData }) => {
   const [courseType, setCourseType] = useState('');
   const [newDishes, setNewDishes] = useState({}); // Object to store new dish input for each course
   const [courseDishes, setCourseDishes] = useState({});
+  const [rentalVariants, setRentalVariants] = useState([
+    { itemName: '', stock: '', price: '' }  // Added price to initial variant
+  ]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -142,6 +145,21 @@ const UploadProduct = ({ onClose, fetchData }) => {
     }));
   };
 
+  const handleVariantChange = (index, field, value) => {
+    const newVariants = [...rentalVariants];
+    newVariants[index][field] = value;
+    setRentalVariants(newVariants);
+  };
+
+  const addNewVariant = () => {
+    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '' }]);
+  };
+
+  const removeVariant = (index) => {
+    const newVariants = rentalVariants.filter((_, i) => i !== index);
+    setRentalVariants(newVariants);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -158,13 +176,15 @@ const UploadProduct = ({ onClose, fetchData }) => {
 
     const finalData = {
       ...data,
-      // Only include catering data if category is Catering
       ...(data.category.toLowerCase() === "catering" && {
         catering: cateringData
+      }),
+      ...(data.category.toLowerCase() === "rent" && {
+        rentalVariants: rentalVariants
       })
     };
 
-    console.log('Submitting data:', finalData); // For debugging
+    console.log('Submitting data:', finalData);
 
     try {
       setLoading(true);
@@ -420,19 +440,24 @@ const UploadProduct = ({ onClose, fetchData }) => {
             )}
           </div>
 
-          <label htmlFor='price' className='mt-3'>Price :</label>
-          <label htmlFor='for' className='text-xs text-blue-500'>*For caters, logistics, and bakers price is price per head/plate</label>
-          <label htmlFor='for' className='text-xs text-pink-600'>*For others price is for the package</label>
-          <input
-            type='number'
-            id='price'
-            placeholder='Enter price'
-            name='price'
-            value={data.price}
-            onChange={handleOnChange}
-            className='p-2 bg-slate-100 border rounded'
-            required
-          />
+          {/* Only show price field if category is NOT rent */}
+          {data.category.toLowerCase() !== "rent" && (
+            <>
+              <label htmlFor='price' className='mt-3'>Price :</label>
+              <label htmlFor='for' className='text-xs text-blue-500'>*For caters, logistics, and bakers price is price per head/plate</label>
+              <label htmlFor='for' className='text-xs text-pink-600'>*For others price is for the package</label>
+              <input
+                type='number'
+                id='price'
+                placeholder='Enter price'
+                name='price'
+                value={data.price}
+                onChange={handleOnChange}
+                className='p-2 bg-slate-100 border rounded'
+                required
+              />
+            </>
+          )}
 
           <label htmlFor='description' className='mt-3'>Description :</label>
           <textarea
@@ -572,6 +597,80 @@ const UploadProduct = ({ onClose, fetchData }) => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Rental Variants Section */}
+          {data.category.toLowerCase() === "rent" && (
+            <div className="space-y-4 mt-4 border-t pt-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-800">Item Variants</h3>
+                <button
+                  type="button"
+                  onClick={addNewVariant}
+                  className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                >
+                  <span className="text-xl">+</span> Add Variant
+                </button>
+              </div>
+
+              {rentalVariants.map((item, index) => (
+                <div key={index} className="flex items-end gap-4 bg-gray-50 p-3 rounded-lg">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Item Name
+                    </label>
+                    <input
+                      type="text"
+                      value={item.itemName}
+                      onChange={(e) => handleVariantChange(index, 'itemName', e.target.value)}
+                      placeholder="e.g., Plastic Chair, Wooden Chair"
+                      className="p-2 bg-white border rounded w-full"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="w-24">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      value={item.stock}
+                      onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
+                      placeholder="Qty"
+                      className="p-2 bg-white border rounded w-full"
+                      required
+                      min="1"
+                    />
+                  </div>
+
+                  <div className="w-32">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={item.price}
+                      onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
+                      placeholder="Price"
+                      className="p-2 bg-white border rounded w-full"
+                      required
+                      min="0"
+                    />
+                  </div>
+
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(index)}
+                      className="text-red-500 hover:text-red-700 p-2"
+                    >
+                      <MdDelete size={20} />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 

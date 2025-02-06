@@ -46,6 +46,11 @@ const AdminEditProduct = ({
     }), {}) || {}
   );
 
+  // Add state for rental variants
+  const [rentalVariants, setRentalVariants] = useState(
+    productData?.rentalVariants || [{ itemName: '', stock: '', price: '' }]
+  );
+
   useEffect(() => {
     const fetchData = async () => {
      
@@ -110,6 +115,9 @@ const AdminEditProduct = ({
       _id: productData._id,
       ...(data.category.toLowerCase() === "catering" && {
         catering: cateringData
+      }),
+      ...(data.category.toLowerCase() === "rent" && {
+        rentalVariants: rentalVariants
       })
     };
 
@@ -314,6 +322,24 @@ const AdminEditProduct = ({
     }));
   };
 
+  // Handle variant changes
+  const handleVariantChange = (index, field, value) => {
+    const newVariants = [...rentalVariants];
+    newVariants[index][field] = value;
+    setRentalVariants(newVariants);
+  };
+
+  // Add new variant
+  const addNewVariant = () => {
+    setRentalVariants([...rentalVariants, { itemName: '', stock: '', price: '' }]);
+  };
+
+  // Remove variant
+  const removeVariant = (index) => {
+    const newVariants = rentalVariants.filter((_, i) => i !== index);
+    setRentalVariants(newVariants);
+  };
+
   return (
     <div className='fixed w-full h-full bg-black bg-opacity-50 top-0 left-0 right-0 bottom-0 flex justify-center items-center z-[9999]'>
       <div className='bg-white p-4 rounded-lg w-full max-w-xl h-full max-h-[80%] overflow-hidden relative shadow-2xl'>
@@ -416,20 +442,23 @@ const AdminEditProduct = ({
                 )}
               </div>
 
-              <div>
-                <label htmlFor='price' className="block text-sm font-medium text-gray-700 mb-2">Price</label>
-                <input
-                  type='number'
-                  id='price'
-                  placeholder='Enter price'
-                  value={data.price}
-                  name='price'
-                  onChange={handleOnChange}
-                  className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500'
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">*For caters, logistics and bakers price is per head/plate/trip</p>
-              </div>
+              {/* Only show price field if category is NOT rent */}
+              {data.category.toLowerCase() !== "rent" && (
+                <div>
+                  <label htmlFor='price' className="block text-sm font-medium text-gray-700 mb-2">Price</label>
+                  <input
+                    type='number'
+                    id='price'
+                    placeholder='Enter price'
+                    value={data.price}
+                    name='price'
+                    onChange={handleOnChange}
+                    className='w-full p-3 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500'
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">*For caters, logistics and bakers price is per head/plate/trip</p>
+                </div>
+              )}
 
               <div>
                 <label htmlFor='description' className="block text-sm font-medium text-gray-700 mb-2">Description</label>
@@ -444,6 +473,80 @@ const AdminEditProduct = ({
                 />
               </div>
             </div>
+
+            {/* Rental Variants Section */}
+            {data.category.toLowerCase() === "rent" && (
+              <div className="space-y-4 mt-4 border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">Item Variants</h3>
+                  <button
+                    type="button"
+                    onClick={addNewVariant}
+                    className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    <span className="text-xl">+</span> Add Variant
+                  </button>
+                </div>
+
+                {rentalVariants.map((item, index) => (
+                  <div key={index} className="flex items-end gap-4 bg-gray-50 p-3 rounded-lg">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Item Name
+                      </label>
+                      <input
+                        type="text"
+                        value={item.itemName}
+                        onChange={(e) => handleVariantChange(index, 'itemName', e.target.value)}
+                        placeholder="e.g., Plastic Chair, Wooden Chair"
+                        className="p-2 bg-white border rounded w-full"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="w-24">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Stock
+                      </label>
+                      <input
+                        type="number"
+                        value={item.stock}
+                        onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
+                        placeholder="Qty"
+                        className="p-2 bg-white border rounded w-full"
+                        required
+                        min="1"
+                      />
+                    </div>
+
+                    <div className="w-32">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={item.price}
+                        onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
+                        placeholder="Price"
+                        className="p-2 bg-white border rounded w-full"
+                        required
+                        min="0"
+                      />
+                    </div>
+
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVariant(index)}
+                        className="text-red-500 hover:text-red-700 p-2"
+                      >
+                        <MdDelete size={20} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Conditional Catering Fields */}
             {data.category.toLowerCase() === "catering" && (

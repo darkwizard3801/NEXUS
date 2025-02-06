@@ -27,6 +27,7 @@ const ProductDetails = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [selectedDishes, setSelectedDishes] = useState({});
   const [currentConfiguration, setCurrentConfiguration] = useState(null); // Store configuration here
+  const [selectedVariant, setSelectedVariant] = useState(null);
 
   const { fetchUserAddToCart } = useContext(Context);
   const navigate = useNavigate();
@@ -70,6 +71,13 @@ const ProductDetails = () => {
       setSelectedDishes(initialSelection);
     }
   }, [data?.catering?.courses]);
+
+  // Set initial variant when data loads
+  useEffect(() => {
+    if (data?.category === "rent" && data?.rentalVariants?.length > 0) {
+      setSelectedVariant(data.rentalVariants[0]);
+    }
+  }, [data]);
 
   const handleConfigurationSave = () => {
     const hasEmptySelection = Object.values(selectedDishes).some(dishes => 
@@ -125,26 +133,66 @@ const ProductDetails = () => {
     }
   };
 
+  const addToCartWithVariant = async (e, productId) => {
+    try {
+      if (!selectedVariant) {
+        toast.error('Please select a variant first');
+        return;
+      }
+
+      // Log the data being sent
+      console.log('Sending to backend:', {
+        productId,
+        quantity,
+        variantId: selectedVariant._id,
+        variantName: selectedVariant.itemName,
+        variantPrice: selectedVariant.price
+      });
+
+      const response = await fetch(SummaryApi.addToCartWithVariant.url, {
+        method: SummaryApi.addToCartWithVariant.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          productId,
+          quantity,
+          variantId: selectedVariant._id,
+          variantName: selectedVariant.itemName,
+          variantPrice: selectedVariant.price
+        })
+      });
+
+      const responseData = await response.json();
+      console.log('Backend Response:', responseData);
+
+      if (responseData.success) {
+        toast.success(responseData.message);
+        fetchUserAddToCart();
+      } else {
+        toast.error(responseData.message || 'Failed to add to cart');
+      }
+    } catch (error) {
+      console.error('Add to Cart Error:', error);
+      toast.error('Failed to add item to cart');
+    }
+  };
+
   const handleAddToCart = async (e, id) => {
     e.preventDefault();
-    if (data?.category === "catering") {
+    
+    if (data?.category === "rent") {
+      await addToCartWithVariant(e, id);
+    } else if (data?.category === "catering") {
       if (!currentConfiguration) {
         toast.error('Please configure your platter before adding to cart');
         setIsConfigModalOpen(true);
         return;
       }
-      console.log('Sending to addToCartWithConfig:', {
-        id,
-        quantity,
-        configuration: currentConfiguration
-      });
       await addToCartWithConfig(id, quantity, currentConfiguration);
     } else {
-      // Use regular addToCart for non-catering items
-      console.log('Sending to regular addToCart:', {
-        id,
-        quantity
-      });
+      // Use regular addToCart for other categories
       await addToCart(e, id, quantity);
       fetchUserAddToCart();
     }
@@ -152,23 +200,17 @@ const ProductDetails = () => {
 
   const handleBuyProduct = async (e, id) => {
     e.preventDefault();
-    if (data?.category === "catering") {
+    
+    if (data?.category === "rent") {
+      await addToCartWithVariant(e, id);
+    } else if (data?.category === "catering") {
       if (!currentConfiguration) {
         toast.error('Please configure your platter before proceeding');
         setIsConfigModalOpen(true);
         return;
       }
-      console.log('Buying with configuration:', {
-        id,
-        quantity,
-        configuration: currentConfiguration
-      });
       await addToCartWithConfig(id, quantity, currentConfiguration);
     } else {
-      console.log('Buying without configuration:', {
-        id,
-        quantity
-      });
       await addToCart(e, id, quantity);
       fetchUserAddToCart();
     }
@@ -231,6 +273,11 @@ const ProductDetails = () => {
 
   const handleConfigureClick = () => {
     setIsConfigModalOpen(true);
+  };
+
+  // Handle variant selection
+  const handleVariantSelect = (variant) => {
+    setSelectedVariant(variant);
   };
 
   return (
@@ -297,9 +344,43 @@ const ProductDetails = () => {
                 {/* Render half star if applicable */}
                 {rating.hasHalfStar && <FaStarHalf />}
               </div>
-              {/* Product Price */}
+
+              {/* Rental Variants Section */}
+              {data?.category === "rent" && data?.rentalVariants && (
+                <div className="mt-4 mb-2">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">Available Options:</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {data.rentalVariants.map((variant, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleVariantSelect(variant)}
+                        className={`
+                          px-4 py-2 rounded-lg border-2 transition-all duration-200
+                          ${selectedVariant?._id === variant._id 
+                            ? 'border-red-600 bg-red-50 text-red-600' 
+                            : 'border-gray-300 hover:border-red-600 hover:bg-red-50'
+                          }
+                        `}
+                      >
+                        <div className="text-left">
+                          <p className="font-medium">{variant.itemName}</p>
+                          <p className="text-sm text-gray-600">{displayINRCurrency(variant.price)}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Price Display - Show selected variant price for rental items */}
               <div className='flex items-center gap-2 text-2xl lg:text-3xl font-medium my-1'>
-                <p className='text-red-600'>{displayINRCurrency(data.price)}</p>
+                {data?.category === "rent" ? (
+                  selectedVariant && (
+                    <p className='text-red-600'>{displayINRCurrency(selectedVariant.price)}</p>
+                  )
+                ) : (
+                  <p className='text-red-600'>{displayINRCurrency(data.price)}</p>
+                )}
               </div>
 
               {/* Quantity Input */}
@@ -311,9 +392,15 @@ const ProductDetails = () => {
                     id='quantity'
                     value={quantity}
                     min="1"
+                    max={data?.category === "rent" ? selectedVariant?.stock : undefined}
                     onChange={(e) => setQuantity(e.target.value)}
                     className='border border-slate-400 p-2 rounded w-24'
                   />
+                  {data?.category === "rent" && selectedVariant && (
+                    <p className="text-sm text-gray-600">
+                      Available Stock: {selectedVariant.stock}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -335,6 +422,7 @@ const ProductDetails = () => {
                     text-red-600 font-medium hover:bg-red-600 hover:text-white
                     transition-all duration-300'
                   onClick={(e) => handleBuyProduct(e, data?._id)}
+                  disabled={data?.category === "rent" && !selectedVariant}
                 >
                   Book Now
                 </button>
@@ -344,6 +432,7 @@ const ProductDetails = () => {
                     font-medium text-white bg-red-600 hover:text-red-600 hover:bg-white
                     transition-all duration-300'
                   onClick={(e) => handleAddToCart(e, data?._id)}
+                  disabled={data?.category === "rent" && !selectedVariant}
                 >
                   Add To Cart
                 </button>

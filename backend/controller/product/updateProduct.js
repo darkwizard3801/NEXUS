@@ -53,6 +53,31 @@ async function updateProductController(req, res) {
             });
         }
 
+        // Validate rental data if present
+        if (updateData.category?.toLowerCase() === "rent" && updateData.rentalVariants) {
+            console.log('Processing rental variants update:', updateData.rentalVariants);
+            
+            if (!Array.isArray(updateData.rentalVariants)) {
+                throw new Error("Rental variants must be an array");
+            }
+
+            // Validate each variant
+            updateData.rentalVariants.forEach((variant, index) => {
+                if (!variant.itemName) {
+                    throw new Error(`Item name is required for variant ${index + 1}`);
+                }
+                if (!variant.stock || variant.stock < 0) {
+                    throw new Error(`Valid stock quantity is required for ${variant.itemName}`);
+                }
+                if (!variant.price || variant.price < 0) {
+                    throw new Error(`Valid price is required for ${variant.itemName}`);
+                }
+            });
+
+            // Remove the main price field for rental products
+            delete updateData.price;
+        }
+
         console.log('Updating product with data:', updateData); // Debug log
 
         const updateProduct = await productModel.findByIdAndUpdate(

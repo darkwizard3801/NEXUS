@@ -28,6 +28,23 @@ const cateringSchema = new mongoose.Schema({
     courses: [courseSchema]
 });
 
+const rentalVariantSchema = new mongoose.Schema({
+    itemName: {
+        type: String,
+        required: true
+    },
+    stock: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    price: {
+        type: Number,
+        required: true,
+        min: 0
+    }
+});
+
 const productSchema = mongoose.Schema({
     productName: {
         type: String,
@@ -51,7 +68,9 @@ const productSchema = mongoose.Schema({
     },
     price: {
         type: Number,
-        required: true
+        required: function() {
+            return this.category !== 'rent'; // Price is not required for rent category
+        }
     },
     user: {
         type: String,
@@ -69,6 +88,12 @@ const productSchema = mongoose.Schema({
         type: cateringSchema,
         required: function() {
             return this.category === 'Catering';
+        }
+    },
+    rentalVariants: {
+        type: [rentalVariantSchema],
+        required: function() {
+            return this.category === 'rent';
         }
     }
 }, {

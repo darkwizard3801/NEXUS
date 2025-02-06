@@ -67,6 +67,23 @@ const VendorProductCard = ({ data, fetchdata }) => {
     }
   };
 
+  // Function to get price range for rental items
+  const getRentalPriceRange = () => {
+    if (!data.rentalVariants || data.rentalVariants.length === 0) {
+      return "Price not available";
+    }
+
+    const prices = data.rentalVariants.map(item => item.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (minPrice === maxPrice) {
+      return displayINRCurrency(minPrice);
+    }
+
+    return `${displayINRCurrency(minPrice)} - ${displayINRCurrency(maxPrice)}`;
+  };
+
   return (
     <div className={`
       ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}
@@ -92,8 +109,12 @@ const VendorProductCard = ({ data, fetchdata }) => {
           {data.productName}
         </h2>
 
-        <p className='font-bold mb-1.5 text-sm'> {/* Reduced margin-bottom */}
-          {displayINRCurrency(data.price)}
+        {/* Price Display - Conditional based on category */}
+        <p className='font-bold mb-1.5 text-sm'>
+          {data.category.toLowerCase() === 'rent' 
+            ? getRentalPriceRange()
+            : displayINRCurrency(data.price)
+          }
         </p>
 
         {/* Action Buttons */}

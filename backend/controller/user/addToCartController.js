@@ -108,7 +108,76 @@ const addToCartWithConfigController = async (req, res) => {
   }
 };
 
-module.exports = { addToCartController, addToCartWithConfigController };
+const addToCartWithVariantController = async (req, res) => {
+  try {
+    const { productId, quantity, variantId, variantName, variantPrice } = req.body;
+    const currentUser = req.userId;
+
+    // Ensure quantity is a number
+    const productQuantity = parseInt(quantity, 10);
+    console.log('Product Quantity:', productQuantity);
+    console.log('Variant Details:', { variantId, variantName, variantPrice });
+
+    // Check if the product with the same variant is already in the cart
+    const isProductInCart = await addToCartModel.findOne({ 
+      productId, 
+      userId: currentUser,
+      'rentalVariant.variantId': variantId // Check for specific variant
+    });
+
+    if (isProductInCart) {
+      // Increment quantity with the new value
+      isProductInCart.quantity += productQuantity;
+      const updatedCartProduct = await isProductInCart.save();
+
+      return res.json({
+        data: updatedCartProduct,
+        message: "Product quantity updated in cart",
+        success: true,
+        error: false,
+      });
+    }
+
+    // If product not in cart or has different variant, create a new entry
+    const payload = {
+      productId: productId,
+      quantity: productQuantity,
+      userId: currentUser,
+      rentalVariant: {
+        variantId,
+        variantName,
+        variantPrice
+      }
+    };
+
+    console.log('Creating new cart entry:', payload);
+
+    const newAddToCart = new addToCartModel(payload);
+    const saveProduct = await newAddToCart.save();
+
+    return res.json({
+      data: saveProduct,
+      message: "Product added to cart",
+      success: true,
+      error: false,
+    });
+
+  } catch (err) {
+    console.error('Add to Cart Error:', err);
+    return res.json({
+      message: err.message || err,
+      error: true,
+      success: false,
+    });
+  }
+};
+
+// Export all controllers
+module.exports = { 
+  addToCartController, 
+  addToCartWithConfigController,
+  addToCartWithVariantController 
+};
 
 
 
