@@ -43,8 +43,8 @@ const Header = () => {
   const [search, setSearch] = useState(searchQuery);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
-     
-
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   console.log("userdetails=",user)
   const getCookie = () => {
@@ -91,6 +91,115 @@ const Header = () => {
   useEffect(() => {
     getCookie();
   }, []);
+
+  // Updated getNavigationPath function with correct path
+  const getNavigationPath = (userRole) => {
+    switch (userRole) {
+      case 'Vendor':
+        return '/vendor-panel/vendor-order';
+      case 'Admin':
+        return '/admin-panel/admin-order';
+      case 'Customer':
+        return '/user-panel/orders';
+      default:
+        return '/';
+    }
+  };
+
+  // Updated fetch notifications function with correct navigation paths
+  const fetchNotifications = async () => {
+    if (user?.role === 'Vendor' || user?.role === 'Customer') {
+      try {
+        const response = await fetch(SummaryApi.orderDetails.url, {
+          method: SummaryApi.orderDetails.method,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch orders');
+        }
+
+        const data = await response.json();
+        
+        if (user.role === 'Vendor') {
+          const vendorOrders = data.data.filter(order => 
+            order.products.some(product => 
+              product.vendor === user.email && 
+              order.status.toLowerCase() === 'ordered'
+            )
+          ).map(order => ({
+            id: order._id,
+            title: `New Order #${order.invoiceNumber}`,
+            message: `Order received for ${order.products.length} item(s)`,
+            time: new Date(order.createdAt),
+            link: getNavigationPath('Vendor') // Use the new function
+          }));
+          setNotifications(vendorOrders);
+          setNotificationCount(vendorOrders.length);
+        } else if (user.role === 'Customer') {
+          const customerOrders = data.data.filter(order => 
+            order.userEmail === user.email && 
+            order.status.toLowerCase() === 'accepted'
+          ).map(order => ({
+            id: order._id,
+            title: `Order Accepted #${order.invoiceNumber}`,
+            message: 'Your order has been accepted by the vendor',
+            time: new Date(order.createdAt),
+            link: getNavigationPath('Customer') // Use the new function
+          }));
+          setNotifications(customerOrders);
+          setNotificationCount(customerOrders.length);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = (notification) => {
+    navigate(notification.link);
+    setShowNotifications(false);
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    setNotificationCount(0);
+    setShowNotifications(false);
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+
+    // Listen for status updates
+    window.addEventListener('orderStatusUpdated', fetchNotifications);
+
+    // Set up polling interval as backup
+    const intervalId = setInterval(fetchNotifications, 5000); // Poll every 5 seconds
+
+    // Listen for database changes
+    const eventSource = new EventSource(`${SummaryApi.baseURL}/api/order-updates`);
+    
+    eventSource.onmessage = (event) => {
+      fetchNotifications();
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('EventSource failed:', error);
+      eventSource.close();
+    };
+
+    // Cleanup
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('orderStatusUpdated', fetchNotifications);
+      eventSource.close();
+    };
+  }, [user]);
 
   console.log(user)
 
@@ -163,15 +272,67 @@ const Header = () => {
             <div className='flex items-center gap-6'>
               {user?._id && (
                 <>
-                  <div className='text-2xl relative cursor-pointer bell-animation'>
-                    <IoNotifications 
-                      className={`transition-colors duration-200 ${
-                        isDarkMode ? 'hover:text-gray-300' : 'hover:text-gray-600'
-                      }`}
-                    />
-                    <div className='bg-red-600 text-white w-5 h-5 rounded-full p-1 flex items-center justify-center absolute -top-2 -right-3'>
-                      <p className='text-sm'>{notificationCount > 99 ? '99+' : notificationCount}</p>
+                  <div className='relative'>
+                    <div 
+                      className='text-2xl relative cursor-pointer bell-animation'
+                      onClick={() => setShowNotifications(!showNotifications)}
+                    >
+                      <IoNotifications />
+                      {notificationCount > 0 && (
+                        <div className='bg-red-600 text-white w-5 h-5 rounded-full p-1 flex items-center justify-center absolute -top-2 -right-3'>
+                          <p className='text-sm'>{notificationCount > 99 ? '99+' : notificationCount}</p>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Notifications Dropdown */}
+                    {showNotifications && (
+                      <div className={`absolute right-0 mt-2 w-80 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden z-50`}>
+                        <div className="p-4 border-b border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-semibold">Notifications</h3>
+                            {notifications.length > 0 && (
+                              <button
+                                onClick={clearAllNotifications}
+                                className="text-sm text-red-500 hover:text-red-600"
+                              >
+                                Clear All
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="max-h-96 overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">
+                              No new notifications
+                            </div>
+                          ) : (
+                            notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                onClick={() => handleNotificationClick(notification)}
+                                className={`p-4 border-b border-gray-200 cursor-pointer ${
+                                  isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-medium">{notification.title}</h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {notification.message}
+                                    </p>
+                                  </div>
+                                  <span className="text-xs text-gray-400">
+                                    {new Date(notification.time).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className='relative flex justify-center'>

@@ -235,11 +235,10 @@ const SummaryApi = {
         url: `${backendDomin}/api/message`,
         method: 'post'
     },
-
-
-  
-
-
+    updateOrderStatus: {
+        url: `${backendDomin}/api/update-order-status`,
+        method: 'put'
+    },
 }
 
 export default SummaryApi

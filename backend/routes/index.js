@@ -39,7 +39,13 @@ const { getAllCategories, addCategory,toggleCategory } = require('../controller/
 const searchProduct = require('../controller/product/searchProduct')
 const filterProductController = require('../controller/product/filterProduct')
 const { createEvent, getEvents, updateEventStatus } = require('../controller/user/eventController')
-const {  createOrUpdateOrder, getAllOrders, updateOrderWithPayment, cancelOrder } = require('../controller/user/orderController')
+const { 
+    createOrUpdateOrder, 
+    getAllOrders, 
+    updateOrderWithPayment, 
+    cancelOrder,
+    updateOrderStatus 
+} = require('../controller/user/orderController')
 const { clearCart } = require('../controller/user/cartController')
 const { addRatingReview, getRatingDetails } = require('../controller/user/ratingController')
 const { deleteUser } = require('../controller/user/userController')
@@ -129,6 +135,7 @@ router.post('/checkout', createOrUpdateOrder);
 router.get('/order-view',getAllOrders);
 router.post('/cancel-order',cancelOrder);
 router.post('/updateOrderWithPayment', updateOrderWithPayment);
+router.put('/update-order-status/:orderId', updateOrderStatus);
 router.delete('/clear-cart', authToken, clearCart);
 router.post('/ratings', addRatingReview);
 router.get('/show-rating',getRatingDetails)

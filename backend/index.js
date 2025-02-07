@@ -22,7 +22,9 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors({
     origin: process.env.FRONTEND_URL, // Allow requests from your frontend
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Add PATCH to allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -30,7 +32,9 @@ app.use(cookieParser());
 app.use(session({ 
     secret: process.env.TOKEN_SECRET_KEY, 
     resave: false, 
-    saveUninitialized: true 
+    saveUninitialized: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Add PATCH to allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // if (!process.env.HUGGING_FACE_API_KEY) {
 //     console.error('HUGGING_FACE_API_KEY is not set in environment variables');

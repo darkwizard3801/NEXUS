@@ -10,6 +10,7 @@ import {
 } from "react-icons/tb";
 import { TbReportAnalytics } from "react-icons/tb";
 import { ImProfile } from "react-icons/im";
+import { BsCart4 } from "react-icons/bs";
 
 
 import { CgProfile } from "react-icons/cg";
@@ -113,6 +114,16 @@ const VendorPanel = () => {
                    {isCollapsed ? null : "Report"}
                 </Link>
                 <Link
+                  to={"vendor-order"}
+                  className="flex items-center p-2 hover:bg-blue-600 hover:rounded-r-full hover:text-white transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                 <BsCart4 
+    
+                    className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
+                  />
+                   {isCollapsed ? null : "Orders"}
+                </Link>
+                <Link
                   to={"vendor-products"}
                   className="flex items-center p-2 hover:bg-blue-600 hover:rounded-r-full hover:text-white transition duration-300 ease-in-out transform hover:scale-105"
                 >
@@ -204,6 +215,14 @@ const VendorPanel = () => {
                   >
                     <AiOutlineProduct className="mr-2" />
                     My Products
+                  </Link>
+                  <Link
+                    to={"vendor-order"}
+                    className="flex items-center p-2 transition duration-300 ease-in-out hover:bg-blue-600 hover:text-white rounded-l-full hover:rounded-r-full"
+                    onClick={toggleSidebar} // Close sidebar on link click
+                  >
+                    <BsCart4 className="mr-2" />
+                    Orders
                   </Link>
     
                   <Link
