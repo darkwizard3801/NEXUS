@@ -45,6 +45,11 @@ const Header = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [clearedNotifications, setClearedNotifications] = useState(() => {
+    // Initialize from localStorage
+    const saved = localStorage.getItem('clearedNotifications');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   console.log("userdetails=",user)
   const getCookie = () => {
@@ -106,7 +111,7 @@ const Header = () => {
     }
   };
 
-  // Updated fetch notifications function with correct navigation paths
+  // Updated fetch notifications function to filter out cleared notifications
   const fetchNotifications = async () => {
     if (user?.role === 'Vendor' || user?.role === 'Customer') {
       try {
@@ -125,31 +130,37 @@ const Header = () => {
         const data = await response.json();
         
         if (user.role === 'Vendor') {
-          const vendorOrders = data.data.filter(order => 
-            order.products.some(product => 
-              product.vendor === user.email && 
-              order.status.toLowerCase() === 'ordered'
+          const vendorOrders = data.data
+            .filter(order => 
+              order.products.some(product => 
+                product.vendor === user.email && 
+                order.status.toLowerCase() === 'ordered'
+              ) && 
+              !clearedNotifications.includes(order._id) // Filter out cleared notifications
             )
-          ).map(order => ({
-            id: order._id,
-            title: `New Order #${order.invoiceNumber}`,
-            message: `Order received for ${order.products.length} item(s)`,
-            time: new Date(order.createdAt),
-            link: getNavigationPath('Vendor') // Use the new function
-          }));
+            .map(order => ({
+              id: order._id,
+              title: `New Order #${order.invoiceNumber}`,
+              message: `Order received for ${order.products.length} item(s)`,
+              time: new Date(order.createdAt),
+              link: getNavigationPath('Vendor')
+            }));
           setNotifications(vendorOrders);
           setNotificationCount(vendorOrders.length);
         } else if (user.role === 'Customer') {
-          const customerOrders = data.data.filter(order => 
-            order.userEmail === user.email && 
-            order.status.toLowerCase() === 'accepted'
-          ).map(order => ({
-            id: order._id,
-            title: `Order Accepted #${order.invoiceNumber}`,
-            message: 'Your order has been accepted by the vendor',
-            time: new Date(order.createdAt),
-            link: getNavigationPath('Customer') // Use the new function
-          }));
+          const customerOrders = data.data
+            .filter(order => 
+              order.userEmail === user.email && 
+              order.status.toLowerCase() === 'accepted' &&
+              !clearedNotifications.includes(order._id) // Filter out cleared notifications
+            )
+            .map(order => ({
+              id: order._id,
+              title: `Order Accepted #${order.invoiceNumber}`,
+              message: 'Your order has been accepted by the vendor',
+              time: new Date(order.createdAt),
+              link: getNavigationPath('Customer')
+            }));
           setNotifications(customerOrders);
           setNotificationCount(customerOrders.length);
         }
@@ -159,16 +170,37 @@ const Header = () => {
     }
   };
 
+  // Updated clearAllNotifications function to persist cleared notifications
+  const clearAllNotifications = () => {
+    const notificationIds = notifications.map(notification => notification.id);
+    const updatedClearedNotifications = [...clearedNotifications, ...notificationIds];
+    
+    // Update state
+    setClearedNotifications(updatedClearedNotifications);
+    setNotifications([]);
+    setNotificationCount(0);
+    setShowNotifications(false);
+    
+    // Save to localStorage
+    localStorage.setItem('clearedNotifications', JSON.stringify(updatedClearedNotifications));
+  };
+
+  // Clear single notification
+  const clearNotification = (notificationId) => {
+    const updatedClearedNotifications = [...clearedNotifications, notificationId];
+    
+    // Update state
+    setClearedNotifications(updatedClearedNotifications);
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setNotificationCount(prev => prev - 1);
+    
+    // Save to localStorage
+    localStorage.setItem('clearedNotifications', JSON.stringify(updatedClearedNotifications));
+  };
+
   // Handle notification click
   const handleNotificationClick = (notification) => {
     navigate(notification.link);
-    setShowNotifications(false);
-  };
-
-  // Clear all notifications
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    setNotificationCount(0);
     setShowNotifications(false);
   };
 
@@ -285,7 +317,7 @@ const Header = () => {
                       )}
                     </div>
 
-                    {/* Notifications Dropdown */}
+                    {/* Updated Notifications Dropdown */}
                     {showNotifications && (
                       <div className={`absolute right-0 mt-2 w-80 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden z-50`}>
                         <div className="p-4 border-b border-gray-200">
@@ -311,21 +343,35 @@ const Header = () => {
                             notifications.map((notification) => (
                               <div
                                 key={notification.id}
-                                onClick={() => handleNotificationClick(notification)}
-                                className={`p-4 border-b border-gray-200 cursor-pointer ${
+                                className={`p-4 border-b border-gray-200 ${
                                   isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
                                 }`}
                               >
                                 <div className="flex justify-between items-start">
-                                  <div>
+                                  <div 
+                                    className="flex-1 cursor-pointer"
+                                    onClick={() => handleNotificationClick(notification)}
+                                  >
                                     <h4 className="font-medium">{notification.title}</h4>
                                     <p className="text-sm text-gray-500 mt-1">
                                       {notification.message}
                                     </p>
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(notification.time).toLocaleDateString()}
+                                    </span>
                                   </div>
-                                  <span className="text-xs text-gray-400">
-                                    {new Date(notification.time).toLocaleDateString()}
-                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      clearNotification(notification.id);
+                                    }}
+                                    className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                    title="Clear notification"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
                                 </div>
                               </div>
                             ))

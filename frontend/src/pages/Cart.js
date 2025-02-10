@@ -37,6 +37,24 @@ const Cart = () => {
   });
 
   const [showConfigDetails, setShowConfigDetails] = useState({});
+  const [rentalDetails, setRentalDetails] = useState({});
+  const [cateringDetails, setCateringDetails] = useState({});
+  const [showCateringModal, setShowCateringModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [expandedMenus, setExpandedMenus] = useState({});
+  const [selectedMenuItems, setSelectedMenuItems] = useState({});
+  const [rentalDates, setRentalDates] = useState({});
+
+  // Array of colors for different courses
+  const courseColors = {
+    'Appetizer': 'bg-pink-100 text-pink-800',
+    'Main Course': 'bg-blue-100 text-blue-800',
+    'Dessert': 'bg-purple-100 text-purple-800',
+    'Starter': 'bg-green-100 text-green-800',
+    'Soup': 'bg-yellow-100 text-yellow-800',
+    'Salad': 'bg-emerald-100 text-emerald-800',
+    'Beverage': 'bg-orange-100 text-orange-800'
+  };
 
   const getMinDeliveryDate = () => {
     const today = new Date();
@@ -123,6 +141,18 @@ const Cart = () => {
     console.log("Current Cart State:", data);
   }, [data]);
 
+  useEffect(() => {
+    console.log("Cart Data Structure:", {
+      fullData: data,
+      items: data.map(item => ({
+        productId: item.productId,
+        configuration: item.configuration,
+        catering: item.productId?.catering,
+        selectedItems: item.selectedItems
+      }))
+    });
+  }, [data]);
+
   const increaseQty = async (id, qty) => {
     const response = await fetch(SummaryApi.updateCartProduct.url, {
       method: SummaryApi.updateCartProduct.method,
@@ -182,20 +212,6 @@ const Cart = () => {
     }
   };
 
-//   const productCategory = data.productId.category; // This should dynamically reflect the category of the product
-    // console.log(data.productId.category)
-  // List of categories that require a delivery fee
-//   const categoriesWithDeliveryFee = [
-//     "catering",
-//     "bakers",
-//     "rent",
-//     "decorations",
-//   ];
-
-  // Calculate delivery fee only if the total price is above 5000 and the category matches
-  
-    //  && categoriesWithDeliveryFee.includes(productCategory);
-
   const totalQty = data.reduce((previousValue, currentValue) => previousValue + currentValue.quantity,0);
   const totalPrice = data.reduce((prev, curr) => {
     const itemPrice = curr?.productId?.category.toLowerCase() === 'rent' && curr?.rentalVariant
@@ -203,7 +219,6 @@ const Cart = () => {
       : curr?.productId?.price;
     return prev + (curr.quantity * itemPrice);
   }, 0);
-
 
   const shouldApplyDeliveryFee =totalPrice > 5000
 
@@ -362,56 +377,171 @@ const Cart = () => {
       );
     }
   };
-  const handlePlaceOrder = async () => {
-    if (!userDetails || !userDetails.address) {
-      toast.error("Please provide a valid delivery address.");
-      return;
-    }
 
-    if (!deliveryDate) {
-      toast.error("Please select a delivery date.");
-      return;
-    }
+  // Function to handle rental variant selection
+  const handleRentalVariantSelect = (productId, variant, duration, startDate, endDate) => {
+    setRentalDetails(prev => ({
+      ...prev,
+      [productId]: {
+        variantId: variant._id,
+        variantName: variant.name,
+        variantPrice: variant.price,
+        duration,
+        startDate,
+        endDate
+      }
+    }));
+  };
 
-    const orderDetails = {
-      products: data.map((product) => ({
-        productId: product.productId._id,
-        productName: product.productId.productName,
-        quantity: product.quantity,
-        price: product.productId.price,
-        vendor: product.productId.user,
-        vendorName: product.productId.brandName,
-        image: product.productId.productImage[0],
-      })),
-      address: userDetails.address,
-      totalPrice,
-      discount,
-      finalAmount,
-      userEmail: userDetails.email,
-      userName: userDetails.name,
-      deliveryDate: deliveryDate,
+  // Function to handle catering details
+  const handleCateringDetails = (productId, selectedCourses) => {
+    setCateringDetails(prev => ({
+      ...prev,
+      [productId]: {
+        courses: selectedCourses.courses.map(course => ({
+          courseName: course.courseName,
+          courseType: course.courseType,
+          menuItems: course.dishes || [], // Store selected dishes
+          additionalNotes: course.additionalNotes || ''
+        }))
+      }
+    }));
+  };
+
+  // Function to handle menu item selection
+  const handleMenuSelection = (productId, courseName, selectedDishes) => {
+    setSelectedMenuItems(prev => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [courseName]: selectedDishes
+      }
+    }));
+  };
+
+  // Render catering menu selection modal
+  const CateringMenuModal = ({ product, onClose }) => {
+    const [selectedCourses, setSelectedCourses] = useState({
+      courseType: product.catering.courseType,
+      courses: product.catering.courses.map(course => ({
+        courseName: course.courseName,
+        courseType: course.courseType,
+        dishes: [], // Start with empty selection
+        additionalNotes: ''
+      }))
+    });
+
+    const handleSave = () => {
+      handleCateringDetails(product._id, selectedCourses);
+      onClose();
     };
 
-    try {
-      const response = await fetch(SummaryApi.checkout.url, {
-        method: SummaryApi.checkout.method,
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderDetails),
-      });
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <h2 className="text-2xl font-bold mb-4">Configure Menu</h2>
+          
+          {selectedCourses.courses.map((course, courseIndex) => (
+            <div key={courseIndex} className="mb-6 border-b pb-4">
+              <h3 className="text-xl font-semibold mb-2">{course.courseName}</h3>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex flex-wrap gap-2">
+                    {product.catering.courses[courseIndex].dishes.map((dish, dishIndex) => (
+                      <label 
+                        key={dishIndex}
+                        className="cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={course.dishes.includes(dish)}
+                          onChange={(e) => {
+                            const newCourses = [...selectedCourses.courses];
+                            if (e.target.checked) {
+                              newCourses[courseIndex].dishes.push(dish);
+                            } else {
+                              newCourses[courseIndex].dishes = newCourses[courseIndex].dishes.filter(d => d !== dish);
+                            }
+                            setSelectedCourses({ ...selectedCourses, courses: newCourses });
+                          }}
+                        />
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm
+                          ${course.dishes.includes(dish)
+                            ? courseColors[course.courseName] || 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {dish}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-1/3">
+                  <input
+                    type="text"
+                    placeholder="Additional Notes"
+                    className="w-full px-3 py-1 text-sm border rounded-md"
+                    value={course.additionalNotes}
+                    onChange={(e) => {
+                      const newCourses = [...selectedCourses.courses];
+                      newCourses[courseIndex].additionalNotes = e.target.value;
+                      setSelectedCourses({ ...selectedCourses, courses: newCourses });
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
 
-      const responseData = await response.json();
-      if (responseData.success) {
-        handlePayment(); // Directly proceed to payment
-      } else {
-        toast.error("Failed to place the order. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error placing the order:", error);
-      toast.error("An error occurred while placing the order. Please try again.");
+          <div className="flex justify-end space-x-4">
+            <button
+              className="px-4 py-2 bg-gray-200 rounded"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded"
+              onClick={handleSave}
+            >
+              Save Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Updated renderCateringMenuSelection function
+  const renderCateringMenuSelection = (product) => {
+    if (product.productId.category.toLowerCase() === 'catering') {
+      const hasSelectedMenu = cateringDetails[product.productId._id];
+      return (
+        <div className="mt-2">
+          <button
+            className={`px-4 py-2 rounded ${
+              hasSelectedMenu 
+                ? 'bg-green-500 text-white' 
+                : 'bg-blue-500 text-white'
+            }`}
+            onClick={() => {
+              setSelectedProduct(product.productId);
+              setShowCateringModal(true);
+            }}
+          >
+            {hasSelectedMenu ? 'Menu Selected ✓' : 'Configure Menu'}
+          </button>
+          {hasSelectedMenu && (
+            <div className="mt-2 text-sm text-gray-600">
+              {cateringDetails[product.productId._id].courses.length} courses selected
+            </div>
+          )}
+        </div>
+      );
     }
+    return null;
   };
 
   const handlePosterCreation = () => {
@@ -461,8 +591,266 @@ const Cart = () => {
     return product?.productId?.productImage[0];
   };
 
+  // Toggle menu details visibility
+  const toggleMenuDetails = (productId) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [productId]: !prev[productId]
+    }));
+  };
+
+  // Render catering menu details with updated styling
+  const renderCateringDetails = (product) => {
+    if (product.productId.category.toLowerCase() === 'catering') {
+      return (
+        <div className="mt-2">
+          <button
+            onClick={() => toggleMenuDetails(product.productId._id)}
+            className="text-blue-600 hover:text-blue-800 underline focus:outline-none font-medium"
+          >
+            {expandedMenus[product.productId._id] ? 'Hide Details' : 'Show Details'}
+          </button>
+          
+          {expandedMenus[product.productId._id] && (
+            <div className="mt-3 pl-4 border-l-2 border-gray-200 bg-gray-50 p-4 rounded-md">
+              <h4 className="font-semibold mb-3 text-gray-800">Selected Menu Items:</h4>
+              
+              {/* Appetizers/Hors d'oeuvre */}
+              {product.configuration?.horsOeuvre?.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h5 className="font-medium text-gray-700 mb-2">Appetizers</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {product.configuration.horsOeuvre.map((dish, index) => (
+                          <span 
+                            key={index} 
+                            className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm"
+                          >
+                            {dish}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Main Course */}
+              {product.configuration?.mainCourse?.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h5 className="font-medium text-gray-700 mb-2">Main Course</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {product.configuration.mainCourse.map((dish, index) => (
+                          <span 
+                            key={index} 
+                            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                          >
+                            {dish}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Dessert */}
+              {product.configuration?.dessert?.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h5 className="font-medium text-gray-700 mb-2">Dessert</h5>
+                      <div className="flex flex-wrap gap-2">
+                        {product.configuration.dessert.map((dish, index) => (
+                          <span 
+                            key={index} 
+                            className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm"
+                          >
+                            {dish}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Add this helper function to calculate the item price
+  const getItemPrice = (product) => {
+    if (product?.productId?.category?.toLowerCase() === 'rent' && product?.rentalVariant) {
+      return product.rentalVariant.variantPrice;
+    }
+    return product?.productId?.price || 0;
+  };
+
+  // Update the renderRentalDetails function
+  const renderRentalDetails = (product) => {
+    if (product.productId.category.toLowerCase() === 'rent') {
+      return null; // Don't render anything for rental products
+    }
+    return null;
+  };
+
+  // Updated handlePlaceOrder function
+  const handlePlaceOrder = async () => {
+    if (!userDetails || !userDetails.address) {
+      toast.error("Please provide a valid delivery address.");
+      return;
+    }
+
+    if (!deliveryDate) {
+      toast.error("Please select a delivery date.");
+      return;
+    }
+
+    // For rental products, validate dates using rentalDates state
+    const hasInvalidRentalDates = data.some(product => {
+      if (product.productId.category.toLowerCase() === 'rent') {
+        const productDates = rentalDates[product._id];
+        return !productDates?.startDate || !productDates?.endDate;
+      }
+      return false;
+    });
+
+    if (hasInvalidRentalDates) {
+      toast.error("Please select both start and end dates for rental items.");
+      return;
+    }
+
+    const orderDetails = {
+      products: data.map((product) => {
+        // Get the correct price based on the product type
+        const productPrice = product.productId.category.toLowerCase() === 'rent' 
+          ? Number(product.rentalVariant?.variantPrice || product.productId.price)
+          : Number(product.productId.price);
+
+        const baseProduct = {
+          productId: product.productId._id,
+          productName: product.productId.productName,
+          quantity: Number(product.quantity),
+          price: productPrice,
+          category: product.productId.category,
+          vendor: product.productId.user,
+          vendorName: product.productId.brandName || '',
+          image: product.productId.productImage?.[0] || ''
+        };
+
+        // Add rental details if it's a rental product
+        if (product.productId.category.toLowerCase() === 'rent' && product.rentalVariant) {
+          const variantPrice = Number(product.rentalVariant.variantPrice) || 0;
+          const quantity = Number(product.quantity);
+          const totalRentalPrice = variantPrice * quantity;
+          const finePerDay = 2; // 2 rupees per day per quantity
+
+          baseProduct.additionalDetails = {
+            rental: {
+              variantName: product.rentalVariant.variantName || '',
+              variantPrice: variantPrice,
+              startDate: rentalDates[product._id]?.startDate || null,
+              endDate: rentalDates[product._id]?.endDate || null,
+              totalPrice: totalRentalPrice,
+              fine: 0, // Initial fine is 0
+              isReturned: false, // Initial return status
+              finePerDay: finePerDay * quantity // Fine per day considering quantity
+            }
+          };
+        }
+        // Keep existing catering details handling
+        else if (product.productId.category.toLowerCase() === 'catering') {
+          baseProduct.additionalDetails = {
+            catering: {
+              courses: [
+                {
+                  courseName: 'Appetizer',
+                  courseType: 'horsOeuvre',
+                  menuItems: product.configuration?.horsOeuvre ? [product.configuration.horsOeuvre].flat() : [],
+                  additionalNotes: '',
+                  dietaryRestrictions: []
+                },
+                {
+                  courseName: 'Main Course',
+                  courseType: 'mainCourse',
+                  menuItems: product.configuration?.mainCourse ? [product.configuration.mainCourse].flat() : [],
+                  additionalNotes: '',
+                  dietaryRestrictions: []
+                },
+                {
+                  courseName: 'Dessert',
+                  courseType: 'dessert',
+                  menuItems: product.configuration?.dessert ? [product.configuration.dessert].flat() : [],
+                  additionalNotes: '',
+                  dietaryRestrictions: []
+                }
+              ]
+            }
+          };
+        }
+
+        return baseProduct;
+      }),
+      address: String(userDetails.address), // Ensure address is a string
+      totalPrice: Number(totalPrice),
+      discount: Number(discount),
+      finalAmount: Number(finalAmount),
+      userEmail: String(userDetails.email),
+      userName: String(userDetails.name),
+      deliveryDate: new Date(deliveryDate),
+      status: "Pending"
+    };
+
+    console.log('Sending order details:', JSON.stringify(orderDetails, null, 2)); // Debug log
+
+    try {
+      const response = await fetch(SummaryApi.checkout.url, {
+        method: SummaryApi.checkout.method,
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderDetails),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server error:', errorData);
+        throw new Error(errorData.message || 'Failed to place order');
+      }
+
+      const responseData = await response.json();
+      if (responseData.success) {
+        handlePayment();
+      } else {
+        toast.error("Failed to place the order. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error placing the order:", error);
+      toast.error(error.message || "An error occurred while placing the order. Please try again.");
+    }
+  };
+
+  // Add this function near your other state management functions
+  const handleDateChange = (productId, dateType, value) => {
+    setRentalDates(prev => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [dateType]: value
+      }
+    }));
+  };
+
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto px-4 py-8">
       {/* Address Section with role-based redirect */}
       <div className="bg-white p-4 mb-1">
         <div className="flex justify-between items-center">
@@ -537,103 +925,133 @@ const Cart = () => {
                 ></div>
               ))
             : data.map((product, index) => (
-                <div
-                  key={product?._id + "Add To Cart Loading"}
-                  className="w-full bg-white my-1.5 border border-slate-300 rounded"
-                >
-                  <div className="grid grid-cols-[128px,1fr]">
-                    <div className="w-32 h-32 bg-slate-200 overflow-hidden">
-                      <img
-                        src={getProductImage(product)}
-                        className="w-full h-full object-cover"
-                        alt={`${product?.productId?.productName} ${
-                          product?.rentalVariant ? `- ${product.rentalVariant.variantName}` : ''
-                        }`}
-                      />
-                    </div>
-                    <div className="px-4 py-2 relative">
-                      <div
-                        className="absolute right-0 text-red-600 rounded-full p-2 hover:bg-red-600 hover:text-white cursor-pointer"
-                        onClick={() => deleteCartProduct(product?._id)}
-                      >
-                        <MdDelete />
-                      </div>
-                      <h2 className="text-lg lg:text-xl text-ellipsis line-clamp-1">
-                        {product?.productId?.productName}
-                        {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant && (
-                          <span className="text-sm text-gray-600 ml-2">
-                            ({product.rentalVariant.variantName})
-                          </span>
+                <div key={index} className="flex flex-col md:flex-row gap-4 border-b py-4">
+                  <div className="w-full md:w-1/4">
+                    <img
+                      src={getProductImage(product)}
+                      alt={product.productId.productName}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold">{product.productId.productName}</h3>
+                        <p className="text-gray-600">{product.productId.brandName}</p>
+                        
+                        {/* Variant Name and Price display for rental products */}
+                        {product.productId.category.toLowerCase() === 'rent' ? (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm text-gray-600">Selected Variant:</span>
+                              <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-sm font-medium">
+                                {product.rentalVariant?.variantName || 'Standard'}
+                              </span>
+                            </div>
+                            <p className="text-lg font-medium text-green-600">
+                              {displayINRCurrency(getItemPrice(product))}
+                              <span className="text-sm text-gray-500 ml-2">
+                                for {product.rentalVariant?.duration} days
+                              </span>
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-lg font-medium text-green-600 mt-2">
+                            {displayINRCurrency(getItemPrice(product))}
+                          </p>
                         )}
-                      </h2>
 
-                      <div className="flex items-center justify-between">
-                        <p className="text-red-600 font-medium text-lg">
-                          {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant
-                            ? displayINRCurrency(product.rentalVariant.variantPrice * product.quantity)
-                            : displayINRCurrency(product?.productId?.price * product?.quantity)
-                          }
-                        </p>
+                        {/* Date Selection for Rental Products */}
+                        {product.productId.category.toLowerCase() === 'rent' && (
+                          <div className="mt-4 grid grid-cols-2 gap-4">
+                            <div className="relative">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Start Date
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  value={rentalDates[product._id]?.startDate || ''}
+                                  onChange={(e) => handleDateChange(product._id, 'startDate', e.target.value)}
+                                  min={new Date().toISOString().split('T')[0]}
+                                  className="block w-full px-4 py-2.5 text-gray-700 bg-white border border-gray-300 
+                                    rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                    hover:border-gray-400 transition-colors duration-200
+                                    appearance-none cursor-pointer
+                                    [&::-webkit-calendar-picker-indicator]:bg-transparent
+                                    [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer
+                                    [&::-webkit-calendar-picker-indicator]:px-2
+                                    [&::-webkit-calendar-picker-indicator]:hover:opacity-60"
+                                />
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="relative">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                End Date
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  value={rentalDates[product._id]?.endDate || ''}
+                                  onChange={(e) => handleDateChange(product._id, 'endDate', e.target.value)}
+                                  min={rentalDates[product._id]?.startDate || new Date().toISOString().split('T')[0]}
+                                  className="block w-full px-4 py-2.5 text-gray-700 bg-white border border-gray-300 
+                                    rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                    hover:border-gray-400 transition-colors duration-200
+                                    appearance-none cursor-pointer
+                                    [&::-webkit-calendar-picker-indicator]:bg-transparent
+                                    [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer
+                                    [&::-webkit-calendar-picker-indicator]:px-2
+                                    [&::-webkit-calendar-picker-indicator]:hover:opacity-60"
+                                />
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-3 mt-1">
+
+                      {/* Quantity controls */}
+                      <div className="flex items-center gap-2">
                         <button
-                          className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-6 h-6 flex justify-center items-center rounded"
-                          onClick={() => decraseQty(product?._id, product.quantity)}
+                          onClick={() => decraseQty(product._id, product.quantity)}
+                          className="p-1 rounded bg-gray-100 hover:bg-gray-200"
                         >
                           -
                         </button>
-                        <span className="w-6 text-center">{product.quantity}</span>
+                        <span className="w-8 text-center">{product.quantity}</span>
                         <button
-                          className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-6 h-6 flex justify-center items-center rounded"
-                          onClick={() => increaseQty(product?._id, product.quantity)}
+                          onClick={() => increaseQty(product._id, product.quantity)}
+                          className="p-1 rounded bg-gray-100 hover:bg-gray-200"
                         >
                           +
                         </button>
+                        <button
+                          onClick={() => deleteCartProduct(product._id)}
+                          className="ml-4 text-red-500 hover:text-red-700"
+                        >
+                          <MdDelete size={20} />
+                        </button>
                       </div>
-
-                      {/* Show configuration details for catering items */}
-                      {product?.productId?.category === "catering" && (
-                        <div className="mt-2">
-                          <button
-                            onClick={() => toggleConfigDetails(product._id)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium float-right"
-                          >
-                            {showConfigDetails[product._id] ? "Hide Details" : "Show Details"}
-                          </button>
-                          
-                          {/* Configuration Details */}
-                          {showConfigDetails[product._id] && product.configuration && (
-                            <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                              <h4 className="text-sm font-semibold mb-2">Selected Items:</h4>
-                              {Object.entries(product.configuration).map(([courseType, dishes]) => (
-                                <div key={courseType} className="mb-2">
-                                  <span className="text-sm font-medium text-gray-700">{courseType}:</span>
-                                  <div className="flex flex-wrap gap-2 mt-1">
-                                    {Array.isArray(dishes) && dishes.map((dish, index) => (
-                                      <span
-                                        key={index}
-                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs
-                                          bg-blue-100 text-blue-800 border border-blue-200"
-                                      >
-                                        {dish}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Show rental variant details */}
-                      {product?.productId?.category.toLowerCase() === 'rent' && product?.rentalVariant && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          <p>Option: {product.rentalVariant.variantName}</p>
-                          <p>Price per item: {displayINRCurrency(product.rentalVariant.variantPrice)}</p>
-                        </div>
-                      )}
                     </div>
+
+                    {/* Render rental details */}
+                    {renderRentalDetails(product)}
+                    
+                    {/* Render catering details if it's a catering product */}
+                    {renderCateringDetails(product)}
                   </div>
                 </div>
               ))}
@@ -721,10 +1139,17 @@ const Cart = () => {
     setShowPosterModal(false); // Close the modal
   }} 
 />
+      {showCateringModal && selectedProduct && (
+        <CateringMenuModal
+          product={selectedProduct}
+          onClose={() => {
+            setShowCateringModal(false);
+            setSelectedProduct(null);
+          }}
+        />
+      )}
     </div>
-  
-
-);
+  );
 };
 
 export default Cart;
