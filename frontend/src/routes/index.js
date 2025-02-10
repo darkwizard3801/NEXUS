@@ -207,6 +207,10 @@ const router = createBrowserRouter([
                         path : 'my-profile',
                         element : <MyProfile/>
                     },
+                    {
+                        path : 'vendor-order',
+                        element : <VendorOrders/>
+                    },
                     
                    
                     

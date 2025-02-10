@@ -729,7 +729,6 @@ const Cart = () => {
 
     const orderDetails = {
       products: data.map((product) => {
-        // Get the correct price based on the product type
         const productPrice = product.productId.category.toLowerCase() === 'rent' 
           ? Number(product.rentalVariant?.variantPrice || product.productId.price)
           : Number(product.productId.price);
@@ -741,8 +740,8 @@ const Cart = () => {
           price: productPrice,
           category: product.productId.category,
           vendor: product.productId.user,
-          vendorName: product.productId.brandName || '',
-          image: product.productId.productImage?.[0] || ''
+          vendorName: product.productId.brandName,
+          image: product.productId.productImage[0]
         };
 
         // Add rental details if it's a rental product
@@ -750,7 +749,11 @@ const Cart = () => {
           const variantPrice = Number(product.rentalVariant.variantPrice) || 0;
           const quantity = Number(product.quantity);
           const totalRentalPrice = variantPrice * quantity;
-          const finePerDay = 2; // 2 rupees per day per quantity
+
+          // Find the matching variant to get its image
+          const selectedVariant = product.productId.rentalVariants.find(
+            v => v._id === product.rentalVariant.variantId
+          );
 
           baseProduct.additionalDetails = {
             rental: {
@@ -759,9 +762,10 @@ const Cart = () => {
               startDate: rentalDates[product._id]?.startDate || null,
               endDate: rentalDates[product._id]?.endDate || null,
               totalPrice: totalRentalPrice,
-              fine: 0, // Initial fine is 0
-              isReturned: false, // Initial return status
-              finePerDay: finePerDay * quantity // Fine per day considering quantity
+              fine: 0,
+              isReturned: false,
+              finePerDay: 2 * quantity,
+              variantImage: selectedVariant?.images?.[0] || product.productId.productImage[0]
             }
           };
         }

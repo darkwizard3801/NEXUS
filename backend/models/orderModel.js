@@ -28,8 +28,8 @@ const rentalDetailsSchema = new mongoose.Schema({
     },
     finePerDay: {
         type: Number,
-        // default: 0 // 2 rupees per day
-    }
+    },
+    variantImage: String
 });
 
 const additionalDetailsSchema = new mongoose.Schema({
@@ -39,7 +39,8 @@ const additionalDetailsSchema = new mongoose.Schema({
 
 const productSchema = new mongoose.Schema({
     productId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'product',
         required: true
     },
     productName: {

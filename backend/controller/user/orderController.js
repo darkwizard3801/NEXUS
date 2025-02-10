@@ -35,10 +35,29 @@ const createOrUpdateOrder = async (req, res) => {
                 price: Number(product.price),
                 category: product.category,
                 vendor: product.vendor,
-                vendorName: product.vendorName
+                vendorName: product.vendorName,
+                image: product.image
             };
 
-            // Handle catering products (keeping existing code)
+            // Handle rental products with variant details
+            if (product.category.toLowerCase() === 'rent' && product.additionalDetails?.rental) {
+                const rentalDetails = product.additionalDetails.rental;
+                processedProduct.additionalDetails = {
+                    rental: {
+                        variantName: rentalDetails.variantName,
+                        variantPrice: Number(rentalDetails.variantPrice),
+                        startDate: new Date(rentalDetails.startDate),
+                        endDate: new Date(rentalDetails.endDate),
+                        totalPrice: Number(rentalDetails.totalPrice),
+                        fine: 0,
+                        isReturned: false,
+                        finePerDay: Number(rentalDetails.finePerDay),
+                        variantImage: rentalDetails.variantImage || product.image
+                    }
+                };
+            }
+            
+            // Keep existing catering handling
             if (product.category.toLowerCase() === 'catering' && product.additionalDetails?.catering) {
                 processedProduct.additionalDetails = {
                     catering: {
@@ -49,24 +68,6 @@ const createOrUpdateOrder = async (req, res) => {
                             additionalNotes: course.additionalNotes || '',
                             dietaryRestrictions: course.dietaryRestrictions || []
                         }))
-                    }
-                };
-            }
-            
-            // Handle rental products with fine calculation
-            if (product.category.toLowerCase() === 'rent' && product.additionalDetails?.rental) {
-                const rentalDetails = product.additionalDetails.rental;
-                processedProduct.additionalDetails = {
-                    ...processedProduct.additionalDetails,
-                    rental: {
-                        variantName: rentalDetails.variantName,
-                        variantPrice: Number(rentalDetails.variantPrice),
-                        startDate: new Date(rentalDetails.startDate),
-                        endDate: new Date(rentalDetails.endDate),
-                        totalPrice: Number(rentalDetails.totalPrice),
-                        fine: 0, // Initial fine
-                        isReturned: false,
-                        finePerDay: Number(rentalDetails.finePerDay)
                     }
                 };
             }
@@ -152,11 +153,15 @@ const updateOrderWithPayment = async (req, res) => {
 
         // Prepare email details
         const productDetails = order.products.map((product) => {
+            const imageToShow = product.category.toLowerCase() === 'rent' && 
+                product.additionalDetails?.rental?.variantImage
+                ? product.additionalDetails.rental.variantImage 
+                : product.image;
+
             return `
                 <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
-                    <h3 style="margin: 0;">${product.productName} x ${product.quantity} </h3>
-                    <img src="${product.image}" alt="${product.productName}" style="width: 100%; max-width: 200px; height: auto;" />
-                   
+                    <h3 style="margin: 0;">${product.productName} x ${product.quantity}</h3>
+                    <img src="${imageToShow}" alt="${product.productName}" style="width: 100%; max-width: 200px; height: auto;" />
                 </div>`;
         }).join('');
 
@@ -405,11 +410,14 @@ const markRentalAsReturned = async (req, res) => {
 // Update the email sending function
 const sendOrderConfirmationEmail = async (orderDetails) => {
     try {
-        // Create HTML for products
         const productsHTML = orderDetails.products.map(product => {
+            const imageToShow = product.category.toLowerCase() === 'rent' && 
+                product.additionalDetails?.rental?.variantImage
+                ? product.additionalDetails.rental.variantImage 
+                : product.image;
+
             let additionalDetailsHTML = '';
             
-            // Handle rental products
             if (product.category.toLowerCase() === 'rent' && product.additionalDetails?.rental) {
                 additionalDetailsHTML = `
                     <div style="margin-top: 10px; color: #666;">
@@ -441,7 +449,7 @@ const sendOrderConfirmationEmail = async (orderDetails) => {
             return `
                 <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
                     <div style="display: flex; align-items: start;">
-                        <img src="${product.image}" 
+                        <img src="${imageToShow}" 
                              alt="${product.productName}" 
                              style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px; margin-right: 15px;"
                         />

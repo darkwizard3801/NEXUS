@@ -11,6 +11,7 @@ const VendorOrders = () => {
   const [currentUserEmail, setCurrentUserEmail] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
+  const [productImages, setProductImages] = useState({});
   const dispatch = useDispatch();
 
   // Updated Status options without 'Pending'
@@ -43,7 +44,7 @@ const VendorOrders = () => {
 
     const fetchOrders = async () => {
       try {
-        const response = await fetch(SummaryApi.orderDetails.url, {
+        const response = await fetch(`${SummaryApi.orderDetails.url}`, {
           method: SummaryApi.orderDetails.method,
           credentials: 'include',
           headers: {
@@ -56,27 +57,63 @@ const VendorOrders = () => {
         }
 
         const data = await response.json();
-        // Filter orders where any product's vendor email matches current user's email
-        // AND status is not pending
         const vendorOrders = data.data.filter(order => 
-          order.products.some(product => product.vendor === currentUserEmail) &&
-          order.status.toLowerCase() !== 'pending'
-        );
-        
-        // Map through orders to only include products belonging to this vendor
-        const filteredOrders = vendorOrders.map(order => ({
-          ...order,
-          products: order.products.filter(product => product.vendor === currentUserEmail)
-        }));
-
-        // Sort orders by createdAt date, latest first
-        const sortedOrders = filteredOrders.sort((a, b) => 
-          new Date(b.createdAt) - new Date(a.createdAt)
+          order.products.some(product => product.vendor === currentUserEmail)
         );
 
-        setOrders(sortedOrders);
+        // Fetch product details for each product in the orders
+        const ordersWithProductDetails = await Promise.all(
+          vendorOrders.map(async (order) => {
+            const productsWithDetails = await Promise.all(
+              order.products.map(async (product) => {
+                try {
+                  const productResponse = await fetch(`${SummaryApi.productDetails.url}`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      productId: product.productId
+                    })
+                  });
+
+                  if (!productResponse.ok) {
+                    throw new Error('Failed to fetch product details');
+                  }
+
+                  const productData = await productResponse.json();
+                  console.log('Product Details:', productData);
+
+                  return {
+                    ...product,
+                    productImage: productData.data.productImage
+                  };
+                } catch (error) {
+                  console.error('Error fetching product details:', error);
+                  return product;
+                }
+              })
+            );
+
+            return {
+              ...order,
+              products: productsWithDetails
+            };
+          })
+        );
+
+        const filteredOrders = ordersWithProductDetails
+          .map(order => ({
+            ...order,
+            products: order.products.filter(product => product.vendor === currentUserEmail)
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        setOrders(filteredOrders);
         setLoading(false);
       } catch (error) {
+        console.error('Error fetching orders:', error);
         setError(error.message);
         setLoading(false);
       }
@@ -206,82 +243,173 @@ const VendorOrders = () => {
         ) : (
           // Orders list
           <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white p-6 rounded-lg shadow-md">
-                {/* Order Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Order #{order.invoiceNumber}</h2>
-                    <p className="text-sm text-gray-500">
-                      Ordered on {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Delivery Date: {new Date(order.deliveryDate).toLocaleDateString()}
-                    </p>
+            {orders.map((order) => {
+              return (
+                <div key={order._id} className="bg-white p-6 rounded-lg shadow-md">
+                  {/* Order Header */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold">
+                        Order ID: {order.invoiceNumber || order._id}  {/* Fallback to _id if invoiceNumber is missing */}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Ordered on {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Delivery Date: {new Date(order.deliveryDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {/* Status Dropdown */}
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order._id, e.target.value, order.status)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer border 
+                          ${getStatusColor(order.status)} focus:outline-none focus:ring-2 focus:ring-red-500`}
+                      >
+                        {statusOptions.map((status) => (
+                          <option 
+                            key={status} 
+                            value={status}
+                            className="bg-white text-gray-800"
+                          >
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  {/* Status Dropdown */}
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={order.status}
-                      onChange={(e) => handleStatusChange(order._id, e.target.value, order.status)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer border 
-                        ${getStatusColor(order.status)} focus:outline-none focus:ring-2 focus:ring-red-500`}
-                    >
-                      {statusOptions.map((status) => (
-                        <option 
-                          key={status} 
-                          value={status}
-                          className="bg-white text-gray-800"
-                        >
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
-                {/* Order Items */}
-                <div className="space-y-4">
-                  {order.products.map((item) => (
-                    <div key={item._id} className="flex items-center gap-4 border-b pb-4">
-                      <img
-                        src={item.image}
-                        alt={item.productName}
-                        className="w-20 h-20 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-medium">{item.productName}</h3>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {item.quantity}
-                        </p>
-                        <p className="text-sm font-medium text-gray-800">
-                          Price: {displayINRCurrency(item.price * item.quantity)}
+                  {/* Order Items */}
+                  <div className="space-y-4">
+                    {order.products.map((item) => {
+                      let imageSrc;
+                      try {
+                        if (item.category?.toLowerCase() === 'rent' && item.additionalDetails?.rental?.variantImage) {
+                          // Use variant image for rental products
+                          imageSrc = item.additionalDetails.rental.variantImage;
+                        } else if (item.productImage && Array.isArray(item.productImage) && item.productImage.length > 0) {
+                          // Use regular product image for non-rental products
+                          imageSrc = item.productImage[0];
+                        } else if (typeof item.productImage === 'string') {
+                          imageSrc = item.productImage;
+                        }
+
+                        if (imageSrc && !imageSrc.startsWith('http') && !imageSrc.startsWith('/placeholder')) {
+                          imageSrc = `${process.env.REACT_APP_API_URL}/${imageSrc}`;
+                        }
+
+                        if (!imageSrc) {
+                          imageSrc = '/placeholder-image.jpg';
+                        }
+
+                        console.log('Rental Product Details:', {
+                          category: item.category,
+                          variantImage: item.additionalDetails?.rental?.variantImage,
+                          finalImageSrc: imageSrc
+                        });
+
+                      } catch (error) {
+                        console.error('Error processing image source:', error);
+                        imageSrc = '/placeholder-image.jpg';
+                      }
+
+                      return (
+                        <div key={item._id} className="flex items-center gap-4 border-b pb-4">
+                          <img
+                            src={imageSrc}
+                            alt={item.productName || 'Product'}
+                            className="w-20 h-20 object-cover rounded"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/placeholder-image.jpg';
+                            }}
+                            crossOrigin="anonymous"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-medium">{item.productName}</h3>
+                            <p className="text-sm text-gray-600">
+                              Order ID: {order.invoiceNumber || order._id}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Quantity: {item.quantity}
+                            </p>
+                            
+                            {/* Catering Details */}
+                            {item.category?.toLowerCase() === 'catering' && item.additionalDetails?.catering?.courses && (
+                              <div className="mt-2">
+                                <p className="text-sm font-medium text-gray-700">Course Details:</p>
+                                {item.additionalDetails.catering.courses.map((course, index) => (
+                                  <div key={index} className="ml-2 mb-2">
+                                    <p className="text-sm font-medium text-gray-600">
+                                      {course.courseName} ({course.courseType})
+                                    </p>
+                                    {course.menuItems && course.menuItems.length > 0 && (
+                                      <p className="text-sm text-gray-600">
+                                        Menu Items: {course.menuItems.join(', ')}
+                                      </p>
+                                    )}
+                                    {course.dietaryRestrictions && course.dietaryRestrictions.length > 0 && (
+                                      <p className="text-sm text-gray-600">
+                                        Dietary Restrictions: {course.dietaryRestrictions.join(', ')}
+                                      </p>
+                                    )}
+                                    {course.additionalNotes && (
+                                      <p className="text-sm text-gray-600 italic">
+                                        Notes: {course.additionalNotes}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Rental Details */}
+                            {item.category?.toLowerCase() === 'rent' && item.additionalDetails?.rental && (
+                              <>
+                                <p className="text-sm text-gray-600">
+                                  Variant: {item.additionalDetails.rental.variantName}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Start Date: {new Date(item.additionalDetails.rental.startDate).toLocaleDateString()}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  End Date: {new Date(item.additionalDetails.rental.endDate).toLocaleDateString()}
+                                </p>
+                              </>
+                            )}
+
+                            <div className="text-sm font-medium text-gray-800">
+                              <p>Price: {displayINRCurrency(item.price)} / item</p>
+                              <p>Total: {displayINRCurrency(item.price * item.quantity)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Order Summary - Only showing vendor's products total */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-gray-600">Customer: {order.userName}</p>
+                        <p className="text-sm text-gray-600">Email: {order.userEmail}</p>
+                        <p className="text-sm text-gray-600">Address: {order.address}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">Total Items: {order.products.length}</p>
+                        <p className="font-medium">
+                          Total Amount: {displayINRCurrency(
+                            order.products.reduce((total, item) => total + (item.price * item.quantity), 0)
+                          )}
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Order Summary - Only showing vendor's products total */}
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-gray-600">Customer: {order.userName}</p>
-                      <p className="text-sm text-gray-600">Email: {order.userEmail}</p>
-                      <p className="text-sm text-gray-600">Address: {order.address}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Total Items: {order.products.length}</p>
-                      <p className="font-medium">
-                        Total Amount: {displayINRCurrency(
-                          order.products.reduce((total, item) => total + (item.price * item.quantity), 0)
-                        )}
-                      </p>
-                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
