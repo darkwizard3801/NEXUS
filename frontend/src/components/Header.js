@@ -113,7 +113,7 @@ const Header = () => {
 
   // Updated fetch notifications function to filter out cleared notifications
   const fetchNotifications = async () => {
-    if (user?.role === 'Vendor' || user?.role === 'Customer') {
+    if (user?.role === 'Vendor' || user?.role === 'Customer' || user?.role === 'Admin') {
       try {
         const response = await fetch(SummaryApi.orderDetails.url, {
           method: SummaryApi.orderDetails.method,
@@ -136,7 +136,7 @@ const Header = () => {
                 product.vendor === user.email && 
                 order.status.toLowerCase() === 'ordered'
               ) && 
-              !clearedNotifications.includes(order._id) // Filter out cleared notifications
+              !clearedNotifications.includes(order._id)
             )
             .map(order => ({
               id: order._id,
@@ -147,22 +147,39 @@ const Header = () => {
             }));
           setNotifications(vendorOrders);
           setNotificationCount(vendorOrders.length);
-        } else if (user.role === 'Customer') {
+        } 
+        else if (user.role === 'Customer') {
           const customerOrders = data.data
             .filter(order => 
               order.userEmail === user.email && 
-              order.status.toLowerCase() === 'accepted' &&
-              !clearedNotifications.includes(order._id) // Filter out cleared notifications
+              (order.status.toLowerCase() === 'accepted' || order.status.toLowerCase() === 'shipped' || order.status.toLowerCase() === 'delivered') &&
+              !clearedNotifications.includes(order._id)
             )
             .map(order => ({
               id: order._id,
-              title: `Order Accepted #${order.invoiceNumber}`,
-              message: 'Your order has been accepted by the vendor',
+              title: `Order ${order.status} #${order.invoiceNumber}`,
+              message: `Your order has been ${order.status.toLowerCase()}`,
               time: new Date(order.createdAt),
               link: getNavigationPath('Customer')
             }));
           setNotifications(customerOrders);
           setNotificationCount(customerOrders.length);
+        }
+        else if (user.role === 'Admin') {
+          const adminOrders = data.data
+            .filter(order => 
+              !clearedNotifications.includes(order._id) && 
+              (order.status.toLowerCase() === 'ordered' || order.status.toLowerCase() === 'accepted')
+            )
+            .map(order => ({
+              id: order._id,
+              title: `Order Update #${order.invoiceNumber}`,
+              message: `New ${order.status.toLowerCase()} order from ${order.userName}`,
+              time: new Date(order.createdAt),
+              link: getNavigationPath('Admin')
+            }));
+          setNotifications(adminOrders);
+          setNotificationCount(adminOrders.length);
         }
       } catch (error) {
         console.error('Error fetching notifications:', error);

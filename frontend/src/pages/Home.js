@@ -314,7 +314,10 @@ const MainContent = memo(({ contentRef }) => {
             Explore additional services and products to make your event unforgettable.
           </p>
           <div className="flex justify-center mt-4 md:mt-6">
-            <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm md:text-base">
+            <button 
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm md:text-base"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               Explore Now
             </button>
           </div>

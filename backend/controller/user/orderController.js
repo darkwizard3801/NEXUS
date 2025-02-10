@@ -1,6 +1,7 @@
 const Order = require('../../models/orderModel');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
+const Product = require('../../models/productModel');
 
 const createOrUpdateOrder = async (req, res) => {
     try {
@@ -129,73 +130,128 @@ const updateOrderWithPayment = async (req, res) => {
 
     try {
         // Ensure order exists
-        const order = await Order.findOne({ _id: orderDetails.orderId }); // Use the existing order ID
+        const order = await Order.findOne({ _id: orderDetails.orderId }); 
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
         // Update order with payment details
         order.paymentId = paymentId;
-        order.status = 'Ordered'; // Change the status to 'Ordered'
-        order.invoiceNumber = uuidv4(); // Generate a unique invoice number
+        order.status = 'Ordered';
+        order.invoiceNumber = uuidv4();
 
         // Save the updated order
         await order.save();
 
-        // Set up nodemailer transporter
-        const transporter = nodemailer.createTransport({
-            service: 'Gmail', // e.g., Gmail
-            auth: {
-                user: process.env.EMAIL, // Use your environment variable for the email
-                pass: process.env.EMAIL_PASSWORD, // Use your environment variable for the password or app password
-            },
-        });
+        // Prepare product details HTML with images
+        const productDetails = await Promise.all(order.products.map(async (product) => {
+            // Fetch product details from Product model
+            const productDoc = await Product.findById(product.productId);
+            console.log('Product from DB:', {
+                id: product.productId,
+                foundProduct: productDoc,
+                images: productDoc?.productImage
+            });
 
-        // Prepare email details
-        const productDetails = order.products.map((product) => {
-            const imageToShow = product.category.toLowerCase() === 'rent' && 
-                product.additionalDetails?.rental?.variantImage
-                ? product.additionalDetails.rental.variantImage 
-                : product.image;
+            // Get the correct image URL
+            let imageUrl;
+            if (product.category.toLowerCase() === 'rent' && product.additionalDetails?.rental?.variantImage) {
+                imageUrl = product.additionalDetails.rental.variantImage;
+            } else if (productDoc?.productImage?.[0]) {
+                imageUrl = productDoc.productImage[0];
+            } else {
+                imageUrl = 'placeholder-image.jpg'; // fallback image
+            }
+
+            // Make sure the image URL is absolute
+            const fullImageUrl = imageUrl?.startsWith('http') 
+                ? imageUrl 
+                : `${process.env.REACT_APP_API_URL}/${imageUrl}`;
+
+            console.log('Image URL:', {
+                productName: product.productName,
+                category: product.category,
+                originalUrl: imageUrl,
+                fullUrl: fullImageUrl
+            });
 
             return `
-                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
-                    <h3 style="margin: 0;">${product.productName} x ${product.quantity}</h3>
-                    <img src="${imageToShow}" alt="${product.productName}" style="width: 100%; max-width: 200px; height: auto;" />
+                <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                    <div style="display: flex; align-items: start;">
+                        <img src="${fullImageUrl}" 
+                             alt="${product.productName}" 
+                             style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px; margin-right: 15px;"
+                        />
+                        <div>
+                            <h3 style="margin: 0; color: #333;">${product.productName} x ${product.quantity}</h3>
+                            ${product.category.toLowerCase() === 'catering' ? `
+                                <div style="margin-top: 10px;">
+                                    ${product.additionalDetails?.catering?.courses.map(course => `
+                                        <p><strong>${course.courseName}:</strong> ${course.menuItems.join(', ')}</p>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            ${product.category.toLowerCase() === 'rent' ? `
+                                <div style="margin-top: 10px;">
+                                    <p>Variant: ${product.additionalDetails?.rental?.variantName}</p>
+                                    <p>Duration: ${new Date(product.additionalDetails?.rental?.startDate).toLocaleDateString()} - 
+                                       ${new Date(product.additionalDetails?.rental?.endDate).toLocaleDateString()}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
                 </div>`;
-        }).join('');
+        }));
 
         const mailOptions = {
-            from: process.env.EMAIL_USER, // Sender address
-            to: order.userEmail, // Recipient's email
+            from: process.env.EMAIL_USER,
+            to: order.userEmail,
             subject: 'Your Order has been placed successfully!',
             html: `
-                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px; background-color: #f9f9f9;">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://res.cloudinary.com/du8ogkcns/image/upload/v1726763193/n5swrlk0apekdvwsc2w5.png" alt="Nexus" style="width: 150px; height: auto;" /> <!-- Replace with your logo URL -->
+                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+                    <div style="text-align: center; padding: 20px;">
+                        <img src="https://res.cloudinary.com/du8ogkcns/image/upload/v1726763193/n5swrlk0apekdvwsc2w5.png" 
+                             alt="Nexus" 
+                             style="width: 150px; height: auto;" />
                     </div>
-                    <center>
-                    <h2 style="color: #333;">Thank you for your order!</h2>
-                    <p style="color: #555;">Dear Customer,</p>
-                    <p style="color: #555;">Your order has been successfully placed with the following details:</p>
-                    <p><strong>Invoice Number:</strong> ${order.invoiceNumber}</p>
-                    <p><strong>Order ID:</strong> ${order._id}</p>
-                    <p><strong>Total Amound :</strong> ${order.finalAmount}</p>
-                    <h3 style="color: #333;">Products:</h3>
-                    ${productDetails}
-                    <p style="color: #555;">We will notify you once your order is shipped. If you have any questions, feel free to contact our support team.</p>
-                    <p style="color: #555;">Thank you for shopping with <strong>Nexus</strong>!</p>
-                    <p style="color: #555;">We hope to serve you again soon.</p>
-                    </center>
-                    <div style="text-align: center; margin-top: 20px;">
-                        <p style="font-size: 12px; color: #999;">&copy; 2024 Nexus. All rights reserved.</p>
+                    
+                    <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+                        <h2 style="color: #333; text-align: center;">Thank you for your order!</h2>
                         
+                        <div style="margin: 20px 0;">
+                            <p><strong>Invoice Number:</strong> ${order.invoiceNumber}</p>
+                            <p><strong>Order ID:</strong> ${order._id}</p>
+                            <p><strong>Total Amount:</strong> ₹${order.finalAmount}</p>
+                        </div>
+
+                        <div style="margin: 20px 0;">
+                            <h3 style="color: #333;">Ordered Products:</h3>
+                            ${productDetails.join('')}
+                        </div>
+
+                        <div style="margin-top: 20px; text-align: center;">
+                            <p>We will notify you once your order is shipped.</p>
+                            <p>If you have any questions, feel free to contact our support team.</p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px; color: #666;">
+                        <p>Thank you for shopping with <strong>Nexus</strong>!</p>
+                        <p style="font-size: 12px; margin-top: 20px;">&copy; 2024 Nexus. All rights reserved.</p>
                     </div>
                 </div>
-            `,
+            `
         };
 
         // Send the email
+        const transporter = nodemailer.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: process.env.EMAIL,
+                pass: process.env.EMAIL_PASSWORD,
+            },
+        });
+
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error('Error sending email:', error);
@@ -208,7 +264,7 @@ const updateOrderWithPayment = async (req, res) => {
             success: true,
             message: 'Order updated successfully with payment details.',
             orderId: order._id,
-            invoiceNumber: order.invoiceNumber, // Send back the invoice number if needed
+            invoiceNumber: order.invoiceNumber,
         });
     } catch (error) {
         console.error('Error updating the order:', error);
