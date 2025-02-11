@@ -9,6 +9,7 @@ import CategoryList from '../components/CategoryList';
 import BannerProduct from '../components/BannerProduct';
 import HorizontalCardProduct from '../components/HorizontalCardProduct';
 import VerticalCardProduct from '../components/VerticalCardProduct';
+import Recomended from '../components/Recomended';
 
 // Lazy load less critical components
 const BannerCenter1Product = lazy(() => import(/* webpackPrefetch: true */'../components/BannerCenter1Product'));
@@ -197,7 +198,7 @@ const MainContent = memo(({ contentRef }) => {
   });
 
   return (
-    <>
+    <div ref={contentRef}>
       <div className="w-full">
         <BannerProduct />
       </div>
@@ -212,8 +213,13 @@ const MainContent = memo(({ contentRef }) => {
         />
         <ComponentInView 
           Component={HorizontalCardProduct} 
-          props={{ category: "event-management", heading: "Popular Event Management Services" }} 
+          props={{ category: "auditorium", heading: "Popular Auditoriums" }} 
         />
+      </div>
+
+      {/* Add Recommended component here */}
+      <div className="mt-12 mb-12">
+        <Recomended />
       </div>
 
       {/* Lazy load less critical components */}
@@ -323,7 +329,7 @@ const MainContent = memo(({ contentRef }) => {
           </div>
         </div>
       </Suspense>
-    </>
+    </div>
   );
 });
 

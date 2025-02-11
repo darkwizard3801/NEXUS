@@ -51,7 +51,7 @@ const Header = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  console.log("userdetails=",user)
+  // console.log("userdetails=",user)
   const getCookie = () => {
     const token = Cookies.get("token"); // Replace 'token' with your actual cookie name
     console.log('Cookie token:', token);
@@ -250,7 +250,7 @@ const Header = () => {
     };
   }, [user]);
 
-  console.log(user)
+  // console.log(user)
 
   return (
     <>

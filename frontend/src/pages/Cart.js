@@ -929,23 +929,32 @@ const Cart = () => {
                 ></div>
               ))
             : data.map((product, index) => (
-                <div key={index} className="flex flex-col md:flex-row gap-4 border-b py-4">
+                <div 
+                  key={index} 
+                  className="flex flex-col md:flex-row gap-6 bg-white rounded-xl p-6 mb-6 
+                  border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md 
+                  transition-all duration-300"
+                >
+                  {/* Product Image */}
                   <div className="w-full md:w-1/4">
                     <img
                       src={getProductImage(product)}
                       alt={product.productId.productName}
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-32 object-cover rounded-lg shadow-sm"
                     />
                   </div>
                   
+                  {/* Product Details */}
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-semibold">{product.productId.productName}</h3>
-                        <p className="text-gray-600">{product.productId.brandName}</p>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {product.productId.productName}
+                        </h3>
+                        <p className="text-gray-600 mb-2">{product.productId.brandName}</p>
                         
                         {/* Variant Name and Price display for rental products */}
-                        {product.productId.category.toLowerCase() === 'rent' ? (
+                        {product.productId.category.toLowerCase() === 'rent' && (
                           <div className="mt-2">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm text-gray-600">Selected Variant:</span>
@@ -960,102 +969,104 @@ const Cart = () => {
                               </span>
                             </p>
                           </div>
-                        ) : (
+                        )}
+                        
+                        {/* Regular product price */}
+                        {product.productId.category.toLowerCase() !== 'rent' && (
                           <p className="text-lg font-medium text-green-600 mt-2">
                             {displayINRCurrency(getItemPrice(product))}
                           </p>
                         )}
-
-                        {/* Date Selection for Rental Products */}
-                        {product.productId.category.toLowerCase() === 'rent' && (
-                          <div className="mt-4 grid grid-cols-2 gap-4">
-                            <div className="relative">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Start Date
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="date"
-                                  value={rentalDates[product._id]?.startDate || ''}
-                                  onChange={(e) => handleDateChange(product._id, 'startDate', e.target.value)}
-                                  min={new Date().toISOString().split('T')[0]}
-                                  className="block w-full px-4 py-2.5 text-gray-700 bg-white border border-gray-300 
-                                    rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                    hover:border-gray-400 transition-colors duration-200
-                                    appearance-none cursor-pointer
-                                    [&::-webkit-calendar-picker-indicator]:bg-transparent
-                                    [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer
-                                    [&::-webkit-calendar-picker-indicator]:px-2
-                                    [&::-webkit-calendar-picker-indicator]:hover:opacity-60"
-                                />
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="relative">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                End Date
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="date"
-                                  value={rentalDates[product._id]?.endDate || ''}
-                                  onChange={(e) => handleDateChange(product._id, 'endDate', e.target.value)}
-                                  min={rentalDates[product._id]?.startDate || new Date().toISOString().split('T')[0]}
-                                  className="block w-full px-4 py-2.5 text-gray-700 bg-white border border-gray-300 
-                                    rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                    hover:border-gray-400 transition-colors duration-200
-                                    appearance-none cursor-pointer
-                                    [&::-webkit-calendar-picker-indicator]:bg-transparent
-                                    [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer
-                                    [&::-webkit-calendar-picker-indicator]:px-2
-                                    [&::-webkit-calendar-picker-indicator]:hover:opacity-60"
-                                />
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
 
-                      {/* Quantity controls */}
-                      <div className="flex items-center gap-2">
+                      {/* Existing quantity controls */}
+                      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
                         <button
                           onClick={() => decraseQty(product._id, product.quantity)}
-                          className="p-1 rounded bg-gray-100 hover:bg-gray-200"
+                          className="p-1 rounded hover:bg-gray-200 transition-colors"
                         >
                           -
                         </button>
-                        <span className="w-8 text-center">{product.quantity}</span>
+                        <span className="w-8 text-center font-medium">{product.quantity}</span>
                         <button
                           onClick={() => increaseQty(product._id, product.quantity)}
-                          className="p-1 rounded bg-gray-100 hover:bg-gray-200"
+                          className="p-1 rounded hover:bg-gray-200 transition-colors"
                         >
                           +
                         </button>
                         <button
                           onClick={() => deleteCartProduct(product._id)}
-                          className="ml-4 text-red-500 hover:text-red-700"
+                          className="ml-2 text-red-500 hover:text-red-700 transition-colors"
                         >
                           <MdDelete size={20} />
                         </button>
                       </div>
                     </div>
 
-                    {/* Render rental details */}
-                    {renderRentalDetails(product)}
-                    
-                    {/* Render catering details if it's a catering product */}
-                    {renderCateringDetails(product)}
+                    {/* Existing rental dates */}
+                    {product.productId.category.toLowerCase() === 'rent' && (
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Start Date
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              value={rentalDates[product._id]?.startDate || ''}
+                              onChange={(e) => handleDateChange(product._id, 'startDate', e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="block w-full px-4 py-2.5 text-gray-700 bg-white border border-gray-300 
+                                rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                hover:border-gray-400 transition-colors duration-200
+                                appearance-none cursor-pointer
+                                [&::-webkit-calendar-picker-indicator]:bg-transparent
+                                [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer
+                                [&::-webkit-calendar-picker-indicator]:px-2
+                                [&::-webkit-calendar-picker-indicator]:hover:opacity-60"
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            End Date
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              value={rentalDates[product._id]?.endDate || ''}
+                              onChange={(e) => handleDateChange(product._id, 'endDate', e.target.value)}
+                              min={rentalDates[product._id]?.startDate || new Date().toISOString().split('T')[0]}
+                              className="block w-full px-4 py-2.5 text-gray-700 bg-white border border-gray-300 
+                                rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                hover:border-gray-400 transition-colors duration-200
+                                appearance-none cursor-pointer
+                                [&::-webkit-calendar-picker-indicator]:bg-transparent
+                                [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer
+                                [&::-webkit-calendar-picker-indicator]:px-2
+                                [&::-webkit-calendar-picker-indicator]:hover:opacity-60"
+                            />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Existing catering details */}
+                    <div className="mt-2">
+                      {renderCateringDetails(product)}
+                    </div>
                   </div>
                 </div>
               ))}
