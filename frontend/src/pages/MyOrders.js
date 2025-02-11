@@ -22,8 +22,10 @@ const MyOrders = () => {
   const [rating, setRating] = useState(0); // State to hold the selected rating
   const [ratingComment, setRatingComment] = useState('');
   const [selectedProductId, setSelectedProductId] = useState(''); // State to hold the selected product ID // State to hold the rating comment
+  const [products, setProducts] = useState({}); // Store fetched product details
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
   useEffect(() => {
-    
     const fetchCurrentUserDetails = async () => {
       try {
         const response = await fetch(SummaryApi.current_user.url, {
@@ -62,9 +64,40 @@ const MyOrders = () => {
         const data = await response.json();
         const filteredOrders = data.data.filter(order => order.userEmail === currentUserEmail);
         setOrders(filteredOrders);
-        console.log("filteredOrders",filteredOrders);
+
+        // Fetch product details for each order
+        const productIds = new Set();
+        filteredOrders.forEach(order => {
+          order.products.forEach(product => {
+            if (product.productId) {
+              productIds.add(product.productId);
+            }
+          });
+        });
+
+        // Fetch product details
+        const productDetails = {};
+        for (const productId of productIds) {
+          try {
+            const productResponse = await fetch(SummaryApi.productDetails.url, {
+              method: SummaryApi.productDetails.method,
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ productId: productId })
+            });
+            
+            if (productResponse.ok) {
+              const productData = await productResponse.json();
+              productDetails[productId] = productData.data;
+            }
+          } catch (error) {
+            console.error(`Error fetching product ${productId}:`, error);
+          }
+        }
+        setProducts(productDetails);
         setLoading(false);
-        
       } catch (error) {
         setError(error.message);
         setLoading(false);
@@ -101,128 +134,209 @@ const MyOrders = () => {
 
   const downloadInvoice = (order) => {
     const doc = new jsPDF();
-    doc.setFont('Helvetica', 'bold'); // Change font to bold for the heading
-    doc.setFontSize(20); // Increased font size for the heading
-    doc.text('Invoice', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' }); // Centered heading
     
-    // Add Invoice Number and Date below the heading with reduced size
-    doc.setFont('Helvetica', 'normal'); // Change back to normal font
-    doc.setFontSize(8); // Further reduced font size
-    const invoiceNumberText = `Invoice Number: ${order.invoiceNumber}`;
-    const dateText = `Date: ${new Date().toLocaleString()}`;
+    // Header Section
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('NEXUS', doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+    
+    // Invoice text below brand name
+    doc.setFontSize(12);
+    doc.text('INVOICE', doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+    
+    // Invoice Details
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(10);
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Calculate positions for right alignment
-    const invoiceNumberX = pageWidth - doc.getTextWidth(invoiceNumberText) - 20; // 20 units from the right
-    const dateX = pageWidth - doc.getTextWidth(dateText) - 20; // 20 units from the right
-
-    doc.text(invoiceNumberText, invoiceNumberX, 30); // Positioned below the heading
-    doc.text(dateText, dateX, 38); // Positioned below the heading
-
-    doc.setFontSize(12); // Reset font size for the rest of the content
-    doc.setFont('Helvetica', 'normal'); // Ensure normal font for the content
-    doc.text(`Order ID: ${order._id}`, 20, 50);
-    doc.text(`Name: ${order.userName}`, 20, 60);
-    doc.text(`User: ${order.userEmail}`, 20, 70);
-    doc.text(`Address: ${order.address}`, 20, 80);
-    doc.text(`Status: ${order.status}`, 20, 90);
-    doc.text(`Delivery Date: ${new Date(order.deliveryDate).toLocaleDateString()}`, 20, 100);
+    // Left side details
+    doc.text('Bill To:', 20, 50);
+    doc.text(`Name: ${order.userName}`, 20, 57);
+    doc.text(`Email: ${order.userEmail}`, 20, 64);
+    doc.text(`Address: ${order.address}`, 20, 71);
     
-    const products = order.products.map((product, index) => {
-      return [
-        index + 1,
-        product.productName || 'N/A',
-        product.vendorName,
-        product.quantity ? product.quantity.toString() : '0',
-        product.price ? `${product.price.toFixed(2)}` : '0.00',
-        product.quantity && product.price
-          ? `${(product.quantity * product.price).toFixed(2)}`
-          : '0.00',
-      ];
+    // Right side details
+    doc.text(`Invoice No: INV-${order.invoiceNumber}`, pageWidth - 60, 50);
+    doc.text(`Order Date: ${new Date(order.createdAt).toLocaleDateString()}`, pageWidth - 60, 57);
+    doc.text(`Order Status: ${order.status}`, pageWidth - 60, 64);
+    doc.text(`Expected Delivery: ${new Date(order.deliveryDate).toLocaleDateString()}`, pageWidth - 60, 71);
+
+    // Divider
+    doc.setDrawColor(220, 220, 220);
+    doc.line(20, 80, pageWidth - 20, 80);
+
+    // Products Table
+    const tableColumns = [
+      { header: '#', dataKey: 'index' },
+      { header: 'Product', dataKey: 'product' },
+      { header: 'Category', dataKey: 'category' },
+      { header: 'Qty', dataKey: 'quantity' },
+      { header: 'Price', dataKey: 'price' },
+      { header: 'Total', dataKey: 'total' }
+    ];
+
+    const tableRows = order.products.map((product, index) => {
+      let productDetails = '';
+      if (product.category.toLowerCase() === 'catering') {
+        const courses = product.additionalDetails?.catering?.courses || [];
+        productDetails = `${product.productName}\n${courses.map(c => 
+          `${c.courseName} (${c.menuItems.join(', ')})`
+        ).join('\n')}`;
+      } else if (product.category.toLowerCase() === 'rent') {
+        const rental = product.additionalDetails?.rental;
+        productDetails = `${product.productName}\n${rental?.variantName || ''}\n${
+          new Date(rental?.startDate).toLocaleDateString()} - ${
+          new Date(rental?.endDate).toLocaleDateString()}`;
+      } else {
+        productDetails = product.productName;
+      }
+
+      return {
+        index: index + 1,
+        product: productDetails,
+        category: product.category,
+        quantity: product.quantity,
+        price: `${product.price.toFixed(2)}`,
+        total: `${(product.quantity * product.price).toFixed(2)}`
+      };
     });
-  
+
     doc.autoTable({
-      startY: 110,
-      head: [['#', 'Product Name', 'Vendor', 'Quantity', 'Price', 'Total']],
-      body: products,
-      theme: 'grid', // Add grid theme for a professional look
-      styles: { font: 'Helvetica', fontSize: 10 }, // Set font and size for table
+      startY: 90,
+      head: [tableColumns.map(col => col.header)],
+      body: tableRows.map(row => tableColumns.map(col => row[col.dataKey])),
+      theme: 'grid',
+      headStyles: {
+        fillColor: [51, 122, 183],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      columnStyles: {
+        index: { cellWidth: 10 },
+        product: { cellWidth: 'auto' },
+        category: { cellWidth: 30 },
+        quantity: { cellWidth: 20 },
+        price: { cellWidth: 30 },
+        total: { cellWidth: 30 }
+      }
     });
 
-    // Professional price calculation section
-    const totalPriceY = doc.autoTable.previous.finalY + 20;
-    const discountY = totalPriceY + 10;
-    const finalAmountY = discountY + 10;
+    // Price Summary
+    const finalY = doc.autoTable.previous.finalY + 10;
+    
+    // Summary Box
+    doc.setDrawColor(220, 220, 220);
+    doc.setFillColor(250, 250, 250);
+    const summaryBoxY = finalY;
+    const summaryBoxHeight = 40;
+    doc.rect(pageWidth - 90, summaryBoxY, 70, summaryBoxHeight, 'F');
 
-    doc.setFontSize(12);
-    const priceSummaryText = 'Price Summary';
-    doc.text(priceSummaryText, doc.internal.pageSize.getWidth() / 2, totalPriceY - 10, { align: 'center' }); // Centered section title
-    doc.setFont('Helvetica', 'normal'); // Normal font for the summary
+    // Price Details
+    doc.setFontSize(10);
+    doc.text('Sub Total:', pageWidth - 85, summaryBoxY + 10);
+    doc.text(`${order.totalPrice.toFixed(2)}`, pageWidth - 25, summaryBoxY + 10, { align: 'right' });
+    
+    doc.text('Discount:', pageWidth - 85, summaryBoxY + 20);
+    doc.text(`${order.discount.toFixed(2)}`, pageWidth - 25, summaryBoxY + 20, { align: 'right' });
+    
+    doc.setFont('Helvetica', 'bold');
+    doc.text('Final Amount:', pageWidth - 85, summaryBoxY + 30);
+    doc.text(`${order.finalAmount.toFixed(2)}`, pageWidth - 25, summaryBoxY + 30, { align: 'right' });
 
-    // Total Price
-    doc.text('Total Price:', 20, totalPriceY);
-    doc.text(`${order.totalPrice?.toFixed(2) || '0.00'}`, pageWidth - 40, totalPriceY, { align: 'right' });
+    // Footer with Logo and Details
+    const footerY = doc.internal.pageSize.getHeight() - 20;
+    
+    // Add Logo
+    const logoUrl = 'https://res.cloudinary.com/du8ogkcns/image/upload/v1726763193/n5swrlk0apekdvwsc2w5.png';
+    const logoWidth = 30; // Adjust size as needed
+    const logoHeight = 15; // Adjust size as needed
+    const logoX = doc.internal.pageSize.getWidth() / 2 - logoWidth / 2;
+    
+    // Add image with error handling
+    try {
+      doc.addImage(logoUrl, 'PNG', logoX, footerY - 25, logoWidth, logoHeight);
+    } catch (error) {
+      console.error('Error adding logo to PDF:', error);
+    }
 
-    // Discount
-    doc.text('Discount:', 20, discountY);
-    doc.text(`- ${order.discount?.toFixed(2) || '0.00'}`, pageWidth - 40, discountY, { align: 'right' });
+    // Add divider line above footer
+    doc.setDrawColor(220, 220, 220);
+    doc.line(20, footerY - 8, pageWidth - 20, footerY - 8);
 
-    // Final Amount
-    doc.text('Final Amount:', 20, finalAmountY);
-    doc.text(`${order.finalAmount?.toFixed(2) || '0.00'}`, pageWidth - 40, finalAmountY, { align: 'right' });
+    // Company Details in footer
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Thank you for your business!', doc.internal.pageSize.getWidth() / 2, footerY - 5, { align: 'center' });
+    doc.text('For any queries, please contact pheonix.nexus.2024@gmail.com', doc.internal.pageSize.getWidth() / 2, footerY, { align: 'center' });
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, doc.internal.pageSize.getWidth() / 2, footerY + 5, { align: 'center' });
 
-    doc.save('invoice.pdf');
+    // Add letterhead style elements
+    doc.setDrawColor(51, 122, 183); // Blue color for design elements
+    doc.setLineWidth(0.5);
+    doc.line(20, footerY + 10, pageWidth - 20, footerY + 10); // Bottom border
+
+    // Save the PDF with formatted invoice number
+    doc.save(`NEXUS-Invoice-${order.invoiceNumber}.pdf`);
   };
 
-  // Filter orders based on the selected status
+  // Filter and sort orders
   const filteredOrders = selectedStatus === 'All'
-    ? orders
-    : orders.filter(order => order.status === selectedStatus);
+    ? [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    : [...orders]
+        .filter(order => order.status === selectedStatus)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    const cancelOrder = async (orderId) => {
-      // Check if cancellationReason is provided
-      if (!cancellationReason) {
-          alert('Please select a cancellation reason');
-          return;
-      }
-  
-      try {
-          // Make a POST request to cancel the order
-          const response = await fetch(SummaryApi.cancelOrder.url, {
-              method: 'POST', // Change to POST
-              credentials: 'include',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ orderId, cancellationReason }), // Send both orderId and cancellationReason
-          });
-  
-          // Check if the response is OK
-          if (!response.ok) {
-              throw new Error('Failed to cancel order');
-          }
-          if (response.ok)
-          {
-            toast.success("Order Cancelled SuccessFully")
-          }
-          // Update the local state with the updated order details
-          const updatedOrder = await response.json();
-          setOrders(orders.map(order => 
-              order._id === updatedOrder.order._id // Use the updated order from the response
-                  ? { ...order, status: 'Cancelled', cancellationReason } 
-                  : order
-          ));
-  
-          // Reset form and state
-          setShowCancellationForm(false);
-          setCancellationReason('');
-          setExpandedOrderId(null);
-      } catch (error) {
-          console.error('Error cancelling order:', error);
-          alert('Failed to cancel order. Please try again.');
-      }
+  const handleCancelClick = (orderId) => {
+    setSelectedOrderId(orderId);
+    setShowCancellationForm(true);
   };
-  
+
+  const handleCancelOrder = async () => {
+    if (!cancellationReason) {
+      toast.error('Please select a cancellation reason');
+      return;
+    }
+
+    try {
+      const response = await fetch(SummaryApi.cancelOrder.url, {
+        method: SummaryApi.cancelOrder.method,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          orderId: selectedOrderId, 
+          cancellationReason 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel order');
+      }
+
+      const data = await response.json();
+      
+      // Update orders state
+      setOrders(orders.map(order => 
+        order._id === selectedOrderId
+          ? { ...order, status: 'Cancelled' }
+          : order
+      ));
+
+      toast.success('Order cancelled successfully');
+      setShowCancellationForm(false);
+      setCancellationReason('');
+      setSelectedOrderId(null);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error('Failed to cancel order. Please try again.');
+    }
+  };
 
   // Add this function to handle the button click
   const handleChatClick = () => {
@@ -255,6 +369,169 @@ const MyOrders = () => {
     }
   };
 
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getCourseTypeColor = (courseType) => {
+    switch (courseType?.toLowerCase()) {
+      case 'starter':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'main course':
+        return 'bg-green-100 text-green-800';
+      case 'dessert':
+        return 'bg-pink-100 text-pink-800';
+      case 'beverage':
+        return 'bg-purple-100 text-purple-800';
+      case 'snack':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  const getDishColor = (index) => {
+    const colors = [
+      'bg-red-100 text-red-800',
+      'bg-blue-100 text-blue-800',
+      'bg-green-100 text-green-800',
+      'bg-yellow-100 text-yellow-800',
+      'bg-purple-100 text-purple-800',
+      'bg-pink-100 text-pink-800',
+      'bg-indigo-100 text-indigo-800',
+      'bg-orange-100 text-orange-800',
+      'bg-teal-100 text-teal-800',
+      'bg-cyan-100 text-cyan-800'
+    ];
+    return colors[index % colors.length];
+  };
+
+  const renderProductDetails = (orderProduct) => {
+    if (!orderProduct || !orderProduct.category) {
+      return null;
+    }
+
+    switch (orderProduct.category.toLowerCase()) {
+      case 'catering':
+        let globalDishIndex = 0; // Track global index for all dishes
+        return (
+          <div className="mt-3 bg-orange-50 p-4 rounded-lg">
+            <h4 className="text-sm font-semibold text-orange-700 mb-2">Catering Details</h4>
+            {orderProduct.additionalDetails?.catering?.courses?.map((course, idx) => (
+              <div key={idx} className="mb-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h5 className="font-medium text-orange-800">{course.courseName}</h5>
+                    <p className="text-sm text-orange-600">{course.courseType}</p>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-orange-700 mb-2">Menu Items:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {course.menuItems?.map((item) => {
+                      const color = getDishColor(globalDishIndex++);
+                      return (
+                        <span 
+                          key={globalDishIndex}
+                          className={`text-xs px-3 py-1.5 rounded-full ${color} hover:bg-opacity-80 transition-colors duration-200`}
+                        >
+                          {item}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+                {course.dietaryRestrictions && course.dietaryRestrictions.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-orange-700 mb-2">Dietary Restrictions:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {course.dietaryRestrictions.map((restriction, i) => (
+                        <span key={i} className="text-xs bg-red-100 px-2 py-1 rounded-full text-red-700">
+                          {restriction}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {course.additionalNotes && (
+                  <p className="mt-3 text-xs text-orange-600 italic">
+                    Note: {course.additionalNotes}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'rent':
+        const rentalDetails = orderProduct.additionalDetails?.rental;
+        return (
+          <div className="mt-3 bg-blue-50 p-4 rounded-lg">
+            <h4 className="text-sm font-semibold text-blue-700 mb-2">Rental Details</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-600">Rental Period</p>
+                <p className="text-sm font-medium">
+                  {formatDate(rentalDetails?.startDate)} - {formatDate(rentalDetails?.endDate)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600">Selected Variant</p>
+                <p className="text-sm font-medium">{rentalDetails?.variantName}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600">Daily Rate</p>
+                <p className="text-sm font-medium">₹{rentalDetails?.variantPrice}/day</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600">Total Rental Cost</p>
+                <p className="text-sm font-medium">₹{rentalDetails?.totalPrice}</p>
+              </div>
+              {rentalDetails?.fine > 0 && (
+                <div>
+                  <p className="text-xs text-red-600">Fine Amount</p>
+                  <p className="text-sm font-medium text-red-600">₹{rentalDetails.fine}</p>
+                  <p className="text-xs text-gray-500">(₹{rentalDetails.finePerDay}/day)</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-gray-600">Return Status</p>
+                <p className={`text-sm font-medium ${rentalDetails?.isReturned ? 'text-green-600' : 'text-orange-600'}`}>
+                  {rentalDetails?.isReturned ? 'Returned' : 'Not Returned'}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-gray-600">Regular Purchase</p>
+          </div>
+        );
+    }
+  };
+
+  const getProductImage = (product) => {
+    if (!product) return 'https://placehold.co/150x150';
+
+    try {
+      if (product.category?.toLowerCase() === 'rent' && 
+          product.additionalDetails?.rental?.variantImage) {
+        return product.additionalDetails.rental.variantImage;
+      }
+      const productDetails = products[product.productId];
+      return productDetails?.productImage?.[0] || 'https://placehold.co/150x150';
+    } catch (error) {
+      console.error('Error getting product image:', error);
+      return 'https://placehold.co/150x150';
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row items-start justify-center min-h-screen bg-gray-50 relative mx-10">
@@ -292,187 +569,106 @@ const MyOrders = () => {
             <h2 className="text-lg">Error: {error}</h2>
           </div>
         ) : filteredOrders.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 col-span-full">My Orders</h2>
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">My Orders</h2>
             {filteredOrders.map((order) => (
-              <div
-                key={order._id}
-                className={`bg-white rounded-lg shadow-lg overflow-hidden ${order.status === 'Cancelled' && expandedOrderId !== order._id ? 'opacity-50' : ''}`}
-              >
-                <div onClick={() => toggleOrderDetails(order._id)} className="cursor-pointer">
-                  <img
-                    src={order.products[0]?.image}
-                    alt={order.products[0]?.productName}
-                    className="w-full h-48 object-cover rounded-t-lg"
-                  />
-                  <p className="text-center text-gray-800 font-semibold mt-2">
-                    {order.products[0]?.productName}
-                  </p>
+              <div key={order._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                {/* Order Header */}
+                <div className="p-4 border-b bg-gray-50">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Order Date</p>
+                      <p className="font-medium">{formatDate(order.createdAt)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Order ID</p>
+                      <p className="font-medium truncate">{order._id}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Amount</p>
+                      <p className="font-medium">₹{order.finalAmount}</p>
+                      {order.discount > 0 && (
+                        <p className="text-xs text-green-600">Saved ₹{order.discount}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Status</p>
+                      <p className={`font-medium ${getStatusClass(order.status)}`}>
+                        {order.status}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                
 
-                {expandedOrderId === order._id && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative flex flex-col" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-      {/* Close Button */}
-      <button className="absolute top-4 right-4 text-gray-500 hover:text-gray-800" onClick={() => toggleOrderDetails(order._id)}>
-        <IoCloseSharp className="text-2xl" />
-      </button>
+                {/* Products List */}
+                <div className="divide-y divide-gray-100">
+                  {order.products.map((orderProduct, index) => {
+                    const productDetails = products[orderProduct.productId];
+                    console.log("Order Product:", orderProduct); // Debug log
+                    return (
+                      <div key={index} className="p-4">
+                        <div className="flex gap-4">
+                          {/* Updated Product Image section */}
+                          <div className="w-32 h-32 flex-shrink-0">
+                            <img
+                              src={getProductImage(orderProduct)}
+                              alt={orderProduct.productName || 'Product'}
+                              className="w-full h-full object-cover rounded-lg border border-gray-200"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://placehold.co/150x150';
+                              }}
+                            />
+                          </div>
 
-      <h3 className="font-semibold text-gray-800 mb-2">Order ID: {order._id}</h3>
-      <div className="text-gray-600 mb-4">
-        <h4 className="font-semibold">Address:</h4>
-        <p className="whitespace-pre-line">{order.address}</p>
-      </div>
-      <p className="font-semibold text-black">
-        Status: <span className={getStatusClass(order.status)}>{order.status}</span>
-      </p>
-      <p>Delivery Date: {new Date(order.deliveryDate).toLocaleDateString()}</p>
-
-      {/* Rating Form */}
-     
-
-      {/* Give Rating Button */}
-     
-
-      <div className="mt-4">
-        <h4 className="font-semibold text-gray-700">Products:</h4>
-        <ul className="list-disc pl-5 space-y-1">
-          {order.products.map((product, index) => (
-            <li key={index} className="bg-gray-100 rounded-md p-4 flex items-center space-x-4">
-              <img
-                src={product.image}
-                alt={product.productName}
-                className="w-20 h-20 object-cover"
-              />
-              <div className="flex-1">
-                <div className="text-gray-800 font-semibold">{product.productName}</div>
-                <div className="text-gray-600">
-                  Quantity: {product.quantity} x ₹{product.price}
+                          {/* Product Information */}
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-medium text-lg text-gray-800">
+                                  {productDetails?.productName || orderProduct.productName}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {productDetails?.brandName || orderProduct.brandName || 'Brand'} • {productDetails?.category || orderProduct.category}
+                                </p>
+                                <p className="text-sm font-medium text-gray-800 mt-1">
+                                  Quantity: {orderProduct.quantity} × ₹{orderProduct.price}
+                                </p>
+                              </div>
+                              <p className="text-lg font-semibold text-gray-800">
+                                ₹{(orderProduct.quantity * orderProduct.price).toFixed(2)}
+                              </p>
+                            </div>
+                            {renderProductDetails(orderProduct)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
 
-      <div className="mt-4">
-        <p className="text-gray-700 font-semibold">Total Price: ₹{order.totalPrice || '0.00'}</p>
-        <p className="text-gray-700 font-semibold">Discount: ₹{order.discount || '0.00'}</p>
-        <p className="text-gray-700 font-semibold">Final Amount: ₹{order.finalAmount}</p>
-      </div>
-
-      <div className="mt-4 flex space-x-2">
-        <button
-          className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700"
-          onClick={() => downloadInvoice(order)}
-        >
-          <FaDownload className="inline mr-1" /> Download Invoice
-        </button>
-
-        {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
-          <button 
-            className="bg-red-500 text-white px-3  rounded-lg hover:bg-red-600"
-            onClick={() => setShowCancellationForm(true)}
-          >
-            <FaTimes className="inline mr-1" /> Cancel Order
-          </button>
-        )}
-      {order.status === 'Delivered' && !showRatingForm && (
-        <button
-          className="bg-green-500 text-white px-3 py-1  h-9 rounded-lg hover:bg-green-600 "
-          onClick={() => setShowRatingForm(true)}
-        >
-          Give Rating
-        </button>
-      )}
-      </div>
-
-
-      {showCancellationForm && (
-        <div className="mt-4 bg-gray-100 p-4 rounded-lg">
-          <h4 className="font-semibold text-gray-700 mb-2">Why are you cancelling the order?</h4>
-          <select
-            className="w-full p-2 border rounded-md mb-2"
-            value={cancellationReason}
-            onChange={(e) => setCancellationReason(e.target.value)}
-          >
-            <option value="">Select a reason</option>
-            <option value="Changed my mind">Changed my mind</option>
-            <option value="Found a better deal">Found a better deal</option>
-            <option value="Ordered by mistake">Ordered by mistake</option>
-            <option value="Shipping takes too long">Shipping takes too long</option>
-            <option value="Other">Other</option>
-          </select>
-          <div className="flex justify-end space-x-2">
-            <button
-              className="bg-gray-300 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-400"
-              onClick={() => {
-                setShowCancellationForm(false);
-                setCancellationReason('');
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-              onClick={() => cancelOrder(order._id)}
-            >
-              Submit
-            </button>
-          </div>
-        </div>
-      )}
-
-{showRatingForm && (
-  <div className="mt-4">
-    <h4 className="font-semibold text-gray-700">Rate this Order:</h4>
-    
-    {/* Dropdown for selecting product */}
-    <select
-      className="mt-2 w-full p-2 border rounded-md"
-      value={selectedProductId}
-      onChange={(e) => setSelectedProductId(e.target.value)}
-    >
-      <option value="">Select a product</option>
-      {order.products.map((product) => (
-        <option key={product.productId} value={product.productId}>
-         
-          {product.productName} <img src={product.image}  className="inline w-6 h-6 mr-2" />
-        </option>
-      ))}
-    </select>
-
-    <div className="flex space-x-2">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={`cursor-pointer ${rating >= star ? 'text-yellow-400' : 'text-gray-400'}`}
-          onClick={() => setRating(star)}
-        >
-          ★
-        </span>
-      ))}
-    </div>
-    <textarea
-      className="mt-2 w-full p-2 border rounded-md"
-      rows={3}
-      placeholder="Leave a comment"
-      value={ratingComment}
-      onChange={(e) => setRatingComment(e.target.value)}
-    ></textarea>
-    <button
-      className="bg-blue-600 text-white mt-2 px-3 py-1 rounded-lg hover:bg-blue-700"
-      onClick={() => handleRatingSubmit(order._id, selectedProductId)} // Pass selectedProductId
-    >
-      Submit Rating
-    </button>
-  </div>
-)}
-    </div>
-  </div>
-)}
-
+                {/* Order Actions */}
+                <div className="p-4 bg-gray-50 flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => downloadInvoice(order)}
+                      className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      <FaDownload className="mr-2" /> Download Invoice
+                    </button>
+                    {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+                      <button
+                        onClick={() => handleCancelClick(order._id)}
+                        className="flex items-center px-4 py-2 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                      >
+                        <FaTimes className="mr-2" /> Cancel Order
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Expected Delivery: {formatDate(order.deliveryDate)}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -489,6 +685,54 @@ const MyOrders = () => {
           <FaComments className="mr-2" /> Chat with Us
         </button>
       </div>
+
+      {/* Cancellation Modal */}
+      {showCancellationForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Cancel Order</h3>
+              <button
+                onClick={() => setShowCancellationForm(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <IoCloseSharp size={24} />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reason for Cancellation
+              </label>
+              <select
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select a reason</option>
+                <option value="Changed my mind">Changed my mind</option>
+                <option value="Found better price elsewhere">Found better price elsewhere</option>
+                <option value="Ordered by mistake">Ordered by mistake</option>
+                <option value="Shipping time too long">Shipping time too long</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowCancellationForm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

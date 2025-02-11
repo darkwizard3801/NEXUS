@@ -126,149 +126,117 @@ const getAllOrders = async (req, res) => {
 };
 
 const updateOrderWithPayment = async (req, res) => {
-    const { paymentId, orderDetails } = req.body;
-
     try {
-        // Ensure order exists
-        const order = await Order.findOne({ _id: orderDetails.orderId }); 
-        if (!order) {
-            return res.status(404).json({ success: false, message: 'Order not found' });
+        const { paymentId, orderDetails } = req.body;
+        
+        console.log('Received request body:', {
+            paymentId,
+            orderDetails,
+            fullBody: req.body
+        });
+
+        // Enhanced validation
+        if (!paymentId) {
+            console.log('Missing paymentId');
+            return res.status(400).json({
+                success: false,
+                message: 'Payment ID is required'
+            });
         }
 
-        // Update order with payment details
-        order.paymentId = paymentId;
-        order.status = 'Ordered';
-        order.invoiceNumber = uuidv4();
-
-        // Save the updated order
-        await order.save();
-
-        // Prepare product details HTML with images
-        const productDetails = await Promise.all(order.products.map(async (product) => {
-            // Fetch product details from Product model
-            const productDoc = await Product.findById(product.productId);
-            console.log('Product from DB:', {
-                id: product.productId,
-                foundProduct: productDoc,
-                images: productDoc?.productImage
+        if (!orderDetails || !orderDetails.orderId) {
+            console.log('Missing orderDetails or orderId');
+            return res.status(400).json({
+                success: false,
+                message: 'Order details and Order ID are required'
             });
+        }
 
-            // Get the correct image URL
-            let imageUrl;
-            if (product.category.toLowerCase() === 'rent' && product.additionalDetails?.rental?.variantImage) {
-                imageUrl = product.additionalDetails.rental.variantImage;
-            } else if (productDoc?.productImage?.[0]) {
-                imageUrl = productDoc.productImage[0];
-            } else {
-                imageUrl = 'placeholder-image.jpg'; // fallback image
+        // Find the existing order
+        const existingOrder = await Order.findById(orderDetails.orderId);
+        if (!existingOrder) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Update only specific fields instead of the entire order
+        try {
+            const updatedOrder = await Order.findByIdAndUpdate(
+                orderDetails.orderId,
+                {
+                    $set: {
+                        paymentId: paymentId,
+                        status: 'Ordered',
+                        invoiceNumber: uuidv4()
+                    }
+                },
+                { 
+                    new: true,
+                    runValidators: false // Disable validation since we're only updating specific fields
+                }
+            );
+
+            console.log('Order updated successfully:', updatedOrder);
+
+            // Handle email sending
+            if (process.env.EMAIL && process.env.EMAIL_PASSWORD) {
+                try {
+                    const transporter = nodemailer.createTransport({
+                        service: 'Gmail',
+                        auth: {
+                            user: process.env.EMAIL,
+                            pass: process.env.EMAIL_PASSWORD,
+                        },
+                    });
+
+                    const mailOptions = {
+                        from: process.env.EMAIL,
+                        to: updatedOrder.userEmail,
+                        subject: 'Your Order has been placed successfully!',
+                        html: `
+                            <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+                                <h2>Order Confirmation</h2>
+                                <p>Thank you for your order!</p>
+                                <p>Order ID: ${updatedOrder._id}</p>
+                                <p>Invoice Number: ${updatedOrder.invoiceNumber}</p>
+                                <p>Total Amount: ₹${updatedOrder.finalAmount}</p>
+                            </div>
+                        `
+                    };
+
+                    await transporter.sendMail(mailOptions);
+                    console.log('Order confirmation email sent successfully');
+                } catch (emailError) {
+                    console.error('Error sending email:', emailError);
+                    // Continue execution even if email fails
+                }
             }
 
-            // Make sure the image URL is absolute
-            const fullImageUrl = imageUrl?.startsWith('http') 
-                ? imageUrl 
-                : `${process.env.REACT_APP_API_URL}/${imageUrl}`;
-
-            console.log('Image URL:', {
-                productName: product.productName,
-                category: product.category,
-                originalUrl: imageUrl,
-                fullUrl: fullImageUrl
+            return res.status(200).json({
+                success: true,
+                message: 'Order updated successfully with payment details.',
+                orderId: updatedOrder._id,
+                invoiceNumber: updatedOrder.invoiceNumber,
             });
 
-            return `
-                <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
-                    <div style="display: flex; align-items: start;">
-                        <img src="${fullImageUrl}" 
-                             alt="${product.productName}" 
-                             style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px; margin-right: 15px;"
-                        />
-                        <div>
-                            <h3 style="margin: 0; color: #333;">${product.productName} x ${product.quantity}</h3>
-                            ${product.category.toLowerCase() === 'catering' ? `
-                                <div style="margin-top: 10px;">
-                                    ${product.additionalDetails?.catering?.courses.map(course => `
-                                        <p><strong>${course.courseName}:</strong> ${course.menuItems.join(', ')}</p>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                            ${product.category.toLowerCase() === 'rent' ? `
-                                <div style="margin-top: 10px;">
-                                    <p>Variant: ${product.additionalDetails?.rental?.variantName}</p>
-                                    <p>Duration: ${new Date(product.additionalDetails?.rental?.startDate).toLocaleDateString()} - 
-                                       ${new Date(product.additionalDetails?.rental?.endDate).toLocaleDateString()}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>`;
-        }));
+        } catch (updateError) {
+            console.error('Error updating order:', updateError);
+            return res.status(500).json({
+                success: false,
+                message: 'Error updating order details',
+                error: updateError.message
+            });
+        }
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: order.userEmail,
-            subject: 'Your Order has been placed successfully!',
-            html: `
-                <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-                    <div style="text-align: center; padding: 20px;">
-                        <img src="https://res.cloudinary.com/du8ogkcns/image/upload/v1726763193/n5swrlk0apekdvwsc2w5.png" 
-                             alt="Nexus" 
-                             style="width: 150px; height: auto;" />
-                    </div>
-                    
-                    <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
-                        <h2 style="color: #333; text-align: center;">Thank you for your order!</h2>
-                        
-                        <div style="margin: 20px 0;">
-                            <p><strong>Invoice Number:</strong> ${order.invoiceNumber}</p>
-                            <p><strong>Order ID:</strong> ${order._id}</p>
-                            <p><strong>Total Amount:</strong> ₹${order.finalAmount}</p>
-                        </div>
-
-                        <div style="margin: 20px 0;">
-                            <h3 style="color: #333;">Ordered Products:</h3>
-                            ${productDetails.join('')}
-                        </div>
-
-                        <div style="margin-top: 20px; text-align: center;">
-                            <p>We will notify you once your order is shipped.</p>
-                            <p>If you have any questions, feel free to contact our support team.</p>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 20px; color: #666;">
-                        <p>Thank you for shopping with <strong>Nexus</strong>!</p>
-                        <p style="font-size: 12px; margin-top: 20px;">&copy; 2024 Nexus. All rights reserved.</p>
-                    </div>
-                </div>
-            `
-        };
-
-        // Send the email
-        const transporter = nodemailer.createTransport({
-            service: 'Gmail',
-            auth: {
-                user: process.env.EMAIL,
-                pass: process.env.EMAIL_PASSWORD,
-            },
-        });
-
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending email:', error);
-            } else {
-                console.log('Email sent:', info.response);
-            }
-        });
-
-        res.json({
-            success: true,
-            message: 'Order updated successfully with payment details.',
-            orderId: order._id,
-            invoiceNumber: order.invoiceNumber,
-        });
     } catch (error) {
-        console.error('Error updating the order:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        console.error('Unexpected error in updateOrderWithPayment:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
     }
 };
 

@@ -123,6 +123,7 @@ const VendorPanel = () => {
                   />
                    {isCollapsed ? null : "Orders"}
                 </Link>
+                
                 <Link
                   to={"vendor-products"}
                   className="flex items-center p-2 hover:bg-blue-600 hover:rounded-r-full hover:text-white transition duration-300 ease-in-out transform hover:scale-105"
@@ -259,7 +260,7 @@ const VendorPanel = () => {
                     Sponsored Products
                   </Link>
                   <Link
-                    to={"rating"}
+                    to={"portfolio"}
                     className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
                     onClick={toggleSidebar}
                   >
