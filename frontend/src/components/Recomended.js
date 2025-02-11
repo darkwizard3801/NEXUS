@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoIosArrowBack, IoIosArrowForward } from 'react-icons/io';
+import { IoStar, IoStarHalf, IoStarOutline } from 'react-icons/io5';
 import SummaryApi from '../common';
+import { useNavigate } from 'react-router-dom';
+import displayINRCurrency from '../helpers/displayCurrency';
 
 const Recomended = () => {
   const [orders, setOrders] = useState([]);
@@ -8,9 +11,12 @@ const Recomended = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
+  const [productRatings, setProductRatings] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUserDetails();
+    fetchRatings();
   }, []);
 
   const fetchUserDetails = async () => {
@@ -45,17 +51,17 @@ const Recomended = () => {
         },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders');
-      }
+      if (!response.ok) throw new Error('Failed to fetch orders');
 
       const data = await response.json();
       console.log('Fetched Orders:', data);
       
+      if (!data.data || !Array.isArray(data.data)) {
+        throw new Error('Invalid order data format');
+      }
+
       // Filter orders for current user
-      const userOrders = data.data
-        .filter(order => order.userEmail === userEmail);
-      
+      const userOrders = data.data.filter(order => order.userEmail === userEmail);
       console.log('User Orders:', userOrders);
       setOrders(userOrders);
 
@@ -63,13 +69,184 @@ const Recomended = () => {
       if (userOrders.length > 0) {
         const preferences = analyzeUserPreferences(userOrders);
         console.log('User Preferences:', preferences);
-        fetchRecommendedProducts(preferences);
+        await fetchRecommendedProducts(preferences);
       } else {
-        setLoading(false);
+        // If no orders, fetch some default products
+        await fetchDefaultRecommendations();
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError(error.message);
+      setLoading(false);
+    }
+  };
+
+  const fetchRatings = async () => {
+    try {
+      const response = await fetch(SummaryApi.getRating.url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch ratings');
+      }
+
+      const data = await response.json();
+      console.log('Fetched ratings:', data);
+
+      if (Array.isArray(data?.data)) {
+        const ratingsMap = {};
+        data.data.forEach(rating => {
+          const productId = rating.productId;
+          if (!ratingsMap[productId]) {
+            ratingsMap[productId] = {
+              totalRating: 0,
+              count: 0
+            };
+          }
+          ratingsMap[productId].totalRating += parseFloat(rating.rating);
+          ratingsMap[productId].count += 1;
+        });
+
+        // Calculate average ratings
+        Object.keys(ratingsMap).forEach(productId => {
+          ratingsMap[productId].average = 
+            ratingsMap[productId].totalRating / ratingsMap[productId].count;
+        });
+
+        console.log('Processed ratings:', ratingsMap);
+        setProductRatings(ratingsMap);
+      }
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
+    }
+  };
+
+  const renderRating = (productId) => {
+    console.log('Rendering rating for product:', productId);
+    console.log('Available ratings:', productRatings);
+
+    const rating = productRatings[productId];
+    if (!rating) {
+      console.log('No rating found for product:', productId);
+      return null;
+    }
+
+    const averageRating = rating.average;
+    const reviewCount = rating.count;
+    const fullStars = Math.floor(averageRating);
+    const hasHalfStar = averageRating % 1 >= 0.5;
+
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center">
+          {[...Array(5)].map((_, index) => {
+            if (index < fullStars) {
+              return (
+                <IoStar 
+                  key={index}
+                  className="w-3.5 h-3.5 text-yellow-400"
+                />
+              );
+            } else if (index === fullStars && hasHalfStar) {
+              return (
+                <IoStarHalf 
+                  key={index}
+                  className="w-3.5 h-3.5 text-yellow-400"
+                />
+              );
+            } else {
+              return (
+                <IoStarOutline 
+                  key={index}
+                  className="w-3.5 h-3.5 text-yellow-400"
+                />
+              );
+            }
+          })}
+        </div>
+        <span className="text-xs text-gray-500">
+          ({reviewCount})
+        </span>
+      </div>
+    );
+  };
+
+  // Enhanced getTagStyle function with more colors
+  const getTagStyle = (index) => {
+    const styles = [
+      { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-100', hover: 'group-hover:bg-blue-100' },
+      { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-100', hover: 'group-hover:bg-purple-100' },
+      { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-100', hover: 'group-hover:bg-green-100' },
+      { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-100', hover: 'group-hover:bg-pink-100' },
+      { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-100', hover: 'group-hover:bg-orange-100' },
+    ];
+    return styles[index % styles.length];
+  };
+
+  // Enhanced recommendation reasons generator
+  const getRecommendationReasons = (product) => {
+    const reasons = ['Popular product']; // Default reason
+
+    // Add category-based reason
+    if (product.category?.toLowerCase() === 'rent') {
+      reasons.push('Top rental choice');
+    } else if (product.category?.toLowerCase() === 'catering') {
+      reasons.push('Trending in catering');
+    }
+
+    // Add rating-based reason
+    if (product.rating >= 4.5) {
+      reasons.push('Highly rated');
+    } else if (product.rating >= 4.0) {
+      reasons.push('Well reviewed');
+    }
+
+    // Add price-based reason
+    if (product.price <= 1000) {
+      reasons.push('Budget friendly');
+    } else if (product.price >= 5000) {
+      reasons.push('Premium choice');
+    }
+
+    // Add brand-based reason
+    if (product.brandName) {
+      reasons.push(`Top ${product.brandName} product`);
+    }
+
+    // Return 3 random reasons from the array
+    return reasons
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 3);
+  };
+
+  // Update the fetchDefaultRecommendations function
+  const fetchDefaultRecommendations = async () => {
+    try {
+      const response = await fetch(SummaryApi.allProduct.url, {
+        method: SummaryApi.allProduct.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch products');
+      
+      const dataResponse = await response.json();
+      const allProducts = dataResponse?.data || [];
+      
+      // Add enhanced recommendation reasons to each product
+      setRecommendedProducts(allProducts.slice(0, 6).map(product => ({
+        ...product,
+        matchReasons: getRecommendationReasons(product)
+      })));
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching default recommendations:', error);
       setLoading(false);
     }
   };
@@ -223,16 +400,34 @@ const Recomended = () => {
     }
   };
 
-  // Add this function at the top of your component to get different colors for tags
-  const getTagStyle = (index) => {
-    const styles = [
-      { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-100', hover: 'group-hover:bg-blue-100' },
-      { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-100', hover: 'group-hover:bg-purple-100' },
-      { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-100', hover: 'group-hover:bg-green-100' },
-      { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-100', hover: 'group-hover:bg-pink-100' },
-      { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-100', hover: 'group-hover:bg-orange-100' },
-    ];
-    return styles[index % styles.length];
+  const handleProductClick = (e, productId) => {
+    e.preventDefault();
+    navigate(`/product/${productId}`);
+  };
+
+  // Updated rental price range function to match AdminProductCard
+  const getRentalPriceRange = (product) => {
+    if (!product.rentalVariants || product.rentalVariants.length === 0) {
+      return "Price not available";
+    }
+
+    const prices = product.rentalVariants.map(item => item.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (minPrice === maxPrice) {
+      return `${displayINRCurrency(minPrice)}/day`;
+    }
+
+    return `${displayINRCurrency(minPrice)} - ${displayINRCurrency(maxPrice)}/day`;
+  };
+
+  // Helper function to get the display price
+  const getDisplayPrice = (product) => {
+    if (product.category?.toLowerCase() === 'rent') {
+      return getRentalPriceRange(product);
+    }
+    return displayINRCurrency(product.price);
   };
 
   if (loading) {
@@ -271,11 +466,9 @@ const Recomended = () => {
     <div className="px-6 py-4">
       <h2 className="text-2xl font-semibold text-gray-800 mb-6">Recommended for You</h2>
       
-      {/* Added relative container for absolute positioning of arrows */}
       <div className="relative">
-        {/* Left Arrow */}
         <button
-          onClick={() => {
+          onClick={(e) => {
             const container = document.getElementById('recommendedScroll');
             container.scrollLeft -= container.offsetWidth - 100;
           }}
@@ -288,9 +481,8 @@ const Recomended = () => {
           <IoIosArrowBack className="w-6 h-6 text-gray-600" />
         </button>
 
-        {/* Right Arrow */}
         <button
-          onClick={() => {
+          onClick={(e) => {
             const container = document.getElementById('recommendedScroll');
             container.scrollLeft += container.offsetWidth - 100;
           }}
@@ -303,21 +495,19 @@ const Recomended = () => {
           <IoIosArrowForward className="w-6 h-6 text-gray-600" />
         </button>
 
-        {/* Scrollable container with padding for arrows */}
         <div 
           id="recommendedScroll"
           className="flex overflow-x-auto gap-4 scroll-smooth scrollbar-hide px-4"
           style={{ scrollBehavior: 'smooth' }}
         >
           {recommendedProducts.map((product) => (
-            <a 
+            <div 
               key={product._id}
-              href={`/product/${product._id}`}
+              onClick={(e) => handleProductClick(e, product._id)}
               className="flex-none w-[280px] group bg-white rounded-xl overflow-hidden border 
                 border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all 
                 duration-300 cursor-pointer relative"
             >
-              {/* Image Container */}
               <div className="relative h-40 overflow-hidden">
                 <img
                   src={product.productImage?.[0] || 'https://via.placeholder.com/150'}
@@ -328,62 +518,62 @@ const Recomended = () => {
                     e.target.src = 'https://via.placeholder.com/150';
                   }}
                 />
-                {product.category?.toLowerCase() === 'rent' && (
-                  <span className="absolute top-2 right-2 bg-blue-500/90 text-white px-2 py-0.5 
-                    rounded-full text-xs font-medium backdrop-blur-sm">
-                    Rental
-                  </span>
-                )}
               </div>
 
-              {/* Content Container */}
               <div className="p-4">
-                {/* Product Info */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <h3 className="font-medium text-gray-800 group-hover:text-blue-600 
                       transition-colors duration-200 truncate">
                       {product.productName}
                     </h3>
-                    {product.rating && (
-                      <div className="flex items-center gap-0.5 bg-yellow-50 px-1.5 py-0.5 rounded-full">
-                        <span className="text-yellow-400 text-xs">★</span>
-                        <span className="text-xs font-medium text-yellow-700">
-                          {product.rating.toFixed(1)}
-                        </span>
-                      </div>
-                    )}
+                    {renderRating(product._id)}
                   </div>
                   
-                  <p className="text-xs text-gray-600 truncate">{product.brandName}</p>
-                  
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm font-semibold text-green-600">₹{product.price}</p>
-                    <span className="text-blue-600 opacity-0 group-hover:opacity-100 
-                      transition-opacity duration-200 text-xs">
-                      View →
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-600">
+                      {product.brandName}
+                    </span>
+                    <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-600 capitalize">
+                      {product.category}
                     </span>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-green-600">
+                        {getDisplayPrice(product)}
+                      </p>
+                      {product.category?.toLowerCase() === 'rent' && product.rentalVariants?.length > 0 && (
+                        <p className="text-xs text-gray-500">
+                          {product.rentalVariants.length} duration {product.rentalVariants.length === 1 ? 'option' : 'options'}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-blue-600 opacity-0 group-hover:opacity-100 
+                      transition-opacity duration-200 text-xs">
+                      View Details →
+                    </span>
+                  </div>
 
-                {/* Match Reasons */}
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {product.matchReasons?.slice(0, 2).map((reason, index) => {
-                    const tagStyle = getTagStyle(index);
-                    return (
-                      <span 
-                        key={index}
-                        className={`inline-block ${tagStyle.bg} ${tagStyle.text} text-xs px-2 py-0.5 
-                          rounded-full border ${tagStyle.border} ${tagStyle.hover}
-                          transition-colors duration-200 truncate max-w-[120px]`}
-                      >
-                        {reason}
-                      </span>
-                    );
-                  })}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {product.matchReasons?.slice(0, 3).map((reason, index) => {
+                      const tagStyle = getTagStyle(index);
+                      return (
+                        <span 
+                          key={index}
+                          className={`inline-flex items-center ${tagStyle.bg} ${tagStyle.text} 
+                            text-xs px-2 py-1 rounded-full border ${tagStyle.border} ${tagStyle.hover}
+                            transition-colors duration-200 truncate max-w-[130px]`}
+                        >
+                          {reason}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </a>
+            </div>
           ))}
         </div>
       </div>
