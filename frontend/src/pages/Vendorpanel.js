@@ -208,6 +208,15 @@ const VendorPanel = () => {
     
                 {/* Navigation */}
                 <nav className="grid p-4">
+                
+                  <Link
+                    to={"vendor-report"}
+                    className="flex items-center p-2 transition duration-300 ease-in-out hover:bg-blue-600 hover:text-white rounded-l-full hover:rounded-r-full"
+                    onClick={toggleSidebar} // Close sidebar on link click
+                  >
+                    <TbReportAnalytics className="mr-2" />
+                    Report
+                  </Link>
                   <Link
                     to={"vendor-products"}
                     className="flex items-center p-2 transition duration-300 ease-in-out hover:bg-blue-600 hover:text-white rounded-l-full hover:rounded-r-full"
@@ -258,7 +267,7 @@ const VendorPanel = () => {
                    Portfolio
                   </Link>
                   <Link
-                    to={"portfolio"}
+                    to={"rating"}
                     className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
                     onClick={toggleSidebar}
                   >
