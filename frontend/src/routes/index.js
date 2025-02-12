@@ -211,6 +211,14 @@ const router = createBrowserRouter([
                         path : 'vendor-order',
                         element : <VendorOrders/>
                     },
+                    {
+                        path : 'vendor-report',
+                        element : <VendorReport/>
+                    },
+                    {
+                        path : 'rating',
+                        element : <RatingView/>
+                    },
                     
                    
                     

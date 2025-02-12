@@ -3,6 +3,17 @@ import { toast } from 'react-toastify';
 import SummaryApi from '../common';
 import { FaUserCircle } from 'react-icons/fa';
 import imageTobase64 from '../helpers/imageTobase64'; // Import the helper function
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
 
 const MYProfile = () => {
   const [userDetails, setUserDetails] = useState({
@@ -18,6 +29,9 @@ const MYProfile = () => {
     district: '',
     state: '',
     zipCode: '',
+    latitude: '',
+    longitude: '',
+    locationName: '',
   });
 
   const [loading, setLoading] = useState(true);
@@ -26,6 +40,10 @@ const MYProfile = () => {
   const [role, setRole] = useState('');
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [position, setPosition] = useState([10.8505, 76.2711]); // Default to Kerala coordinates
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const provider = new OpenStreetMapProvider();
 
   // Fetch user details from the server
   const fetchUserDetails = async () => {
@@ -57,9 +75,16 @@ const MYProfile = () => {
         district: result.data.district || '',
         state: result.data.state || '',
         zipCode: result.data.zipCode || '',
+        latitude: result.data.latitude || '',
+        longitude: result.data.longitude || '',
+        locationName: result.data.locationName || '',
       });
 
       setRole(result.data.role || '');
+
+      if (result.data.latitude && result.data.longitude) {
+        setPosition([result.data.latitude, result.data.longitude]);
+      }
     } catch (error) {
       setError(error.message);
       toast.error(error.message);
@@ -120,34 +145,260 @@ const MYProfile = () => {
     }
 
     try {
-      // Send userDetails to the backend, ensure the new profile picture is included
-      const updatedUserDetails = { ...userDetails, profilePic: newProfilePic  }; // Include the new profile picture if it exists
-       console.log(userDetails)
+      // Include the new profile picture and location data
+      const updatedUserDetails = {
+        ...userDetails,
+        profilePic: newProfilePic || userDetails.profilePic,
+        latitude: position[0],  // Ensure we're using the latest position
+        longitude: position[1], // from the map marker
+        locationName: userDetails.locationName,
+      };
+
+      console.log('Sending updated user details:', updatedUserDetails); // For debugging
+
       const response = await fetch(SummaryApi.update_user.url, {
         method: 'PUT',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedUserDetails), // Send the updated userDetails as JSON
+        body: JSON.stringify(updatedUserDetails),
       });
-     console.log(response)
+
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
       }
 
       toast.success('Profile updated successfully!');
-
-      // Reload the page after successful update
-      fetchUserDetails(); // Optionally refetch user details
+      
+      // Refetch user details to update the display
+      await fetchUserDetails();
+      
+      // Optional: Reload the page after a delay
       setTimeout(() => {
         window.location.reload();
-      }, 5000);
+      }, 2000);
       
     } catch (error) {
       toast.error(error.message);
+      console.error('Error updating profile:', error);
     }
   };
+
+  const handleSearch = async (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query.length > 2) {
+      const results = await provider.search({ query });
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleLocationSelect = (result) => {
+    const newPosition = [result.y, result.x];
+    setPosition(newPosition);
+    setUserDetails({
+      ...userDetails,
+      latitude: result.y,
+      longitude: result.x,
+      locationName: result.label,
+    });
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  // Add this new component for the search control
+  const SearchControl = () => {
+    const map = useMap();
+    const [searchValue, setSearchValue] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isFocused, setIsFocused] = useState(false);
+    const provider = new OpenStreetMapProvider();
+    
+    const handleSearch = async (e) => {
+      const query = e.target.value;
+      setSearchValue(query);
+      
+      if (query.length > 2) {
+        const results = await provider.search({ query });
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    };
+
+    const handleResultClick = (result) => {
+      const newPosition = [result.y, result.x];
+      map.setView(newPosition, 13);
+      setSearchValue(result.label);
+      setSearchResults([]);
+      // Update the parent component's state
+      setPosition(newPosition);
+      setUserDetails(prev => ({
+        ...prev,
+        latitude: result.y,
+        longitude: result.x,
+        locationName: result.label,
+      }));
+    };
+
+    return (
+      <div className="leaflet-top leaflet-right" style={{ zIndex: 1000 }}>
+        <div className="leaflet-control p-3" style={{ minWidth: '320px' }}>
+          <div className={`
+            relative transition-all duration-200
+            ${isFocused ? 'transform -translate-y-1' : ''}
+          `}>
+            <div className={`
+              relative bg-white rounded-lg shadow-lg
+              ${isFocused ? 'ring-2 ring-blue-400 shadow-xl' : 'hover:shadow-xl'}
+              transition-all duration-200
+            `}>
+              <input
+                type="text"
+                value={searchValue}
+                onChange={handleSearch}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                placeholder="Search location..."
+                className={`
+                  w-full p-3 pl-10 rounded-lg
+                  bg-white text-gray-700
+                  placeholder-gray-400
+                  focus:outline-none
+                  transition-all duration-200
+                `}
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5"
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {searchResults.length > 0 && (
+              <div className={`
+                absolute w-full mt-2 
+                bg-white rounded-lg shadow-xl 
+                max-h-[200px] overflow-y-auto
+                border border-gray-100
+                transition-all duration-200
+                scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent
+              `}>
+                {searchResults.map((result, index) => (
+                  <div
+                    key={index}
+                    className={`
+                      p-3 cursor-pointer
+                      hover:bg-blue-50 
+                      transition-colors duration-150
+                      flex items-center gap-2
+                      ${index !== searchResults.length - 1 ? 'border-b border-gray-100' : ''}
+                    `}
+                    onClick={() => handleResultClick(result)}
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-4 w-4 text-gray-400 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" 
+                      />
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" 
+                      />
+                    </svg>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-700">
+                        {result.label.split(',')[0]}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {result.label.split(',').slice(1).join(',')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Update your existing MapComponent
+  const MapComponent = () => {
+    const map = useMap();
+    
+    useEffect(() => {
+      map.setView(position, 13);
+    }, [position]);
+
+    return <SearchControl />;
+  };
+
+  // Update your mapSection const to include some additional styling
+  const mapSection = (
+    <div className="mb-6">
+      <label className="block font-semibold mb-2">Business Location</label>
+      <div className="h-[400px] rounded-xl overflow-hidden border relative">
+        <MapContainer
+          center={position}
+          zoom={13}
+          style={{ height: '100%', width: '100%' }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          <Marker 
+            position={position}
+            draggable={true}
+            eventHandlers={{
+              dragend: (e) => {
+                const marker = e.target;
+                const position = marker.getLatLng();
+                setPosition([position.lat, position.lng]);
+                setUserDetails(prev => ({
+                  ...prev,
+                  latitude: position.lat,
+                  longitude: position.lng,
+                }));
+              },
+            }}
+          />
+          <MapComponent />
+        </MapContainer>
+      </div>
+      <p className="text-sm text-gray-600 mt-2">
+        Search for a location or drag the marker to pin your exact location
+      </p>
+    </div>
+  );
 
   if (loading) return <p>Loading profile...</p>;
   if (error) return <p>{error}</p>;
@@ -159,10 +410,9 @@ const MYProfile = () => {
 
         <div className="mb-4 flex items-center justify-center">
           <label className="cursor-pointer">
-            {/* Display new profile picture if selected, otherwise show current profile picture */}
             {newProfilePic ? (
               <img
-                src={newProfilePic} // Use newProfilePic for the selected image
+                src={newProfilePic}
                 alt="New Profile"
                 className="w-32 h-32 rounded-full object-cover border-2 border-gray-300"
               />
@@ -178,7 +428,7 @@ const MYProfile = () => {
             <input
               type="file"
               accept="image/*"
-              onChange={handleUploadPic} // Use handleUploadPic instead of handleProfilePicChange
+              onChange={handleUploadPic}
               className="hidden"
             />
           </label>
@@ -227,7 +477,7 @@ const MYProfile = () => {
             {phoneError && <p className="text-red-500">{phoneError}</p>}
           </div>
 
-          {role === 'Vendor' && (
+          {role === 'Vendor' ? (
             <>
               <div>
                 <label className="block font-semibold">Additional Phone Number (optional)</label>
@@ -252,80 +502,108 @@ const MYProfile = () => {
                   required
                 />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold">House/Shop Number</label>
+                  <input
+                    type="text"
+                    name="houseFlat"
+                    value={userDetails.houseFlat}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold">Street</label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={userDetails.street}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              {mapSection}
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold">House/Flat</label>
+                  <input
+                    type="text"
+                    name="houseFlat"
+                    value={userDetails.houseFlat}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold">Street</label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={userDetails.street}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold">Post Office</label>
+                  <input
+                    type="text"
+                    name="postOffice"
+                    value={userDetails.postOffice}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold">District</label>
+                  <input
+                    type="text"
+                    name="district"
+                    value={userDetails.district}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold">State</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={userDetails.state}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold">Zip Code</label>
+                  <input
+                    type="text"
+                    name="zipCode"
+                    value={userDetails.zipCode}
+                    onChange={handleChange}
+                    className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
             </>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold">House/Flat</label>
-              <input
-                type="text"
-                name="houseFlat"
-                value={userDetails.houseFlat}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold">Street</label>
-              <input
-                type="text"
-                name="street"
-                value={userDetails.street}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold">Post Office</label>
-              <input
-                type="text"
-                name="postOffice"
-                value={userDetails.postOffice}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold">District</label>
-              <input
-                type="text"
-                name="district"
-                value={userDetails.district}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold">State</label>
-              <input
-                type="text"
-                name="state"
-                value={userDetails.state}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold">Zip Code</label>
-              <input
-                type="text"
-                name="zipCode"
-                value={userDetails.zipCode}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
 
           <button
             type="submit"

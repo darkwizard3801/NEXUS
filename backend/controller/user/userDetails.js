@@ -45,7 +45,10 @@ async function updateUserDetailsController(req, res) {
         state,
         zipCode,
         role,
-        licenseNumber
+        licenseNumber,
+        latitude,
+        longitude,
+        locationName
     } = req.body;
 
     console.log("Incoming request data:", req.body);
@@ -70,7 +73,19 @@ async function updateUserDetailsController(req, res) {
         if (additionalPhoneNumber) user.additionalPhoneNumber = additionalPhoneNumber;
         if (role) user.role = role;
         if (licenseNumber) user.licenseNumber = licenseNumber;
-        if (profilePic) user.profilePic = profilePic; // Update profilePic if provided
+        if (profilePic) user.profilePic = profilePic;
+
+        // Update location fields if user is a vendor
+        if (user.role === 'Vendor') {
+            // Update location coordinates and name if provided
+            if (latitude !== undefined && longitude !== undefined) {
+                user.latitude = latitude;
+                user.longitude = longitude;
+            }
+            if (locationName) {
+                user.locationName = locationName;
+            }
+        }
 
         // Update address fields directly
         if (houseFlat) user.houseFlat = houseFlat;
@@ -116,9 +131,6 @@ async function updateUserDetailsController(req, res) {
         });
     }
 }
-
-
-
 
 module.exports = {
     userDetailsController,

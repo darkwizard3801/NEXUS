@@ -264,7 +264,7 @@ const VendorPanel = () => {
                     className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
                     onClick={toggleSidebar}
                   >
-                    <MdOutlineReviews className="mr-2" />
+                    <ImProfile className="mr-2" />
                    Portfolio
                   </Link>
                   <Link
@@ -272,7 +272,7 @@ const VendorPanel = () => {
                     className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
                     onClick={toggleSidebar}
                   >
-                    <ImProfile className="mr-2" />
+                    <MdOutlineReviews className="mr-2" />
                    View Ratings & Reviews
                   </Link>
                 </nav>

@@ -14,6 +14,9 @@ import { BsCart4 } from "react-icons/bs";
 import { LuRectangleHorizontal } from "react-icons/lu";
 import { AiOutlineProduct } from "react-icons/ai";
 import { PiUsersThreeLight } from "react-icons/pi";
+import { TbReportAnalytics } from "react-icons/tb";
+import { MdOutlineReviews } from "react-icons/md";
+
 const AdminPanel = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -106,6 +109,16 @@ const AdminPanel = () => {
                   {isCollapsed ? null : "All Users"}
                 </Link>
                 <Link
+                  to={"vendor-report"}
+                  className="flex items-center p-2 hover:bg-blue-600 hover:rounded-r-full hover:text-white transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                 <TbReportAnalytics 
+    
+                    className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
+                  />
+                   {isCollapsed ? null : "Report"}
+                </Link>
+                <Link
                   to={"all-products"}
                   className="flex items-center p-2 hover:bg-blue-600 hover:text-white hover:rounded-r-full transition duration-300 ease-in-out transform hover:scale-105"
                 >
@@ -121,6 +134,15 @@ const AdminPanel = () => {
                     className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
                   />
                    {isCollapsed ? null : "Orders"}
+                </Link>
+                <Link
+                  to={"rating"}
+                  className="flex items-center p-2 hover:bg-blue-600 hover:text-white hover:rounded-r-full transition duration-300 ease-in-out transform hover:scale-105"
+                >
+                  <MdOutlineReviews
+                    className={`${isCollapsed ? "text-2xl" : "mr-2"}`}
+                  />
+                  {isCollapsed ? null : "View Ratings & Reviews"}
                 </Link>
                 <Link
                   to={"banner-admin"}
@@ -190,12 +212,29 @@ const AdminPanel = () => {
                     All Users
                   </Link>
                   <Link
+                    to={"vendor-report"}
+                    className="flex items-center p-2 transition duration-300 ease-in-out hover:bg-blue-600 hover:text-white rounded-l-full hover:rounded-r-full"
+                    onClick={toggleSidebar} // Close sidebar on link click
+                  >
+                    <TbReportAnalytics className="mr-2" />
+                    Report
+                  </Link>
+
+                  <Link
                     to={"vendor-order"}
                     className="flex items-center p-2 transition duration-300 ease-in-out hover:bg-blue-600 hover:text-white rounded-l-full hover:rounded-r-full"
                     onClick={toggleSidebar} // Close sidebar on link click
                   >
                     <BsCart4 className="mr-2" />
                     Orders
+                  </Link>
+                  <Link
+                    to={"rating"}
+                    className="flex items-center p-2 hover:bg-blue-600 hover:text-white transition duration-300 ease-in-out"
+                    onClick={toggleSidebar}
+                  >
+                    <MdOutlineReviews className="mr-2" />
+                   View Ratings & Reviews
                   </Link>
                   <Link
                     to={"all-products"}

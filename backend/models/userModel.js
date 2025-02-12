@@ -93,6 +93,15 @@ const userSchema = new mongoose.Schema({
     type: String, // License number field added
     default: '', // Optional, can be left blank if not provided
   },
+  latitude: {
+    type: Number,
+  },
+  longitude: {
+    type: Number,
+  },
+  locationName: {
+    type: String,
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

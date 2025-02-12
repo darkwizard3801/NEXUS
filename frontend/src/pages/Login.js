@@ -8,6 +8,24 @@ import SummaryApi from '../common';
 import { toast } from 'react-toastify';
 import Context from '../context';
 import { useSelector } from 'react-redux';
+import styled from 'styled-components';
+
+// Styled component for floating animation
+const FloatingImage = styled.img`
+  animation: float 3s ease-in-out infinite;
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+`;
 
 const Login = () => {
     const user = useSelector(state => state.user.user);
@@ -145,90 +163,126 @@ const Login = () => {
     // };
 
     return (
-        <section id='login' className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
-            <div className='container mx-auto px-4 max-w-6xl'>
-                <div className='bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg max-w-md mx-auto'>
-                    <div className='w-20 h-20 mx-auto'>
-                        <img src={loginIcons} alt='login icons' className="w-full h-full object-contain" />
+        <section className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+            <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-all duration-300">
+                {/* Header Section */}
+                <div className="text-center">
+                    <div className="w-24 h-24 mx-auto mb-6 relative">
+                        <FloatingImage 
+                            src={loginIcons} 
+                            alt="login" 
+                            className="w-full h-full object-contain"
+                        />
                     </div>
-
-                    <h2 className="font-merienda text-4xl font-bold text-center text-gray-800 dark:text-white mb-6">
+                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
                         Welcome Back
                     </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Sign in to continue to your account
+                    </p>
+                </div>
 
-                    <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
-                        <div className='grid'>
-                            <label className="text-gray-700 dark:text-gray-200 mb-2">Email</label>
-                            <div className='bg-gray-50 dark:bg-gray-700 p-3 rounded-xl'>
+                {/* Login Form */}
+                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    <div className="space-y-4">
+                        {/* Email Field */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Email Address
+                            </label>
+                            <div className="relative">
                                 <input
-                                    type='email'
-                                    placeholder='Enter email'
-                                    name='email'
+                                    type="email"
+                                    name="email"
                                     value={data.email}
                                     onChange={handleOnChange}
-                                    className='w-full outline-none bg-transparent dark:text-white'
+                                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 transition-all duration-300"
+                                    placeholder="Enter your email"
+                                    required
                                 />
                             </div>
                         </div>
 
+                        {/* Password Field */}
                         <div>
-                            <label className="text-gray-700 dark:text-gray-200 mb-2">Password</label>
-                            <div className='bg-gray-50 dark:bg-gray-700 p-3 flex rounded-xl'>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Password
+                            </label>
+                            <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
-                                    placeholder='Enter password'
+                                    name="password"
                                     value={data.password}
-                                    name='password'
                                     onChange={handleOnChange}
-                                    className='w-full outline-none bg-transparent dark:text-white'
+                                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 transition-all duration-300"
+                                    placeholder="Enter your password"
+                                    required
                                 />
-                                <div className='cursor-pointer text-xl text-gray-600 dark:text-gray-300' onClick={() => setShowPassword((prev) => !prev)}>
-                                    <span>
-                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                    </span>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(prev => !prev)}
+                                    className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                                >
+                                    {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                                </button>
                             </div>
-                            <Link to={'/forgot-password'} className='block w-fit ml-auto mt-2 text-sm text-red-600 hover:text-red-700 hover:underline'>
-                                Forgot password?
-                            </Link>
+                            <div className="flex justify-end mt-2">
+                                <Link 
+                                    to="/forgot-password"
+                                    className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                >
+                                    Forgot password?
+                                </Link>
+                            </div>
                         </div>
+                    </div>
 
-                        <button className='bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-full hover:scale-105 transition-all mx-auto block mt-6 w-full max-w-[200px] font-medium'>
-                            Login
-                        </button>
-                    </form>
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        className="group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 font-medium"
+                    >
+                        Sign in
+                    </button>
 
-                    <div className="relative my-8">
+                    {/* Divider */}
+                    <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
                         </div>
-                        <div className="relative flex justify-center">
-                            <span className="bg-white dark:bg-gray-800 px-4 text-sm text-gray-500 dark:text-gray-400">
-                                or Login with
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                Or continue with
                             </span>
                         </div>
                     </div>
 
-                    <div className="flex justify-center gap-4">
-                        <button 
-                            onClick={handleGoogleLogin} 
-                            className='flex items-center justify-center gap-2 bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-full hover:scale-105 transition-all w-full max-w-[200px]'
+                    {/* Social Login */}
+                    <div>
+                        <button
+                            type="button"
+                            onClick={handleGoogleLogin}
+                            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-300"
                         >
-                            <FcGoogle className='text-xl' />
-                            Google
+                            <FcGoogle size={20} />
+                            <span>Sign in with Google</span>
                         </button>
                     </div>
 
-                    <p className='text-center mt-8 text-gray-600 dark:text-gray-300'>
-                        Don't have an account? {' '}
-                        <Link to={"/sign-up"} className='text-red-600 hover:text-red-700 hover:underline'>
+                    {/* Sign Up Link */}
+                    <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+                        Don't have an account?{' '}
+                        <Link 
+                            to="/sign-up"
+                            className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                        >
                             Sign up
                         </Link>
                     </p>
-                </div>
+                </form>
             </div>
         </section>
-    )
-}
+    );
+};
 
 export default Login;

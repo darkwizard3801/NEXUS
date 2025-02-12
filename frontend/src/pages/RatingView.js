@@ -655,34 +655,45 @@ const RatingView = () => {
     return stars;
   };
 
-  // Default sentiment chart data
+  // Function to safely get sentiment counts with null checks
+  const getReviewSentimentCounts = () => {
+    if (!Array.isArray(ratings)) return { positive: 0, negative: 0 };
+
+    return ratings.reduce((counts, rating) => {
+      if (rating && typeof rating.rating === 'number') {
+        if (rating.rating >= 3) {
+          counts.positive += 1;
+        } else if (rating.rating <= 2) {
+          counts.negative += 1;
+        }
+      }
+      return counts;
+    }, { positive: 0, negative: 0 });
+  };
+
+  // Get sentiment counts
+  const sentimentCounts = getReviewSentimentCounts();
+
+  // Now define the chart data after sentimentCounts is available
   const sentimentChartData = {
-    labels: ['High', 'Medium', 'Low'],
+    labels: ['Positive', 'Negative'],
     datasets: [
       {
-        label: 'Positive',
-        data: [
-          analytics.sentimentBreakdown.positive.high,
-          analytics.sentimentBreakdown.positive.medium,
-          analytics.sentimentBreakdown.positive.low
+        label: 'Review Count',
+        data: [sentimentCounts.positive, sentimentCounts.negative],
+        backgroundColor: [
+          'rgba(75, 192, 192, 0.5)',  // Green for positive
+          'rgba(255, 99, 132, 0.5)',  // Red for negative
         ],
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-        borderColor: 'rgba(75, 192, 192, 1)',
-      },
-      {
-        label: 'Negative',
-        data: [
-          analytics.sentimentBreakdown.negative.high,
-          analytics.sentimentBreakdown.negative.medium,
-          analytics.sentimentBreakdown.negative.low
+        borderColor: [
+          'rgba(75, 192, 192, 1)',
+          'rgba(255, 99, 132, 1)',
         ],
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1
       }
     ]
   };
 
-  // Chart options for sentiment analysis
   const sentimentChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -703,8 +714,8 @@ const RatingView = () => {
       }
     },
     scales: {
-      x: {
-        stacked: true,
+      y: {
+        beginAtZero: true,
         grid: {
           color: 'rgba(200, 200, 200, 0.2)'
         },
@@ -712,8 +723,7 @@ const RatingView = () => {
           color: 'currentColor'
         }
       },
-      y: {
-        stacked: true,
+      x: {
         grid: {
           color: 'rgba(200, 200, 200, 0.2)'
         },
@@ -903,44 +913,6 @@ const RatingView = () => {
   // Get current vendor's reviews
   const vendorReviews = getCurrentVendorReviews();
 
-  // Function to safely get sentiment counts with null checks
-  const getReviewSentimentCounts = () => {
-    if (!Array.isArray(vendorReviews)) return { positive: 0, negative: 0 };
-
-    return vendorReviews.reduce((counts, review) => {
-      if (review && typeof review.rating === 'number') {
-        if (review.rating >= 3) {
-          counts.positive += 1;
-        } else if (review.rating <= 2) {
-          counts.negative += 1;
-        }
-      }
-      return counts;
-    }, { positive: 0, negative: 0 });
-  };
-
-  // Ensure analytics has default values
-  const defaultAnalytics = {
-    averageRating: 0,
-    sentimentBreakdown: { 
-      positive: { high: 0, medium: 0, low: 0 },
-      neutral: 0,
-      negative: { high: 0, medium: 0, low: 0 }
-    },
-    emotionTrends: {
-      satisfaction: 0,
-      frustration: 0,
-      trust: 0,
-      urgency: 0
-    },
-    themeAnalysis: {},
-    improvements: []
-  };
-
-  // Merge analytics with default values
-  const safeAnalytics = { ...defaultAnalytics, ...analytics };
-  const sentimentCounts = getReviewSentimentCounts();
-
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
@@ -952,13 +924,13 @@ const RatingView = () => {
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg shadow text-white">
               <h3 className="text-sm font-semibold opacity-90">Average Rating</h3>
               <div className="text-2xl font-bold mt-1">
-                {safeAnalytics.averageRating.toFixed(1)}/5
+                {analytics.averageRating.toFixed(1)}/5
               </div>
             </div>
             <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-lg shadow text-white">
               <h3 className="text-sm font-semibold opacity-90">Total Reviews</h3>
               <div className="text-2xl font-bold mt-1">
-                {Array.isArray(vendorReviews) ? vendorReviews.length : 0}
+                {vendorReviews.length}
               </div>
             </div>
             <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 rounded-lg shadow text-white">
@@ -1046,11 +1018,11 @@ const RatingView = () => {
           </div>
 
           {/* Key Improvements - Horizontal Scrollable */}
-          {safeAnalytics.improvements.length > 0 && (
+          {analytics.improvements.length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-3 text-black dark:text-white">Key Improvements Needed</h3>
               <div className="flex overflow-x-auto gap-4 pb-2">
-                {safeAnalytics.improvements.slice(0, 4).map((improvement, index) => (
+                {analytics.improvements.slice(0, 4).map((improvement, index) => (
                   <div key={index} className="min-w-[300px] p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
                     <div className="font-semibold text-red-700 dark:text-red-400">{improvement.productName}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{improvement.review}</div>
@@ -1248,7 +1220,7 @@ const RatingView = () => {
       {/* Ratings List */}
       <div className="mt-6">
         {vendorReviews.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-36 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {vendorReviews.map((rating) => {
               const product = allProduct.find(
                 (product) => product._id === rating.productId

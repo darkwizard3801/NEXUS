@@ -257,18 +257,21 @@ const Header = () => {
       {/* Add the animation styles */}
       <style>{bellRingAnimation}</style>
 
-      <header className={`h-16 shadow-md ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} fixed w-full z-40 transition-colors duration-200`}>
-        <div className='h-full container mx-auto flex items-center px-4 justify-between'>
-          <Link to={"/"} className="flex-shrink-0">
+      <header className={`h-20 shadow-lg ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} fixed w-full z-40 transition-colors duration-200`}>
+        <div className='h-full container mx-auto flex items-center px-6 justify-between'>
+          <Link to={"/"} className="flex-shrink-0 transition-transform hover:scale-105">
             <Logo w={150} h={70} className="md:w-[190px]" />
           </Link>
 
-          <div className="hidden md:flex items-center gap-4  flex-grow justify-between pl-40">
+          <div className="hidden md:flex items-center gap-6 flex-grow justify-between pl-40">
             <button
               onClick={toggleTheme}
               className={`
                 w-14 h-7 rounded-full relative transition-all duration-300 ease-in-out focus:outline-none 
-                ${isDarkMode ? 'bg-gray-700 border-2 border-blue-400' : 'bg-blue-100 border-2 border-yellow-400'}
+                ${isDarkMode 
+                  ? 'bg-gray-700 border-2 border-blue-400 hover:border-blue-300' 
+                  : 'bg-blue-100 border-2 border-yellow-400 hover:border-yellow-300'}
+                transform hover:scale-105
               `}
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
@@ -305,30 +308,40 @@ const Header = () => {
               )}
             </button>
 
-            <div className={`flex items-center rounded-full focus-within:shadow pl-2 w-1/3 border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`flex items-center rounded-full focus-within:ring-2 focus-within:ring-blue-400 pl-2 w-1/3 border-2 transition-all duration-200 ${
+              isDarkMode 
+                ? 'border-gray-700 hover:border-gray-600' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}>
               <input
                 type='text'
                 placeholder='Search product here...'
-                className={`w-full outline-none p-2 rounded-l-full ${isDarkMode ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black'}`}
+                className={`w-full outline-none p-2.5 rounded-l-full ${
+                  isDarkMode 
+                    ? 'bg-gray-700 text-white placeholder-gray-400' 
+                    : 'bg-white text-black'
+                }`}
                 onChange={handleSearch}
                 value={search}
               />
-              <div className={`text-lg min-w-[60px] h-10 flex items-center justify-center rounded-r-full ${isDarkMode ? 'bg-gray-600' : 'bg-black'} text-white`}>
+              <div className={`text-lg min-w-[60px] h-11 flex items-center justify-center rounded-r-full ${
+                isDarkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-black hover:bg-gray-800'
+              } text-white transition-colors duration-200`}>
                 <IoSearch />
               </div>
             </div>
 
-            <div className='flex items-center gap-6'>
+            <div className='flex items-center gap-8'>
               {user?._id && (
                 <>
                   <div className='relative'>
                     <div 
-                      className='text-2xl relative cursor-pointer bell-animation'
+                      className='text-2xl relative cursor-pointer bell-animation hover:text-blue-500 transition-colors duration-200'
                       onClick={() => setShowNotifications(!showNotifications)}
                     >
                       <IoNotifications />
                       {notificationCount > 0 && (
-                        <div className='bg-red-600 text-white w-5 h-5 rounded-full p-1 flex items-center justify-center absolute -top-2 -right-3'>
+                        <div className='bg-red-500 text-white w-5 h-5 rounded-full p-1 flex items-center justify-center absolute -top-2 -right-3 transform scale-90 hover:scale-100 transition-transform duration-200'>
                           <p className='text-sm'>{notificationCount > 99 ? '99+' : notificationCount}</p>
                         </div>
                       )}
@@ -400,17 +413,17 @@ const Header = () => {
 
                   <div className='relative flex justify-center'>
                     <div
-                      className='text-3xl cursor-pointer relative flex justify-center'
+                      className='cursor-pointer relative flex items-center gap-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200'
                       onClick={() => setMenuDisplay((prev) => !prev)}
                     >
-                      <div className='flex flex-col px-5'>
-                        <p className='text-xs font-semibold capitalize'>hello,</p>
-                        <p className='text-sm font-bold capitalize mt-1'>{user?.name}</p>
+                      <div className='flex flex-col'>
+                        <p className='text-xs font-medium capitalize opacity-75'>hello,</p>
+                        <p className='text-sm font-bold capitalize'>{user?.name}</p>
                       </div>
                       {user?.profilePic ? (
-                        <img src={user?.profilePic} className='w-10 h-10 rounded-full' alt={user?.name} />
+                        <img src={user?.profilePic} className='w-10 h-10 rounded-full border-2 border-gray-200 dark:border-gray-600' alt={user?.name} />
                       ) : (
-                        <FaRegCircleUser />
+                        <FaRegCircleUser className="w-10 h-10 text-gray-600 dark:text-gray-300" />
                       )}
                     </div>
 
@@ -458,9 +471,9 @@ const Header = () => {
                     )}
                   </div>
 
-                  <Link to={"/cart"} className='text-2xl relative'>
+                  <Link to={"/cart"} className='text-2xl relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200'>
                     <FaShoppingCart />
-                    <div className='bg-red-600 text-white w-5 h-5 rounded-full p-1 flex items-center justify-center absolute -top-2 -right-3'>
+                    <div className='bg-red-500 text-white w-5 h-5 rounded-full p-1 flex items-center justify-center absolute -top-1 -right-1 transform scale-90 hover:scale-100 transition-transform duration-200'>
                       <p className='text-sm'>{context?.cartProductCount || 0}</p>
                     </div>
                   </Link>
@@ -471,14 +484,14 @@ const Header = () => {
                 {user?._id ? (
                   <button
                     onClick={handleLogout}
-                    className='px-3 py-1 rounded-full text-white bg-red-600 hover:bg-red-700'
+                    className='px-6 py-2 rounded-full text-white bg-red-500 hover:bg-red-600 transition-colors duration-200 transform hover:scale-105'
                   >
                     Logout
                   </button>
                 ) : (
                   <Link
                     to={"/login"}
-                    className='px-3 py-1 rounded-full text-white bg-green-600 hover:bg-green-700'
+                    className='px-6 py-2 rounded-full text-white bg-green-500 hover:bg-green-600 transition-colors duration-200 transform hover:scale-105'
                   >
                     Login
                   </Link>
@@ -487,16 +500,22 @@ const Header = () => {
             </div>
           </div>
 
-          <div className="md:hidden flex items-center gap-2 flex-grow justify-between max-w-[calc(100%-160px)]">
-            <div className={`flex items-center rounded-full focus-within:shadow pl-2 flex-grow max-w-[180px] border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className="md:hidden flex items-center gap-4 flex-grow justify-between max-w-[calc(100%-160px)]">
+            <div className={`flex items-center rounded-full focus-within:ring-2 focus-within:ring-blue-400 pl-2 flex-grow max-w-[180px] border-2 ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
               <input
                 type='text'
                 placeholder='Search...'
-                className={`w-full outline-none p-2 rounded-l-full text-sm ${isDarkMode ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black'}`}
+                className={`w-full outline-none p-2.5 rounded-l-full text-sm ${
+                  isDarkMode ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black'
+                }`}
                 onChange={handleSearch}
                 value={search}
               />
-              <div className={`text-lg min-w-[32px] h-9 flex items-center justify-center rounded-r-full ${isDarkMode ? 'bg-gray-600' : 'bg-black'} text-white`}>
+              <div className={`text-lg min-w-[40px] h-10 flex items-center justify-center rounded-r-full ${
+                isDarkMode ? 'bg-gray-600' : 'bg-black'
+              } text-white`}>
                 <IoSearch />
               </div>
             </div>

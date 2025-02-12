@@ -224,7 +224,156 @@ const Recomended = () => {
       .slice(0, 3);
   };
 
-  // Update the fetchDefaultRecommendations function
+  const analyzeUserPreferences = (orders) => {
+    const preferences = {
+      categories: {},
+      brands: {},
+      priceRanges: {},
+      totalSpent: 0,
+      orderCount: 0
+    };
+
+    // Skip cancelled orders
+    orders.filter(order => order.status !== 'Cancelled').forEach(order => {
+      preferences.orderCount++;
+      
+      order.products?.forEach(product => {
+        if (!product) return;
+
+        // Analyze categories
+        if (product.category) {
+          const category = product.category.toLowerCase();
+          preferences.categories[category] = (preferences.categories[category] || 0) + 1;
+        }
+
+        // Analyze brands
+        if (product.brandName) {
+          preferences.brands[product.brandName] = (preferences.brands[product.brandName] || 0) + 1;
+        }
+
+        // Analyze price ranges
+        const price = product.price * product.quantity;
+        preferences.totalSpent += price;
+        const priceRange = getPriceRange(price);
+        preferences.priceRanges[priceRange] = (preferences.priceRanges[priceRange] || 0) + 1;
+      });
+    });
+
+    // Calculate percentages and sort preferences
+    const totalOrders = preferences.orderCount;
+    if (totalOrders > 0) {
+      Object.keys(preferences.categories).forEach(category => {
+        preferences.categories[category] = (preferences.categories[category] / totalOrders) * 100;
+      });
+    }
+
+    console.log('Analyzed Preferences:', preferences);
+    return preferences;
+  };
+
+  const getPriceRange = (price) => {
+    if (!price) return 'unknown';
+    if (price <= 1000) return 'budget';
+    if (price <= 5000) return 'mid-range';
+    return 'premium';
+  };
+
+  const fetchRecommendedProducts = async (preferences) => {
+    try {
+      const response = await fetch(SummaryApi.allProduct.url, {
+        method: SummaryApi.allProduct.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch products');
+      const dataResponse = await response.json();
+      const allProducts = dataResponse?.data || [];
+
+      // Get user's purchased categories
+      const purchasedCategories = Object.keys(preferences.categories).filter(
+        category => preferences.categories[category] > 0
+      );
+
+      console.log('Purchased Categories:', purchasedCategories);
+
+      // Filter products to only include items from purchased categories
+      const relevantProducts = allProducts.filter(product => 
+        purchasedCategories.includes(product.category?.toLowerCase())
+      );
+
+      // Score and filter products
+      const scoredProducts = relevantProducts.map(product => {
+        let score = 0;
+        let matchReasons = [];
+
+        const productCategory = product.category?.toLowerCase();
+        const categoryPreference = preferences.categories[productCategory] || 0;
+
+        // Only score products from categories user has purchased
+        if (categoryPreference > 0) {
+          score += categoryPreference * 3;
+          matchReasons.push(`Based on your ${productCategory} purchases`);
+
+          // Brand matching within same category
+          if (preferences.brands[product.brandName]) {
+            score += 2;
+            matchReasons.push(`From a brand you trust`);
+          }
+
+          // Price range matching within same category
+          const priceRange = getPriceRange(product.price);
+          if (preferences.priceRanges[priceRange]) {
+            score += 1;
+            matchReasons.push(`Within your preferred price range`);
+          }
+
+          // Rating boost for products in purchased categories
+          if (product.rating >= 4.5) {
+            score += 0.5;
+            matchReasons.push('Highly rated');
+          }
+        }
+
+        return {
+          ...product,
+          score,
+          matchReasons
+        };
+      });
+
+      // Sort and filter recommendations
+      let recommendedProducts = scoredProducts
+        .filter(product => product.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 6);
+
+      // If we don't have enough recommendations, add more from the same categories
+      if (recommendedProducts.length < 6) {
+        const remainingProducts = relevantProducts
+          .filter(product => !recommendedProducts.find(rec => rec._id === product._id))
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 6 - recommendedProducts.length)
+          .map(product => ({
+            ...product,
+            score: 0.1,
+            matchReasons: [`More from ${product.category}`]
+          }));
+
+        recommendedProducts = [...recommendedProducts, ...remainingProducts];
+      }
+
+      console.log('Final Recommendations:', recommendedProducts);
+      setRecommendedProducts(recommendedProducts);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      setLoading(false);
+    }
+  };
+
+  // Update the default recommendations to show popular products if no order history
   const fetchDefaultRecommendations = async () => {
     try {
       const response = await fetch(SummaryApi.allProduct.url, {
@@ -239,163 +388,19 @@ const Recomended = () => {
       const dataResponse = await response.json();
       const allProducts = dataResponse?.data || [];
       
-      // Add enhanced recommendation reasons to each product
-      setRecommendedProducts(allProducts.slice(0, 6).map(product => ({
-        ...product,
-        matchReasons: getRecommendationReasons(product)
-      })));
+      // Get highly rated products
+      const popularProducts = allProducts
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 6)
+        .map(product => ({
+          ...product,
+          matchReasons: ['Popular product', 'Highly rated']
+        }));
+
+      setRecommendedProducts(popularProducts);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching default recommendations:', error);
-      setLoading(false);
-    }
-  };
-
-  const analyzeUserPreferences = (orders) => {
-    const categoryPreferences = {};
-    const priceRanges = {};
-    const vendorPreferences = {};
-    let totalOrders = 0;
-
-    orders.forEach(order => {
-      if (order.status === 'Cancelled') return; // Skip cancelled orders
-
-      order.products?.forEach(product => {
-        if (!product) return;
-        totalOrders++;
-
-        // Get category - directly from product
-        if (product.category) {
-          const category = product.category.toLowerCase();
-          categoryPreferences[category] = (categoryPreferences[category] || 0) + 1;
-        }
-
-        // Get price range from the actual price
-        const priceRange = getPriceRange(product.price * product.quantity);
-        priceRanges[priceRange] = (priceRanges[priceRange] || 0) + 1;
-
-        // Get vendor
-        if (product.vendor) {
-          vendorPreferences[product.vendor] = (vendorPreferences[product.vendor] || 0) + 1;
-        }
-
-        // Special handling for rental products with variants
-        if (product.additionalDetails?.rental) {
-          if (!categoryPreferences['rent']) {
-            categoryPreferences['rent'] = 0;
-          }
-          categoryPreferences['rent'] += 1;
-        }
-      });
-    });
-
-    console.log('Refined Analysis:', {
-      categoryPreferences,
-      priceRanges,
-      vendorPreferences,
-      totalOrders
-    });
-
-    return {
-      categoryPreferences,
-      priceRanges,
-      vendorPreferences,
-      totalOrders
-    };
-  };
-
-  const getPriceRange = (price) => {
-    if (!price) return 'unknown';
-    if (price <= 1000) return 'budget';
-    if (price <= 5000) return 'mid-range';
-    return 'premium';
-  };
-
-  const fetchRecommendedProducts = async (preferences) => {
-    try {
-      // Use the allProduct endpoint
-      const response = await fetch(SummaryApi.allProduct.url, {
-        method: SummaryApi.allProduct.method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch products');
-      const dataResponse = await response.json();
-      const allProducts = dataResponse?.data || [];
-
-      console.log('All Products:', allProducts.length);
-      console.log('User Preferences:', preferences);
-
-      const scoredProducts = allProducts.map(product => {
-        let score = 0;
-        let matchReasons = [];
-
-        // Category matching
-        const productCategory = product.category?.toLowerCase();
-        const hasMatchingCategory = preferences.categoryPreferences[productCategory];
-        
-        if (hasMatchingCategory) {
-          score += 5;
-          matchReasons.push(`Similar to your ${productCategory} purchases`);
-        }
-
-        // Price range matching
-        const productPriceRange = getPriceRange(product.price);
-        if (preferences.priceRanges[productPriceRange]) {
-          score += 3;
-          matchReasons.push(`Within your preferred price range`);
-        }
-
-        // Vendor matching
-        if (preferences.vendorPreferences[product.vendorEmail]) {
-          score += 2;
-          matchReasons.push(`From a seller you've purchased from`);
-        }
-
-        // Special handling for rental products
-        if (preferences.categoryPreferences['rent'] && productCategory === 'rent') {
-          score *= 1.2; // 20% boost for rentals
-          if (!matchReasons.includes('Similar to your rental purchases')) {
-            matchReasons.push('Similar to your rental purchases');
-          }
-        }
-
-        return {
-          ...product,
-          score,
-          matchReasons
-        };
-      });
-
-      // Split recommendations into matched and discovery
-      const matchedProducts = scoredProducts
-        .filter(product => product.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 4);
-
-      // Get discovery products (different categories, highly rated)
-      const userCategories = new Set(Object.keys(preferences.categoryPreferences));
-      const discoveryProducts = scoredProducts
-        .filter(product => {
-          const category = product.category?.toLowerCase();
-          return category && !userCategories.has(category);
-        })
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 2)
-        .map(product => ({
-          ...product,
-          matchReasons: ['Discover something new']
-        }));
-
-      const recommendations = [...matchedProducts, ...discoveryProducts];
-      
-      console.log('Final Recommendations:', recommendations);
-      setRecommendedProducts(recommendations);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
       setLoading(false);
     }
   };

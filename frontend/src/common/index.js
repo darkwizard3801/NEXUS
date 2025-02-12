@@ -179,7 +179,7 @@ const SummaryApi = {
     },
     submitRating : {
         url : `${backendDomin}/api/ratings`,
-        method : 'delete'
+        method : 'post'
     },
     getRating : {
         url : `${backendDomin}/api/show-rating`,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSpinner, FaComments, FaDownload, FaTimes } from 'react-icons/fa';
+import { FaSpinner, FaComments, FaDownload, FaTimes, FaCommentDots } from 'react-icons/fa';
 import SummaryApi from '../common';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -338,31 +338,61 @@ const MyOrders = () => {
     }
   };
 
-  // Add this function to handle the button click
-  const handleChatClick = () => {
-    navigate('/chat'); // Replace '/chat' with your actual chat page route
+  const handleRatingClick = (orderId, productId) => {
+    setSelectedOrderId(orderId);
+    setSelectedProductId(productId);
+    setShowRatingForm(true);
   };
 
-  const handleRatingSubmit = async (orderId, productId) => { // Add productId parameter
+  const handleRatingSubmit = async (orderId, productId) => {
+    if (rating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+
     try {
       const response = await fetch(SummaryApi.submitRating.url, {
-        method: 'POST',
+        method: SummaryApi.submitRating.method,
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ orderId, productId, rating, comment: ratingComment }), // Include productId
+        body: JSON.stringify({
+          orderId,
+          productId,
+          rating,
+          comment: ratingComment
+        }),
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to submit rating');
       }
-  
+
+      const data = await response.json();
+      
+      // Update the orders state to reflect the rating
+      setOrders(orders.map(order => {
+        if (order._id === orderId) {
+          return {
+            ...order,
+            products: order.products.map(product => {
+              if (product.productId === productId) {
+                return { ...product, isRated: true };
+              }
+              return product;
+            })
+          };
+        }
+        return order;
+      }));
+
       toast.success('Rating submitted successfully');
       setShowRatingForm(false);
       setRating(0);
       setRatingComment('');
-      setSelectedProductId(''); // Reset selected product ID
+      setSelectedProductId('');
+      setSelectedOrderId(null);
     } catch (error) {
       console.error('Error submitting rating:', error);
       toast.error('Failed to submit rating. Please try again.');
@@ -534,21 +564,37 @@ const MyOrders = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row items-start justify-center min-h-screen bg-gray-50 relative mx-10">
+    <div className="flex flex-col md:flex-row items-start justify-center min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white relative mx-10">
       {/* Filter Section */}
-      <div className="w-full md:w-1/4 p-4">
-        <h2 className="text-xl font-bold text-gray-700 mb-4">Filter Orders by Status:</h2>
-        <div className="flex flex-col space-y-2">
-          {['All', 'Pending', 'Ordered', 'Dispatched', 'On the Way', 'Cancelled','Delivered'].map((status) => (
-            <label key={status} className="flex items-center space-x-2">
+      <div className="w-full md:w-1/4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
+          Filter Orders
+        </h2>
+        <div className="space-y-3">
+          {['All', 'Pending', 'Ordered', 'Dispatched', 'On the Way', 'Cancelled', 'Delivered'].map((status) => (
+            <label 
+              key={status} 
+              className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 
+                hover:bg-gray-50 dark:hover:bg-gray-700
+                ${selectedStatus === status ? 'bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700' : ''}`}
+            >
               <input
                 type="radio"
                 value={status}
                 checked={selectedStatus === status}
                 onChange={() => setSelectedStatus(status)}
-                className="form-radio text-blue-600"
+                className="form-radio h-4 w-4 text-blue-600 dark:text-blue-400 transition duration-150 ease-in-out cursor-pointer"
               />
-              <span className="text-gray-700">{status}</span>
+              <span className={`ml-3 font-medium ${
+                selectedStatus === status 
+                  ? 'text-blue-600 dark:text-blue-400' 
+                  : 'text-gray-900 dark:text-white'
+              }`}>
+                {status}
+                <span className="ml-1 text-sm text-gray-500 dark:text-gray-300">
+                  ({status === 'All' ? orders.length : orders.filter(order => order.status === status).length})
+                </span>
+              </span>
             </label>
           ))}
         </div>
@@ -561,38 +607,38 @@ const MyOrders = () => {
       <div className="w-full md:w-3/4 p-4">
         {loading ? (
           <div className="flex flex-col items-center">
-            <FaSpinner className="animate-spin text-4xl mb-4 text-blue-600" />
-            <h2 className="text-lg text-gray-700">Loading your orders...</h2>
+            <FaSpinner className="animate-spin text-4xl mb-4 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-lg text-gray-900 dark:text-white">Loading your orders...</h2>
           </div>
         ) : error ? (
-          <div className="text-red-500">
+          <div className="text-red-500 dark:text-red-400">
             <h2 className="text-lg">Error: {error}</h2>
           </div>
         ) : filteredOrders.length > 0 ? (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">My Orders</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">My Orders</h2>
             {filteredOrders.map((order) => (
-              <div key={order._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div key={order._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                 {/* Order Header */}
-                <div className="p-4 border-b bg-gray-50">
+                <div className="p-4 border-b bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600">Order Date</p>
-                      <p className="font-medium">{formatDate(order.createdAt)}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Order Date</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{formatDate(order.createdAt)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Order ID</p>
-                      <p className="font-medium truncate">{order._id}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Order ID</p>
+                      <p className="font-medium text-gray-900 dark:text-white truncate">{order._id}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Total Amount</p>
-                      <p className="font-medium">₹{order.finalAmount}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Total Amount</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{order.finalAmount}</p>
                       {order.discount > 0 && (
-                        <p className="text-xs text-green-600">Saved ₹{order.discount}</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">Saved {order.discount}</p>
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Status</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Status</p>
                       <p className={`font-medium ${getStatusClass(order.status)}`}>
                         {order.status}
                       </p>
@@ -601,7 +647,7 @@ const MyOrders = () => {
                 </div>
 
                 {/* Products List */}
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {order.products.map((orderProduct, index) => {
                     const productDetails = products[orderProduct.productId];
                     console.log("Order Product:", orderProduct); // Debug log
@@ -613,7 +659,7 @@ const MyOrders = () => {
                             <img
                               src={getProductImage(orderProduct)}
                               alt={orderProduct.productName || 'Product'}
-                              className="w-full h-full object-cover rounded-lg border border-gray-200"
+                              className="w-full h-full object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = 'https://placehold.co/150x150';
@@ -625,19 +671,21 @@ const MyOrders = () => {
                           <div className="flex-grow">
                             <div className="flex justify-between items-start">
                               <div>
-                                <h3 className="font-medium text-lg text-gray-800">
+                                <h3 className="font-medium text-lg text-gray-900 dark:text-white">
                                   {productDetails?.productName || orderProduct.productName}
                                 </h3>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
                                   {productDetails?.brandName || orderProduct.brandName || 'Brand'} • {productDetails?.category || orderProduct.category}
                                 </p>
-                                <p className="text-sm font-medium text-gray-800 mt-1">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                   Quantity: {orderProduct.quantity} × ₹{orderProduct.price}
                                 </p>
                               </div>
-                              <p className="text-lg font-semibold text-gray-800">
-                                ₹{(orderProduct.quantity * orderProduct.price).toFixed(2)}
-                              </p>
+                              <div className="flex flex-col items-end">
+                                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                  ₹{(orderProduct.quantity * orderProduct.price).toFixed(2)}
+                                </p>
+                              </div>
                             </div>
                             {renderProductDetails(orderProduct)}
                           </div>
@@ -648,14 +696,28 @@ const MyOrders = () => {
                 </div>
 
                 {/* Order Actions */}
-                <div className="p-4 bg-gray-50 flex flex-wrap justify-between items-center gap-4">
-                  <div className="flex space-x-2">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex space-x-3">
                     <button
                       onClick={() => downloadInvoice(order)}
                       className="flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       <FaDownload className="mr-2" /> Download Invoice
                     </button>
+                    
+                    {order.status === 'Delivered' && order.products.some(product => !product.isRated) && (
+                      <button
+                        onClick={() => handleRatingClick(order._id, order.products.find(p => !p.isRated).productId)}
+                        className="flex items-center px-4 py-2 text-sm font-semibold bg-gradient-to-r from-yellow-400 to-yellow-500 text-white 
+                        rounded-md hover:from-yellow-500 hover:to-yellow-600 transform hover:scale-105 
+                        transition-all duration-300 shadow-md hover:shadow-lg gap-2 
+                        animate-pulse hover:animate-none"
+                      >
+                        <span>★</span>
+                        Rate Product
+                      </button>
+                    )}
+                    
                     {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
                       <button
                         onClick={() => handleCancelClick(order._id)}
@@ -665,7 +727,7 @@ const MyOrders = () => {
                       </button>
                     )}
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
                     Expected Delivery: {formatDate(order.deliveryDate)}
                   </div>
                 </div>
@@ -673,18 +735,25 @@ const MyOrders = () => {
             ))}
           </div>
         ) : (
-          <div className="text-gray-600">No orders found.</div>
+          <div className="text-gray-900 dark:text-white">No orders found.</div>
         )}
       </div>
-      {/* Chat with Us button */}
-      <div className="fixed bottom-24 right-4 z-50">
-        <button 
-          className="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600 shadow-lg flex items-center"
-          onClick={handleChatClick}
-        >
-          <FaComments className="mr-2" /> Chat with Us
-        </button>
-      </div>
+
+      {/* Fixed Chat Button in bottom right corner */}
+      <button
+        onClick={() => navigate('/chat')}
+        className="fixed bottom-6 right-6 flex items-center px-6 py-3 text-sm font-medium 
+        bg-gradient-to-r from-green-400 to-green-500 text-white rounded-full 
+        hover:from-green-500 hover:to-green-600 transform hover:scale-105 
+        transition-all duration-300 shadow-lg hover:shadow-xl gap-2 z-50"
+      >
+        <FaCommentDots className="text-xl animate-bounce" />
+        <span>Chat with Vendor</span>
+        <span className="flex h-2 w-2 relative">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        </span>
+      </button>
 
       {/* Cancellation Modal */}
       {showCancellationForm && (
@@ -730,6 +799,59 @@ const MyOrders = () => {
                 Confirm Cancellation
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {showRatingForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Rate Product</h3>
+              <button
+                onClick={() => {
+                  setShowRatingForm(false);
+                  setRating(0);
+                  setRatingComment('');
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <IoCloseSharp size={24} />
+              </button>
+            </div>
+            
+            {/* Star Rating */}
+            <div className="flex justify-center space-x-2 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className={`text-2xl ${
+                    star <= rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+                  } hover:text-yellow-400 transition-colors`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            {/* Comment Input */}
+            <textarea
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              placeholder="Share your experience with this product..."
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              rows="4"
+            />
+
+            {/* Submit Button */}
+            <button
+              onClick={() => handleRatingSubmit(selectedOrderId, selectedProductId)}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Submit Rating
+            </button>
           </div>
         </div>
       )}
