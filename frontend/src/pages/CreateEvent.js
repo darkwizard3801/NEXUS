@@ -9,7 +9,8 @@ import { toast } from 'react-toastify';
 // import MapComponent from '../components/MapComponent';
 // import { fetchLocationName } from '../helpers/fetchLocation';
 import axios from 'axios';
-import { FaTrash } from 'react-icons/fa'; // Importing delete icon from react-icons
+import { FaTrash, FaPhone, FaSearch, FaMapMarkerAlt } from 'react-icons/fa'; // Importing delete icon from react-icons
+import { MdEventNote } from 'react-icons/md';
 
 // Custom red location icon setup
 const redIcon = new L.Icon({
@@ -30,6 +31,66 @@ const MapController = ({ center }) => {
   }, [center, map]);
   return null;
 };
+
+// Update the IMAGES object with new event creation images
+const IMAGES = {
+  eventCreation: "https://cdn.dribbble.com/users/1138853/screenshots/4669703/media/9f71363be27b3c7b3ae71d46f8dfd638.gif", // Main animated event planning gif
+  eventCreationStatic: "https://img.freepik.com/free-vector/event-planning-illustration_23-2148657518.jpg?w=900&t=st=1709975174~exp=1709975774~hmac=4c3d24e8f6603ab3b4f21b6b18b2b4d5a2f3d6e7", // Fallback static image
+  decorationLeft: "https://cdn-icons-png.flaticon.com/512/2784/2784589.png",
+  decorationRight: "https://cdn-icons-png.flaticon.com/512/2784/2784589.png",
+  partyIcon: "https://cdn-icons-png.flaticon.com/512/3588/3588658.png",
+  locationPin: "https://cdn-icons-png.flaticon.com/512/1180/1180058.png",
+  calendarIcon: "https://cdn-icons-png.flaticon.com/512/2693/2693507.png",
+  budgetIcon: "https://cdn-icons-png.flaticon.com/512/2721/2721091.png",
+  guestsIcon: "https://cdn-icons-png.flaticon.com/512/3126/3126647.png",
+};
+
+// Updated slider styles
+const styles = `
+.horizontal-slider {
+  width: 100%;
+  height: 24px;
+  margin: 20px 0;
+}
+
+.track {
+  position: relative;
+  top: 8px;
+  height: 8px;
+  background: #E5E7EB;
+  border-radius: 4px;
+}
+
+.track.track-1 {
+  position: absolute;
+  height: 8px;
+  background: linear-gradient(to right, #3B82F6, #8B5CF6);
+  border-radius: 4px;
+}
+
+.track.track-2 {
+  background: #E5E7EB;
+}
+
+.thumb {
+  top: 1px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  background: #ffffff;
+  border: 2px solid #3B82F6;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.thumb:hover {
+  box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1);
+}
+
+.thumb.active {
+  box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2);
+}
+`;
 
 const CreateEvent = () => {
   const navigate = useNavigate();
@@ -248,41 +309,39 @@ const CreateEvent = () => {
   };
 
   const handleSearch = async () => {
-    console.log("Search Query:", searchQuery);
+    if (!searchQuery.trim()) {
+      toast.warning("Please enter a location to search");
+      return;
+    }
 
     try {
-        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=5`);
-        console.log("API Response:", response.data);
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
+      );
 
-        if (response.data && response.data.length > 0) {
-            const firstResult = response.data[0];
-            const newLocation = {
-                lat: parseFloat(firstResult.lat),
-                lng: parseFloat(firstResult.lon)
-            };
-
-            console.log("Searched Location:", newLocation);
-
-            setEventDetails(prevDetails => ({
-                ...prevDetails,
-                location: newLocation // Set the new location from search
-            }));
-
-            setSearchQuery(firstResult.display_name);
-            setSearchResults([]); // Clear search results
-        } else {
-            toast.error("Location not found");
-        }
+      if (response.data && response.data.length > 0) {
+        setSearchResults(response.data);
+      } else {
+        toast.error("No locations found");
+        setSearchResults([]);
+      }
     } catch (error) {
-        console.error('Error searching:', error);
-        if (error.response) {
-            toast.error(`Error: ${error.response.data.message || 'Failed to fetch data'}`);
-        } else if (error.request) {
-            toast.error("Network error: Unable to reach the API");
-        } else {
-            toast.error(`Error: ${error.message}`);
-        }
+      console.error('Search error:', error);
+      toast.error("Error searching for location");
+      setSearchResults([]);
     }
+  };
+
+  const handleLocationSelect = (location) => {
+    setEventDetails(prevDetails => ({
+      ...prevDetails,
+      location: {
+        lat: parseFloat(location.lat),
+        lng: parseFloat(location.lon)
+      }
+    }));
+    setSearchQuery(location.display_name);
+    setSearchResults([]);
   };
 
   if (isLoading) {
@@ -290,224 +349,334 @@ const CreateEvent = () => {
   }
 
   return (
-    <div className={`flex items-center justify-center min-h-screen bg-gray-100 ${theme === 'dark' ? 'dark' : ''}`}>
-      <div className="w-full max-w-4xl">
-       
-       
-     
-<div className='pb-32'>
-      <div className="bg-white rounded-lg shadow-lg w-100 md:w-128 p-6 ">
-        <h2 className="text-2xl font-semibold mb-6 text-center">Create Event</h2>
-        <form onSubmit={handleSubmit}>
-          {/* Row with Event Type, Occasion, and Expected Guests */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label htmlFor="eventType" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-                Type of Event
-              </label>
-              <select
-                id="eventType"
-                name="eventType"
-                value={eventDetails.eventType}
-                onChange={handleChange}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="">Select Event Type</option>
-                <option value="personal">Personal Events</option>
-                <option value="corporate">Corporate Events</option>
-                <option value="social">Social Events</option>
-                <option value="sports"> Sports Events</option>
-                <option value="cultural">Cultural and Religious Events</option>
-                <option value="political">Political Events</option>
-                <option value="academic">Academic Events</option>
-                <option value="entertainment">Entertainment Events</option>
-                <option value="virtual">Virtual Events</option>
-                <option value="hybrid">Hybrid Events</option>
-                <option value="other">Others</option>
-              </select>
-            </div>
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 ${theme === 'dark' ? 'dark' : ''}`}>
+      {/* Decorative Elements - adjusted top position */}
+      <img 
+        src={IMAGES.decorationLeft} 
+        className="fixed left-0 top-1/6 w-24 opacity-10 -z-10 transform -translate-x-1/2"
+        alt=""
+      />
+      <img 
+        src={IMAGES.decorationRight}
+        className="fixed right-0 bottom-1/3 w-24 opacity-10 -z-10 transform translate-x-1/2"
+        alt=""
+      />
 
-            <div>
-              <label htmlFor="occasion" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-                Occasion
-              </label>
-              <input
-                id="occasion"
-                name="occasion"
-                type="text"
-                value={eventDetails.occasion}
-                onChange={handleChange}
-                placeholder="E.g., Anniversary, Product Launch"
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="guests" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-                Expected Guests
-              </label>
-              <input
-                id="guests"
-                name="guests"
-                type="number"
-                value={eventDetails.guests}
-                onChange={handleChange}
-                placeholder="Enter expected guests"
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-            </div>
-          </div>
-
-          {/* Budget */}
-          <div className="mb-4 relative">
-            <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              Budget (INR)
-            </label>
-            <div className="relative">
-              <div className="flex justify-between">
-                <span>₹ {eventDetails.budget[0]}</span>
-                <span>to</span>
-                <span>₹ {eventDetails.budget[1]}</span>
-              </div>
-              <Slider
-                value={eventDetails.budget}
-                onChange={handleSliderChange}
-                min={0}
-                max={1000000}
-                step={200}
-                className="w-full"
-                thumbClassName="w-8 h-8 bg-blue-600 rounded-full shadow-lg transition-transform transform hover:scale-125"
-                trackClassName="bg-gray-300 h-2 rounded-full" // Default track color
-                minDistance={1000}
-                // Adding custom styles for the track
-                trackStyle={[{ backgroundColor: '#4A90E2' }]} // Custom track color
-                handleStyle={[{ borderColor: '#4A90E2' }]} // Custom handle border color
-              />
-            </div>
-          </div>
-
-          {/* Phone Number and Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-black dark:text-white">
-                Phone Number
-              </label>
-              <input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="tel"
-                value={eventDetails.phoneNumber}
-                onChange={handleChange}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                placeholder="Enter your phone number"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-black dark:text-white">
-                Event Date
-              </label>
-              <input
-                id="date"
-                name="date"
-                type="date"
-                value={eventDetails.date}
-                onChange={handleChange}
-                min={getMinDate()}
-                max={getMaxDate()}
-                className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Map to select location */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-              Event Location
-            </label>
-            <div className="relative">
-              {/* Search bar positioned above map */}
-              <div className="absolute top-2 right-2 z-[1000] w-64">
-                <div className="bg-white p-2 rounded-md shadow-md">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded-md shadow-sm text-sm"
-                      placeholder="Search location..."
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSearch}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                    >
-                      Search
-                    </button>
-                  </div>
-                  
-                  {/* Search Results Dropdown */}
-                  {searchResults.length > 0 && (
-                    <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                      {searchResults.map((result, index) => (
-                        <div
-                          key={index}
-                          className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                          onClick={() => {
-                            const newLocation = {
-                              lat: parseFloat(result.lat),
-                              lng: parseFloat(result.lon)
-                            };
-                            setEventDetails(prevDetails => ({
-                              ...prevDetails,
-                              location: newLocation
-                            }));
-                            setSearchQuery(result.display_name);
-                            setSearchResults([]);
-                          }}
-                        >
-                          {result.display_name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+      {/* Adjusted top padding from pt-24 to pt-16 */}
+      <div className="w-full max-w-4xl mx-auto pt-16 pb-32 px-4">
+        {/* Header Section - reduced bottom margin */}
+        <div className="text-center mb-6 relative">
+          <div className="flex justify-center mb-3">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+              <div className="relative">
+                <img 
+                  src={IMAGES.eventCreation} 
+                  alt="Event Creation" 
+                  className="w-40 h-40 rounded-full shadow-lg border-4 border-white object-cover transform transition duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = IMAGES.eventCreationStatic;
+                  }}
+                />
+                <div className="absolute -right-4 -bottom-4 flex space-x-2">
+                  <img 
+                    src={IMAGES.partyIcon}
+                    alt="Party"
+                    className="w-10 h-10 animate-bounce"
+                  />
+                  <img 
+                    src={IMAGES.calendarIcon}
+                    alt="Calendar"
+                    className="w-10 h-10 animate-pulse"
+                  />
                 </div>
               </div>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-1 relative">
+            Create Your Event
+            <span className="absolute -top-6 right-1/4 transform rotate-12 text-2xl">🎉</span>
+          </h1>
+          <p className="text-gray-600 text-sm mb-2">Plan your perfect event with us</p>
+          
+          {/* Decorative Line - reduced margin */}
+          <div className="relative">
+            <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-2 rounded-full"></div>
+            <div className="absolute w-full h-1 top-0 left-0 animate-shimmer bg-gradient-to-r from-transparent via-white to-transparent opacity-30"></div>
+          </div>
+        </div>
 
-              {/* Map Container */}
-              {loadingLocation ? (
-                <p>Loading your location...</p>
-              ) : (
-                <MapContainer 
-                  center={[eventDetails.location?.lat || 0, eventDetails.location?.lng || 0]} 
-                  zoom={13} 
-                  style={{ height: '400px', width: '100%'}}
-                  key={eventDetails.location ? `${eventDetails.location.lat}-${eventDetails.location.lng}` : 'default'}
+        {/* Main Form - adjusted padding */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 backdrop-blur-lg bg-opacity-90 relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-5 pattern-dots pattern-gray-700 pattern-bg-white pattern-size-4"></div>
+
+          <form onSubmit={handleSubmit} className="space-y-6 relative">
+            {/* Event Type & Occasion Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="eventType" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                  Type of Event
+                </label>
+                <select
+                  id="eventType"
+                  name="eventType"
+                  value={eventDetails.eventType}
+                  onChange={handleChange}
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 >
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  />
+                  <option value="">Select Event Type</option>
+                  <option value="personal">Personal Events</option>
+                  <option value="corporate">Corporate Events</option>
+                  <option value="social">Social Events</option>
+                  <option value="sports"> Sports Events</option>
+                  <option value="cultural">Cultural and Religious Events</option>
+                  <option value="political">Political Events</option>
+                  <option value="academic">Academic Events</option>
+                  <option value="entertainment">Entertainment Events</option>
+                  <option value="virtual">Virtual Events</option>
+                  <option value="hybrid">Hybrid Events</option>
+                  <option value="other">Others</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="occasion" className={`block text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                  Occasion
+                </label>
+                <input
+                  id="occasion"
+                  name="occasion"
+                  type="text"
+                  value={eventDetails.occasion}
+                  onChange={handleChange}
+                  placeholder="E.g., Anniversary, Product Launch"
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+            </div>
+
+            {/* Guests & Budget Section with Icons */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-gray-700 font-semibold">
+                  <img src={IMAGES.guestsIcon} alt="" className="w-6 h-6" />
+                  Expected Guests
+                </label>
+                <input
+                  id="guests"
+                  name="guests"
+                  type="number"
+                  value={eventDetails.guests}
+                  onChange={handleChange}
+                  placeholder="Enter expected guests"
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+
+              {/* Budget Section */}
+              <div className="space-y-4 p-6 bg-white rounded-xl shadow-sm">
+                <style>{styles}</style>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-gray-700 font-semibold">
+                    <img src={IMAGES.budgetIcon} alt="" className="w-6 h-6" />
+                    Budget Range (INR)
+                  </label>
+                  
+                  <div className="pt-6 pb-2">
+                    {/* Budget Display Cards */}
+                    <div className="flex justify-between mb-6">
+                      <div className="bg-blue-50 rounded-lg p-3 min-w-[120px]">
+                        <p className="text-xs text-blue-600 mb-1">Minimum</p>
+                        <p className="text-lg font-semibold text-blue-700">
+                          ₹{eventDetails.budget[0].toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-3 min-w-[120px]">
+                        <p className="text-xs text-purple-600 mb-1">Maximum</p>
+                        <p className="text-lg font-semibold text-purple-700">
+                          ₹{eventDetails.budget[1].toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Slider Container */}
+                    <div className="relative px-3 py-4">
+                      <Slider
+                        className="horizontal-slider"
+                        thumbClassName="thumb"
+                        trackClassName="track"
+                        value={eventDetails.budget}
+                        onChange={handleSliderChange}
+                        min={5000}
+                        max={1000000}
+                        step={1000}
+                        minDistance={10000}
+                        pearling
+                      />
+                    </div>
+
+                    {/* Budget Markers */}
+                    <div className="flex justify-between mt-4 px-2 text-xs text-gray-500">
+                      <span>₹5K</span>
+                      <span>₹250K</span>
+                      <span>₹500K</span>
+                      <span>₹750K</span>
+                      <span>₹1M</span>
+                    </div>
+
+                    {/* Budget Tips */}
+                    <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        Drag both handles to set your minimum and maximum budget range
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact & Date Section with Icons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-gray-700 font-semibold">
+                  <FaPhone className="text-red-500 text-xl" />
+                  Phone Number
+                </label>
+                <input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  value={eventDetails.phoneNumber}
+                  onChange={handleChange}
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-gray-700 font-semibold">
+                  <img src={IMAGES.calendarIcon} alt="" className="w-6 h-6" />
+                  Event Date
+                </label>
+                <input
+                  id="date"
+                  name="date"
+                  type="date"
+                  value={eventDetails.date}
+                  onChange={handleChange}
+                  min={getMinDate()}
+                  max={getMaxDate()}
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Location Section */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-gray-700 font-semibold">
+                <img src={IMAGES.locationPin} alt="" className="w-6 h-6" />
+                Event Location
+              </label>
+              <div className="relative rounded-xl overflow-hidden shadow-lg border-4 border-white">
+                {/* Search Container */}
+                <div className="absolute top-4 right-4 z-[1000] w-64">
+                  <div className="bg-white rounded-lg shadow-lg">
+                    <div className="p-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          placeholder="Search location..."
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSearch();
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={handleSearch}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+                        >
+                          <FaSearch className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search Results Dropdown */}
+                    {searchResults.length > 0 && (
+                      <div className="border-t border-gray-100 max-h-60 overflow-y-auto">
+                        {searchResults.map((result, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleLocationSelect(result)}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 focus:bg-gray-50 transition-colors
+                                     border-b last:border-b-0 border-gray-100 flex items-start gap-2"
+                          >
+                            <FaMapMarkerAlt className="text-red-500 mt-1 flex-shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {result.display_name.split(',')[0]}
+                              </span>
+                              <span className="text-xs text-gray-500 line-clamp-2">
+                                {result.display_name.split(',').slice(1).join(',')}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Map Container */}
+                <MapContainer
+                  center={[eventDetails.location?.lat || 20.5937, eventDetails.location?.lng || 78.9629]}
+                  zoom={13}
+                  style={{ height: '400px', width: '100%' }}
+                  className="z-0"
+                >
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   <LocationMarker />
                   <MapController center={eventDetails.location} />
                 </MapContainer>
-              )}
-            </div>
-          </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            id="submit"
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
-          >
-            Create Event
-          </button>
-        </form>
+                {/* Map Instructions */}
+                <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <FaMapMarkerAlt className="text-red-500" />
+                    Click on the map to set event location or use the search bar above
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button with Animation */}
+            <button
+              type="submit"
+              className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold 
+                         hover:from-blue-600 hover:to-purple-600 transform hover:scale-[1.02] transition-all duration-200
+                         flex items-center justify-center gap-2 shadow-lg group"
+            >
+              <MdEventNote className="text-xl group-hover:rotate-12 transition-transform" />
+              Create Event
+              <img 
+                src={IMAGES.partyIcon} 
+                alt="" 
+                className="w-6 h-6 group-hover:rotate-12 transition-transform"
+              />
+            </button>
+          </form>
+        </div>
       </div>
-      </div>
-    </div>
     </div>
   );
 };

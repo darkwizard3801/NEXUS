@@ -12,6 +12,8 @@ import Context from "../context";
 import Cookies from 'js-cookie'; 
 import { useTheme } from '../context/ThemeContext';
 import { FaSun, FaMoon, FaStar, FaCloud } from "react-icons/fa";
+import { MdEventAvailable, MdAddBox } from "react-icons/md";
+import { FaCalendarPlus, FaCalendarAlt } from "react-icons/fa";
 
 // Add this CSS animation at the top of your file or in your global CSS
 const bellRingAnimation = `
@@ -334,6 +336,32 @@ const Header = () => {
             <div className='flex items-center gap-8'>
               {user?._id && (
                 <>
+                  {user.role === 'Customer' && (
+                    <button
+                      onClick={() => navigate('/create-event')}
+                      className={`
+                        px-4 py-2 rounded-full 
+                        ${isDarkMode 
+                          ? 'bg-blue-600 hover:bg-blue-700' 
+                          : 'bg-blue-500 hover:bg-blue-600'
+                        } 
+                        text-white transition-all duration-200 
+                        transform hover:scale-105 flex items-center gap-2
+                        group
+                      `}
+                      title="Create New Event"
+                    >
+                      <div className="relative">
+                        <FaCalendarAlt className="h-5 w-5 group-hover:opacity-0 absolute transition-opacity duration-200" />
+                        <FaCalendarPlus className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      </div>
+                      <span className="relative">
+                        Create Event
+                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
+                      </span>
+                    </button>
+                  )}
+
                   <div className='relative'>
                     <div 
                       className='text-2xl relative cursor-pointer bell-animation hover:text-blue-500 transition-colors duration-200'
@@ -571,25 +599,20 @@ const Header = () => {
                             My Account
                           </Link>
                           <Link
+                            to={"/create-event"}
+                            className={`block px-4 py-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} flex items-center gap-2`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <FaCalendarPlus className="h-4 w-4" />
+                            Create Event
+                          </Link>
+                          <Link
                             to={"/user-panel/orders"}
                             className={`block px-4 py-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                             onClick={() => setMobileMenuOpen(false)}
                           >
                             My Orders
                           </Link>
-                          <Link
-                            to={"/cart"}
-                            className={`block px-4 py-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            Cart ({context?.cartProductCount || 0})
-                          </Link>
-                          <button
-                            onClick={goToCreateEvent}
-                            className={`block w-full text-left px-4 py-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                          >
-                            Create Event
-                          </button>
                         </>
                       )}
                       {user?.role === "Vendor" && (
@@ -610,6 +633,14 @@ const Header = () => {
                           Admin Panel
                         </Link>
                       )}
+                      <Link
+                        to={"/cart"}
+                        className={`block px-4 py-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} flex items-center gap-2`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <FaShoppingCart className="h-4 w-4" />
+                        Cart ({context?.cartProductCount || 0})
+                      </Link>
                       <button
                         onClick={() => {
                           handleLogout();
