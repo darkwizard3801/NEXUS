@@ -28,6 +28,7 @@ const RecommendedEvents = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
+  const [categories, setCategories] = useState([]);
 
   // Updated event type categories with two more package types
   const eventTypeCategories = {
@@ -141,13 +142,8 @@ const RecommendedEvents = () => {
 
       // Generate packages based on products and event details
       const generatedPackages = createPackages(allProducts, editedDetails, eventConfig);
-      
-      if (generatedPackages.length === 0) {
-        toast.warning("No packages could be generated with current criteria");
-      } else {
-        console.log('Generated packages:', generatedPackages);
-        setPackages(generatedPackages);
-      }
+      console.log('Generated packages:', generatedPackages);
+      setPackages(generatedPackages);
 
     } catch (error) {
       console.error('Error generating packages:', error);
@@ -223,23 +219,27 @@ const RecommendedEvents = () => {
     const { categories, weights } = eventConfig;
     let packageProducts = {};
     let totalCost = 0;
-    let remainingBudget = budgetRange.max;
-
-    // Sort categories by weight (highest to lowest)
-    const sortedCategories = [...categories].sort((a, b) => weights[b] - weights[a]);
 
     // Select products for each required category
-    for (const category of sortedCategories) {
-      // Filter available products
+    categories.forEach(category => {
+      // Ensure products is an array before filtering
+      if (!Array.isArray(products)) {
+        console.error('Products is not an array:', products);
+        return;
+      }
+
+      // Filter products by category, budget, and exclude used products
       const availableProducts = products.filter(product => 
         product && 
         product.category === category && 
         product.price && 
-        product.price <= remainingBudget &&
+        product.price <= (budgetRange.max - totalCost) &&
         !usedProducts.has(product._id)
       );
 
-      if (availableProducts.length > 0) {
+      console.log(`Available products for ${category}:`, availableProducts);
+
+      if (availableProducts && availableProducts.length > 0) {
         // Score and sort products
         const scoredProducts = availableProducts.map(product => ({
           ...product,
@@ -249,25 +249,27 @@ const RecommendedEvents = () => {
           score: calculateProductScore(product, eventDetails, weights[category], budgetRange)
         })).sort((a, b) => b.score - a.score);
 
-        // Select the best product that fits within remaining budget
-        const selectedProduct = scoredProducts.find(product => 
-          product.totalPrice <= remainingBudget
-        );
-
+        // Select the best product for this category
+        const selectedProduct = scoredProducts[0];
         if (selectedProduct) {
           packageProducts[category] = [selectedProduct];
           totalCost += selectedProduct.totalPrice;
-          remainingBudget -= selectedProduct.totalPrice;
           usedProducts.add(selectedProduct._id);
         }
       }
-    }
+    });
 
-    // Only create package if we have enough categories covered and total cost is within budget range
+    // Only create package if we have enough categories covered
     const requiredCategories = Math.ceil(categories.length * 0.6);
     const coveredCategories = Object.keys(packageProducts).length;
     
-    if (coveredCategories < requiredCategories || totalCost < budgetRange.min || totalCost > budgetRange.max) {
+    console.log('Package coverage:', {
+      required: requiredCategories,
+      covered: coveredCategories,
+      packageProducts
+    });
+
+    if (coveredCategories < requiredCategories) {
       return null;
     }
 
@@ -454,6 +456,34 @@ const RecommendedEvents = () => {
   const handleImageHover = (index) => {
     setActiveImageIndex(index);
   };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(SummaryApi.categoryPro.url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+
+      const data = await response.json();
+      if (data?.data) {
+        setCategories(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to fetch categories');
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   if (!eventDetails) {
     return <div className="text-center p-8">No event details available</div>;
