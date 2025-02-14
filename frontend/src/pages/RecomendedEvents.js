@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { FaStore } from 'react-icons/fa';
 import { MdRestaurantMenu } from 'react-icons/md';
 import { BsCalendarCheck } from 'react-icons/bs';
-import { FiShoppingCart } from 'react-icons/fi';
+import { FiShoppingCart, FiSettings } from 'react-icons/fi';
 
 const RecommendedEvents = () => {
   const location = useLocation();
@@ -29,6 +29,7 @@ const RecommendedEvents = () => {
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
   const [categories, setCategories] = useState([]);
+  const [currentProduct, setCurrentProduct] = useState(null);
 
   // Updated event type categories with two more package types
   const eventTypeCategories = {
@@ -881,7 +882,7 @@ const RecommendedEvents = () => {
         ) : (
           <div className="text-center text-gray-600 bg-white p-8 rounded-lg shadow">
             <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01"></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01M12 12h.01"></path>
             </svg>
             <p className="text-xl font-semibold">No packages found matching your criteria</p>
             <p className="text-gray-500 mt-2">Try adjusting your event details or budget range</p>
@@ -909,9 +910,12 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
   const [quantity, setQuantity] = useState(1);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState(null);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeImageIndices, setActiveImageIndices] = useState({});
   const [showMagnifier, setShowMagnifier] = useState(false);
   const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
+  const [selectedVariants, setSelectedVariants] = useState({});
+  const [variantImages, setVariantImages] = useState({});
+  const [currentProduct, setCurrentProduct] = useState(null);
 
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -920,8 +924,11 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
     setMagnifierPosition({ x, y });
   };
 
-  const handleImageHover = (index) => {
-    setActiveImageIndex(index);
+  const handleImageHover = (productId, index) => {
+    setActiveImageIndices(prev => ({
+      ...prev,
+      [productId]: index
+    }));
   };
 
   const handleConfigurationSave = () => {
@@ -937,8 +944,42 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
     // Save configuration to state
     setCurrentConfiguration(selectedDishes);
     console.log('Configuration Saved:', selectedDishes);
-    toast.success('Configuration saved successfully!');
+    toast.success('Configuration saved!');
     setIsConfigModalOpen(false);
+  };
+
+  const handleConfigureClick = (product) => {
+    setCurrentProduct(product);
+    setIsConfigModalOpen(true);
+  };
+
+  // Handle variant selection and update images
+  const handleVariantSelect = (productId, variant) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [productId]: variant
+    }));
+
+    // Update images if variant has images
+    if (variant.images && variant.images.length > 0) {
+      setVariantImages(prev => ({
+        ...prev,
+        [productId]: variant.images
+      }));
+      // Reset active image index for this product
+      setActiveImageIndices(prev => ({
+        ...prev,
+        [productId]: 0
+      }));
+    }
+  };
+
+  // Get current images for a product
+  const getCurrentImages = (product) => {
+    if (product.category === 'rent' && variantImages[product._id]) {
+      return variantImages[product._id];
+    }
+    return product.productImage || [];
   };
 
   return (
@@ -970,108 +1011,63 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
                       <div className="flex-1">
                         <div className="relative">
                           {/* Main Image Container */}
-                          <div 
-                            className="w-full h-[300px] rounded-2xl overflow-hidden bg-gray-50 relative cursor-crosshair"
-                            onMouseEnter={() => setShowMagnifier(true)}
-                            onMouseLeave={() => setShowMagnifier(false)}
-                            onMouseMove={handleMouseMove}
-                          >
+                          <div className="w-full h-[300px] rounded-2xl overflow-hidden bg-gray-50">
                             <img
-                              src={product.productImage?.[activeImageIndex]}
+                              src={getCurrentImages(product)[activeImageIndices[product._id] || 0]}
                               className="w-full h-full object-contain p-4"
                               alt={product.productName}
                             />
                           </div>
 
-                          {/* Magnified Preview */}
-                          {showMagnifier && (
-                            <div className="absolute top-0 -right-[320px] w-[300px] h-[300px] border-2 border-gray-200 rounded-2xl overflow-hidden bg-white shadow-xl pointer-events-none">
-                              <div
-                                style={{
-                                  backgroundImage: `url(${product.productImage?.[activeImageIndex]})`,
-                                  backgroundPosition: `${magnifierPosition.x}% ${magnifierPosition.y}%`,
-                                  backgroundRepeat: 'no-repeat',
-                                  backgroundSize: '250%',
-                                  width: '100%',
-                                  height: '100%'
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Thumbnail Images */}
-                        <div className="flex gap-3 overflow-x-auto mt-4 pb-2">
-                          {product.productImage?.map((imgURL, index) => (
-                            <button
-                              key={index}
-                              onMouseEnter={() => handleImageHover(index)}
-                              className={`flex-none w-[60px] h-[60px] rounded-lg overflow-hidden 
-                                ${activeImageIndex === index 
-                                  ? 'ring-2 ring-red-600 ring-offset-2' 
-                                  : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-1'
-                                } transition-all duration-200`}
-                            >
-                              <img
-                                src={imgURL}
-                                className="w-full h-full object-contain p-2"
-                                alt={`Thumbnail ${index}`}
-                              />
-                            </button>
-                          ))}
+                          {/* Thumbnail Images */}
+                          <div className="flex gap-3 overflow-x-auto mt-4 pb-2">
+                            {getCurrentImages(product).map((imgURL, index) => (
+                              <button
+                                key={index}
+                                onMouseEnter={() => handleImageHover(product._id, index)}
+                                className={`flex-none w-[60px] h-[60px] rounded-lg overflow-hidden 
+                                  ${activeImageIndices[product._id] === index 
+                                    ? 'ring-2 ring-red-600 ring-offset-2' 
+                                    : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-1'
+                                  } transition-all duration-200`}
+                              >
+                                <img
+                                  src={imgURL}
+                                  className="w-full h-full object-contain p-2"
+                                  alt={`Thumbnail ${index}`}
+                                />
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
                       {/* Right: Product Details */}
                       <div className="flex-1">
-                        {/* Brand Link */}
-                        <Link 
-                          to={`/vendor/${product.brandName}`} 
-                          className="inline-flex items-center px-3 py-1.5 rounded-full 
-                            bg-red-50 hover:bg-red-100 transition-colors duration-200
-                            border border-red-100 hover:border-red-200 group w-fit mb-3"
-                        >
-                          <FaStore className="w-4 h-4 text-red-600 mr-2" />
-                          <span className="text-red-600 font-medium text-sm group-hover:text-red-700">
-                            {product.brandName}
-                          </span>
-                        </Link>
-
-                        {/* Product Name and Price */}
-                        <h4 className="text-xl font-bold text-gray-900 mb-2">{product.productName}</h4>
-                        <p className="text-2xl font-bold text-blue-600 mb-4">
-                          ₹{product.price?.toLocaleString()}
+                        {/* Product Name and Brand */}
+                        <h4 className="text-xl font-semibold text-gray-800 mb-2">
+                          {product.productName}
+                        </h4>
+                        <p className="text-gray-600 mb-4">
+                          Brand: {product.brandName}
                         </p>
 
-                        {/* Category Specific Controls */}
-                        {category.toLowerCase() === 'catering' && (
-                          <button
-                            onClick={() => {
-                              setActiveProduct(product);
-                              setIsConfigModalOpen(true);
-                            }}
-                            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white 
-                              px-6 py-3.5 rounded-xl font-medium hover:from-purple-700 hover:to-blue-700 
-                              transition-all duration-200 flex items-center justify-center gap-3 mb-4"
-                          >
-                            <MdRestaurantMenu className="w-5 h-5" />
-                            Configure Menu
-                          </button>
-                        )}
-
+                        {/* Rental Variants Section */}
                         {category.toLowerCase() === 'rent' && product.rentalVariants && (
-                          <div className="space-y-3 mb-4">
-                            <h5 className="font-medium text-gray-700">Select Variant:</h5>
-                            <div className="flex flex-wrap gap-2">
-                              {product.rentalVariants.map((variant, vIdx) => (
+                          <div className="mb-6">
+                            <h4 className="text-lg font-medium text-gray-900 mb-3">Available Options:</h4>
+                            <div className="flex flex-wrap gap-3">
+                              {product.rentalVariants.map((variant, index) => (
                                 <button
-                                  key={vIdx}
-                                  onClick={() => setSelectedVariant(variant)}
-                                  className={`px-3 py-2 rounded-lg border-2 transition-colors
-                                    ${selectedVariant?._id === variant._id 
-                                      ? 'border-blue-600 bg-blue-50 text-blue-600' 
-                                      : 'border-gray-300 hover:border-blue-600 hover:bg-blue-50'
-                                    }`}
+                                  key={index}
+                                  onClick={() => handleVariantSelect(product._id, variant)}
+                                  className={`
+                                    px-4 py-2 rounded-lg border-2 transition-all duration-200
+                                    ${selectedVariants[product._id]?._id === variant._id 
+                                      ? 'border-red-600 bg-red-50 text-red-600' 
+                                      : 'border-gray-300 hover:border-red-600 hover:bg-red-50'
+                                    }
+                                  `}
                                 >
                                   <div className="text-left">
                                     <p className="font-medium">{variant.itemName}</p>
@@ -1083,31 +1079,34 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
                           </div>
                         )}
 
-                        {/* Quantity Control */}
-                        <div className="mb-6">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Quantity
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={quantity}
-                            onChange={(e) => setQuantity(parseInt(e.target.value))}
-                            className="w-24 px-3 py-2 border border-gray-300 rounded-md"
-                          />
+                        {/* Price Display */}
+                        <div className="mb-4">
+                          {category.toLowerCase() === 'rent' ? (
+                            selectedVariants[product._id] ? (
+                              <p className="text-2xl font-bold text-red-600">
+                                ₹{selectedVariants[product._id].price?.toLocaleString()}
+                              </p>
+                            ) : (
+                              <p className="text-lg text-gray-600">Select a variant</p>
+                            )
+                          ) : (
+                            <p className="text-2xl font-bold text-red-600">
+                              ₹{product.price?.toLocaleString()}
+                              {['catering', 'bakers'].includes(category.toLowerCase()) && ' per person'}
+                            </p>
+                          )}
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <button className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <BsCalendarCheck className="w-4 h-4" />
-                            Book Now
+                        {/* Configure Menu Button - Only for catering */}
+                        {category.toLowerCase() === 'catering' && (
+                          <button
+                            onClick={() => handleConfigureClick(product)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            <FiSettings className="w-4 h-4" />
+                            Configure Menu
                           </button>
-                          <button className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <FiShoppingCart className="w-4 h-4" />
-                            Add to Cart
-                          </button>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1118,68 +1117,98 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
         </div>
 
         {/* Catering Configuration Modal */}
-        {isConfigModalOpen && activeProduct && (
+        {isConfigModalOpen && currentProduct && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-[90%] max-w-3xl max-h-[90vh] overflow-y-auto">
-              {/* Configuration Modal Content */}
-              <div className="flex justify-between items-center mb-6">
+              {/* Modal Header */}
+              <div className="flex justify-between items-center border-b pb-4">
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-800">{activeProduct.productName}</h2>
-                  <p className="text-gray-600">Configure your menu preferences</p>
+                  <h2 className="text-2xl font-semibold text-gray-800">Configure Menu</h2>
+                  <p className="text-gray-600">Configure your catering preferences</p>
                 </div>
                 <button 
                   onClick={() => setIsConfigModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 text-xl"
                 >
                   ×
                 </button>
               </div>
 
-              {/* Menu Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {activeProduct.catering?.courses?.map((course, index) => (
-                  <div key={index} className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      {course.courseName}
-                    </h3>
-                    <div className="space-y-2">
-                      {course.dishes.map((dish, dishIndex) => (
-                        <label key={dishIndex} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedDishes[course.courseType]?.includes(dish)}
-                            onChange={(e) => {
-                              setSelectedDishes(prev => ({
-                                ...prev,
-                                [course.courseType]: e.target.checked
-                                  ? [...(prev[course.courseType] || []), dish]
-                                  : (prev[course.courseType] || []).filter(d => d !== dish)
-                              }));
-                            }}
-                            className="w-4 h-4 text-blue-600 rounded"
-                          />
-                          <span className="ml-2">{dish}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* Catering Content */}
+              <div className="mt-6">
+                {/* Course Type Header */}
+                <div className="text-center mb-8">
+                  <span className="bg-blue-100 text-blue-800 text-xl font-semibold px-6 py-2 rounded-full">
+                    {currentProduct?.catering?.courseType} Course Meal
+                  </span>
+                </div>
 
-              {/* Configuration Actions */}
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  onClick={() => setIsConfigModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfigurationSave}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Confirm Selection
-                </button>
+                {/* Courses Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {currentProduct?.catering?.courses?.map((course, index) => (
+                    <div key={index} className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
+                      {/* Course Header */}
+                      <div className="text-center mb-4">
+                        <h3 className="text-xl font-semibold text-gray-800">
+                          {course.courseName}
+                        </h3>
+                      </div>
+
+                      {/* Dropdown with Radio Buttons and Scrollbar */}
+                      <details className="group">
+                        <summary className="flex justify-between items-center p-3 bg-gray-50 rounded-md cursor-pointer hover:bg-gray-100">
+                          <span className="font-medium text-gray-700">Select {course.courseName}</span>
+                          <svg 
+                            className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </summary>
+
+                        <div className="mt-2 max-h-48 overflow-y-auto">
+                          {course.dishes.map((dish, dishIndex) => (
+                            <label key={dishIndex} className="flex items-center p-2 hover:bg-gray-50 rounded">
+                              <input
+                                type="checkbox"
+                                checked={selectedDishes[course.courseName]?.includes(dish)}
+                                onChange={(e) => {
+                                  const isChecked = e.target.checked;
+                                  setSelectedDishes(prev => ({
+                                    ...prev,
+                                    [course.courseName]: isChecked
+                                      ? [...(prev[course.courseName] || []), dish]
+                                      : (prev[course.courseName] || []).filter(d => d !== dish)
+                                  }));
+                                }}
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              />
+                              <span className="ml-2 text-gray-700">{dish}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-4 mt-6">
+                  <button
+                    onClick={() => setIsConfigModalOpen(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfigurationSave}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Confirm Selection
+                  </button>
+                </div>
               </div>
             </div>
           </div>
