@@ -804,7 +804,7 @@ const RecommendedEvents = () => {
                                     {['catering', 'rent', 'bakers'].includes(category.toLowerCase()) ? (
                                       <div className="flex flex-col items-end">
                                         <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold mb-1">
-                                          ₹{product.price?.toLocaleString() || 'Price varies'} per plate
+                                          ₹{product.price?.toLocaleString() || 'Price varies'} per person
                                         </span>
                                         <span className="text-sm text-gray-600">
                                           Total: ₹{((product.price || 0) * editedDetails.guests).toLocaleString()}
