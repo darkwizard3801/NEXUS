@@ -7,7 +7,7 @@ import { FaStore } from 'react-icons/fa';
 import { MdRestaurantMenu } from 'react-icons/md';
 import { BsCalendarCheck } from 'react-icons/bs';
 import { FiShoppingCart, FiSettings } from 'react-icons/fi';
-import { FaStar } from 'react-icons/fa';
+import { FaStar, FaStarHalf } from 'react-icons/fa';
 
 const RecommendedEvents = () => {
   const location = useLocation();
@@ -32,6 +32,7 @@ const RecommendedEvents = () => {
   const [categories, setCategories] = useState([]);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [configuredMenus, setConfiguredMenus] = useState({});
+  const [ratingStats, setRatingStats] = useState({});
 
   // Updated event type categories with two more package types
   const eventTypeCategories = {
@@ -443,26 +444,36 @@ const RecommendedEvents = () => {
 
       if (Array.isArray(data?.data)) {
         const ratingsMap = {};
-        data.data.forEach(rating => {
-          const productId = rating.productId;
-          if (!ratingsMap[productId]) {
-            ratingsMap[productId] = {
-              totalRating: 0,
-              count: 0
-            };
-          }
-          ratingsMap[productId].totalRating += parseFloat(rating.rating);
-          ratingsMap[productId].count += 1;
-        });
+        const statsMap = {};
 
-        // Calculate average ratings
-        Object.keys(ratingsMap).forEach(productId => {
-          ratingsMap[productId].average = 
-            ratingsMap[productId].totalRating / ratingsMap[productId].count;
+        // Process each product's ratings
+        Object.entries(packages).forEach(([_, pkg]) => {
+          pkg.categories.forEach(product => {
+            const productRatings = data.data.filter(rating => rating.productId === product._id);
+            
+            // Calculate rating distribution
+            const stats = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+            productRatings.forEach(rating => {
+              stats[Math.floor(rating.rating)]++;
+            });
+            statsMap[product._id] = stats;
+
+            // Calculate average rating
+            const totalRatings = productRatings.length;
+            const avgRating = totalRatings > 0 
+              ? productRatings.reduce((sum, rating) => sum + rating.rating, 0) / totalRatings 
+              : 0;
+
+            ratingsMap[product._id] = {
+              avgRating: avgRating,
+              stats: statsMap[product._id]
+            };
+          });
         });
 
         console.log('Processed ratings:', ratingsMap);
         setProductRatings(ratingsMap);
+        setRatingStats(statsMap);
       }
     } catch (error) {
       console.error('Error fetching ratings:', error);
@@ -920,6 +931,8 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings, eventDet
   const [variantImages, setVariantImages] = useState({});
   const [currentProduct, setCurrentProduct] = useState(null);
   const [configuredMenus, setConfiguredMenus] = useState({});
+  const [productRatings, setProductRatings] = useState({});
+  const [ratingStats, setRatingStats] = useState({});
 
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -1000,23 +1013,87 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings, eventDet
     return product.price;
   };
 
+  // Fetch ratings for all products
+  const fetchProductRatings = async () => {
+    try {
+      const response = await fetch(SummaryApi.getRating.url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch ratings');
+
+      const data = await response.json();
+      if (Array.isArray(data?.data)) {
+        const ratingsMap = {};
+        const statsMap = {};
+
+        // Process each product's ratings
+        Object.entries(packageData.categories).forEach(([_, products]) => {
+          products.forEach(product => {
+            const productRatings = data.data.filter(rating => rating.productId === product._id);
+            
+            // Calculate rating distribution
+            const stats = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+            productRatings.forEach(rating => {
+              stats[Math.floor(rating.rating)]++;
+            });
+            statsMap[product._id] = stats;
+
+            // Calculate average rating
+            const totalRatings = productRatings.length;
+            const avgRating = totalRatings > 0 
+              ? productRatings.reduce((sum, rating) => sum + rating.rating, 0) / totalRatings 
+              : 0;
+
+            ratingsMap[product._id] = {
+              avgRating: Math.round(avgRating * 2) / 2,
+              totalRatings
+            };
+          });
+        });
+
+        setProductRatings(ratingsMap);
+        setRatingStats(statsMap);
+      }
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
+    }
+  };
+
+  // Fetch ratings when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchProductRatings();
+    }
+  }, [isOpen]);
+
   // Helper function to render rating stars
-  const renderRatingStars = (rating) => {
+  const renderRatingStars = (productId) => {
+    const rating = productRatings[productId];
+    if (!rating) return null;
+
+    const fullStars = Math.floor(rating.avgRating);
+    const hasHalfStar = rating.avgRating % 1 !== 0;
+
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mb-4">
         <div className="flex items-center gap-1 text-yellow-400">
-          {[...Array(5)].map((_, index) => (
-            <FaStar key={index} className={`w-5 h-5 ${
-              index < Math.floor(rating) 
-                ? 'text-yellow-400' 
-                : index === Math.floor(rating) && rating % 1 !== 0
-                ? 'text-yellow-400' 
-                : 'text-gray-300'
-            }`} />
-          ))}
+          {[...Array(5)].map((_, index) => {
+            if (index < fullStars) {
+              return <FaStar key={index} className="w-5 h-5" />;
+            } else if (index === fullStars && hasHalfStar) {
+              return <FaStarHalf key={index} className="w-5 h-5" />;
+            } else {
+              return <FaStar key={index} className="w-5 h-5 text-gray-300" />;
+            }
+          })}
         </div>
         <span className="text-sm text-gray-600">
-          ({rating.toFixed(1)})
+          ({rating.totalRatings} {rating.totalRatings === 1 ? 'review' : 'reviews'})
         </span>
       </div>
     );
@@ -1108,11 +1185,7 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings, eventDet
                         <p className="capitalize text-gray-500 mb-4">{category}</p>
 
                         {/* Rating Stars */}
-                        {ratings && ratings[product._id] && (
-                          <div className="mb-4">
-                            {renderRatingStars(ratings[product._id].average)}
-                          </div>
-                        )}
+                        {renderRatingStars(product._id)}
 
                         {/* Rental Variants Section */}
                         {category.toLowerCase() === 'rent' && product.rentalVariants && (
