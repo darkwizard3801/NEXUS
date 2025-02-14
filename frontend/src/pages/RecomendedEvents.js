@@ -7,6 +7,7 @@ import { FaStore } from 'react-icons/fa';
 import { MdRestaurantMenu } from 'react-icons/md';
 import { BsCalendarCheck } from 'react-icons/bs';
 import { FiShoppingCart, FiSettings } from 'react-icons/fi';
+import { FaStar } from 'react-icons/fa';
 
 const RecommendedEvents = () => {
   const location = useLocation();
@@ -999,6 +1000,28 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings, eventDet
     return product.price;
   };
 
+  // Helper function to render rating stars
+  const renderRatingStars = (rating) => {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 text-yellow-400">
+          {[...Array(5)].map((_, index) => (
+            <FaStar key={index} className={`w-5 h-5 ${
+              index < Math.floor(rating) 
+                ? 'text-yellow-400' 
+                : index === Math.floor(rating) && rating % 1 !== 0
+                ? 'text-yellow-400' 
+                : 'text-gray-300'
+            }`} />
+          ))}
+        </div>
+        <span className="text-sm text-gray-600">
+          ({rating.toFixed(1)})
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
       <div className="bg-white rounded-xl p-6 max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -1061,13 +1084,35 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings, eventDet
 
                       {/* Right: Product Details */}
                       <div className="flex-1">
-                        {/* Product Name and Brand */}
-                        <h4 className="text-xl font-semibold text-gray-800 mb-2">
+                        {/* Brand Link with Store Icon */}
+                        <Link 
+                          to={`/vendor/${product.brandName}`} 
+                          className="inline-flex items-center px-3 py-1.5 rounded-full 
+                            bg-red-50 hover:bg-red-100 transition-colors duration-200
+                            border border-red-100 hover:border-red-200 group w-fit mb-3"
+                        >
+                          <FaStore className="w-4 h-4 text-red-600 mr-2" />
+                          <span className="text-red-600 font-medium text-sm group-hover:text-red-700">
+                            {product.brandName}
+                          </span>
+                          <svg className="w-4 h-4 ml-1.5 text-red-500 group-hover:translate-x-0.5 transition-transform" 
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+
+                        {/* Product Name and Category */}
+                        <h4 className="text-xl font-bold text-gray-900 mb-2">
                           {product.productName}
                         </h4>
-                        <p className="text-gray-600 mb-4">
-                          Brand: {product.brandName}
-                        </p>
+                        <p className="capitalize text-gray-500 mb-4">{category}</p>
+
+                        {/* Rating Stars */}
+                        {ratings && ratings[product._id] && (
+                          <div className="mb-4">
+                            {renderRatingStars(ratings[product._id].average)}
+                          </div>
+                        )}
 
                         {/* Rental Variants Section */}
                         {category.toLowerCase() === 'rent' && product.rentalVariants && (
