@@ -30,6 +30,7 @@ const RecommendedEvents = () => {
   const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
   const [categories, setCategories] = useState([]);
   const [currentProduct, setCurrentProduct] = useState(null);
+  const [configuredMenus, setConfiguredMenus] = useState({});
 
   // Updated event type categories with two more package types
   const eventTypeCategories = {
@@ -916,6 +917,7 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
   const [selectedVariants, setSelectedVariants] = useState({});
   const [variantImages, setVariantImages] = useState({});
   const [currentProduct, setCurrentProduct] = useState(null);
+  const [configuredMenus, setConfiguredMenus] = useState({});
 
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -941,11 +943,13 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
       return;
     }
     
-    // Save configuration to state
-    setCurrentConfiguration(selectedDishes);
-    console.log('Configuration Saved:', selectedDishes);
-    toast.success('Configuration saved!');
+    // Save configuration to state with product ID
+    setConfiguredMenus(prev => ({
+      ...prev,
+      [currentProduct._id]: selectedDishes
+    }));
     setIsConfigModalOpen(false);
+    toast.success('Menu configuration saved!');
   };
 
   const handleConfigureClick = (product) => {
@@ -1097,15 +1101,57 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
                           )}
                         </div>
 
-                        {/* Configure Menu Button - Only for catering */}
+                        {/* Configure Menu Button and Configured Items - Only for catering */}
                         {category.toLowerCase() === 'catering' && (
-                          <button
-                            onClick={() => handleConfigureClick(product)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            <FiSettings className="w-4 h-4" />
-                            Configure Menu
-                          </button>
+                          <div className="space-y-4">
+                            <button
+                              onClick={() => handleConfigureClick(product)}
+                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <FiSettings className="w-4 h-4" />
+                              Configure Menu
+                            </button>
+
+                            {/* Display Configured Menu Items */}
+                            {configuredMenus[product._id] && (
+                              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                                <h4 className="font-medium text-gray-700 mb-3">Selected Menu Items:</h4>
+                                <div className="space-y-3">
+                                  {Object.entries(configuredMenus[product._id]).map(([courseType, dishes]) => {
+                                    // Define colors based on course type
+                                    const colorClasses = {
+                                      'Hors d\'oeuvre': "bg-pink-100 text-pink-800 border-pink-200",
+                                      'Main Course': "bg-green-100 text-green-800 border-green-200",
+                                      'Dessert': "bg-purple-100 text-purple-800 border-purple-200",
+                                      'Starter': "bg-orange-100 text-orange-800 border-orange-200",
+                                      'Soup': "bg-yellow-100 text-yellow-800 border-yellow-200",
+                                      'Salad': "bg-emerald-100 text-emerald-800 border-emerald-200",
+                                      'Beverage': "bg-cyan-100 text-cyan-800 border-cyan-200"
+                                    }[courseType] || "bg-blue-100 text-blue-800 border-blue-200";
+
+                                    return dishes && dishes.length > 0 ? (
+                                      <div key={courseType} className="space-y-2">
+                                        <span className="font-medium text-gray-700">
+                                          {courseType}:
+                                        </span>
+                                        <div className="flex flex-wrap gap-2">
+                                          {dishes.map((dish, index) => (
+                                            <span
+                                              key={index}
+                                              className={`inline-flex items-center px-3 py-1 rounded-full text-sm
+                                                border ${colorClasses} transition-colors`}
+                                            >
+                                              {dish}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
