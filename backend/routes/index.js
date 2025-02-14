@@ -55,6 +55,7 @@ const { generatePoster } = require('../controller/user/generatePosterController'
 const portfolioController = require('../controller/user/portfolioController')
 const testimonialController = require('../controller/user/testimonialController')
 const chatController = require('../controller/user/chatController')
+const suggestPackagesController = require('../controller/user/suggestPackagesController')
 
 
 
@@ -170,6 +171,8 @@ router.post('/gettestimonial', testimonialController.getVendorTestimonials);
 
 
 router.post('/message', chatController.handleMessage)
+
+router.post('/suggest-packages', suggestPackagesController.suggestPackages)
 
 
 

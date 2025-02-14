@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { FaTrash, FaPhone, FaSearch, FaMapMarkerAlt } from 'react-icons/fa'; // Importing delete icon from react-icons
 import { MdEventNote } from 'react-icons/md';
+import { OpenStreetMapProvider } from 'leaflet-geosearch'; // Import the provider
 
 // Custom red location icon setup
 const redIcon = new L.Icon({
@@ -112,6 +113,8 @@ const CreateEvent = () => {
   const [placeNames, setPlaceNames] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [suggestedPackages, setSuggestedPackages] = useState([]);
+  const provider = new OpenStreetMapProvider(); // Initialize the provider
 
   // Fetch events created by the user
   const fetchUserEvents = async (email) => {
@@ -194,12 +197,21 @@ const CreateEvent = () => {
   useEffect(() => {
     const fetchPlaceName = async (lat, lng, eventId) => {
       try {
-        // Replace with your chosen API
         const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
         const placeName = response.data.display_name;
         setPlaceNames((prev) => ({ ...prev, [eventId]: placeName })); // Store the place name by event ID
       } catch (error) {
         console.error('Error fetching place name:', error);
+        if (error.response) {
+          // Server responded with a status other than 200
+          toast.error(`Error: ${error.response.data.message || 'Failed to fetch place name'}`);
+        } else if (error.request) {
+          // Request was made but no response received
+          toast.error('Network error: Please check your internet connection.');
+        } else {
+          // Something happened in setting up the request
+          toast.error(`Error: ${error.message}`);
+        }
       }
     };
 
@@ -230,9 +242,10 @@ const CreateEvent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (!userDetails) {
-      alert("User details not found. Please try again.");
+      toast.error("User details not found. Please try again.");
       return;
     }
 
@@ -242,9 +255,8 @@ const CreateEvent = () => {
       username: userDetails.name,
     };
 
-    console.log('Event Payload:', eventPayload);
-
     try {
+      // Save event details
       const response = await fetch(SummaryApi.event_add.url, {
         method: 'POST',
         headers: {
@@ -254,27 +266,33 @@ const CreateEvent = () => {
       });
 
       const result = await response.json();
+      
       if (result.success) {
-      toast.success("event added successfully")
-      navigate("/recomendated-events")
-        setEventDetails({
-          eventType: '',
-          occasion: '',
-          budget: [5000, 90000],
-          guests: '',
-          phoneNumber: userDetails.phoneNumber || '',
-          date: '',
-          location: null,
+        toast.success("Event created successfully!");
+        // Navigate to RecommendedEvents with complete event details
+        navigate('/recomendated-events', { 
+          state: { 
+            eventDetails: {
+              eventType: eventDetails.eventType,
+              occasion: eventDetails.occasion,
+              budget: eventDetails.budget,
+              guests: eventDetails.guests,
+              phoneNumber: eventDetails.phoneNumber,
+              date: eventDetails.date,
+              location: eventDetails.location,
+              username: userDetails.name,
+              email: userDetails.email
+            }
+          }
         });
-
-        // Refetch the user's events after creating a new one
-        fetchUserEvents(userDetails.email);
       } else {
-        toast.error(result.message)
+        toast.error(result.message);
       }
     } catch (error) {
       console.error('Error creating event:', error);
-      alert('An error occurred while creating the event. Please try again.');
+      toast.error('An error occurred while creating the event. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -315,12 +333,9 @@ const CreateEvent = () => {
     }
 
     try {
-      const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5`
-      );
-
-      if (response.data && response.data.length > 0) {
-        setSearchResults(response.data);
+      const results = await provider.search({ query: searchQuery });
+      if (results && results.length > 0) {
+        setSearchResults(results);
       } else {
         toast.error("No locations found");
         setSearchResults([]);
@@ -336,11 +351,11 @@ const CreateEvent = () => {
     setEventDetails(prevDetails => ({
       ...prevDetails,
       location: {
-        lat: parseFloat(location.lat),
-        lng: parseFloat(location.lon)
+        lat: location.y,
+        lng: location.x
       }
     }));
-    setSearchQuery(location.display_name);
+    setSearchQuery(location.label);
     setSearchResults([]);
   };
 
@@ -544,7 +559,7 @@ const CreateEvent = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-gray-700 font-semibold">
-                  <FaPhone className="text-red-500 text-xl" />
+                  <img src={IMAGES.guestsIcon} alt="" className="w-6 h-6" />
                   Phone Number
                 </label>
                 <input
@@ -603,7 +618,10 @@ const CreateEvent = () => {
                           }}
                         />
                         <button
-                          onClick={handleSearch}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSearch();
+                          }}
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
                         >
                           <FaSearch className="w-4 h-4" />
@@ -624,10 +642,10 @@ const CreateEvent = () => {
                             <FaMapMarkerAlt className="text-red-500 mt-1 flex-shrink-0" />
                             <div className="flex flex-col">
                               <span className="text-sm font-medium">
-                                {result.display_name.split(',')[0]}
+                                {result.label}
                               </span>
                               <span className="text-xs text-gray-500 line-clamp-2">
-                                {result.display_name.split(',').slice(1).join(',')}
+                                {result.label}
                               </span>
                             </div>
                           </button>
@@ -676,6 +694,22 @@ const CreateEvent = () => {
             </button>
           </form>
         </div>
+
+        {/* New section to display suggested packages */}
+        {suggestedPackages.length > 0 && (
+          <div className="suggested-packages">
+            <h2 className="text-xl font-semibold">Suggested Packages</h2>
+            <ul>
+              {suggestedPackages.map((pkg, index) => (
+                <li key={index} className="package-item">
+                  <h3>{pkg.name}</h3>
+                  <p>Price: ₹{pkg.price}</p>
+                  <p>Description: {pkg.description}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
