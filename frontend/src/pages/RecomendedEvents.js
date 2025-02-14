@@ -898,13 +898,14 @@ const RecommendedEvents = () => {
           onClose={() => setIsCustomizing(false)}
           packageData={selectedPackage}
           ratings={productRatings}
+          eventDetails={eventDetails}
         />
       )}
     </div>
   );
 }
 
-const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
+const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings, eventDetails }) => {
   const [selectedDishes, setSelectedDishes] = useState({});
   const [currentConfiguration, setCurrentConfiguration] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -984,6 +985,18 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
       return variantImages[product._id];
     }
     return product.productImage || [];
+  };
+
+  // Helper function to calculate total cost
+  const calculateTotalCost = (product, category) => {
+    if (['catering', 'rent', 'bakers'].includes(category.toLowerCase())) {
+      const basePrice = category.toLowerCase() === 'rent' && selectedVariants[product._id] 
+        ? selectedVariants[product._id].price 
+        : product.price;
+      
+      return basePrice * eventDetails.guests;
+    }
+    return product.price;
   };
 
   return (
@@ -1087,16 +1100,35 @@ const CustomizePackageModal = ({ isOpen, onClose, packageData, ratings }) => {
                         <div className="mb-4">
                           {category.toLowerCase() === 'rent' ? (
                             selectedVariants[product._id] ? (
-                              <p className="text-2xl font-bold text-red-600">
-                                ₹{selectedVariants[product._id].price?.toLocaleString()}
-                              </p>
+                              <div className="space-y-1">
+                                <p className="text-2xl font-bold text-red-600">
+                                  ₹{selectedVariants[product._id].price?.toLocaleString()} per guest
+                                </p>
+                                <p className="text-lg text-gray-600">
+                                  Total for {eventDetails.guests} guests:{' '}
+                                  <span className="font-bold text-red-600">
+                                    ₹{calculateTotalCost(product, category).toLocaleString()}
+                                  </span>
+                                </p>
+                              </div>
                             ) : (
                               <p className="text-lg text-gray-600">Select a variant</p>
                             )
+                          ) : ['catering', 'bakers'].includes(category.toLowerCase()) ? (
+                            <div className="space-y-1">
+                              <p className="text-2xl font-bold text-red-600">
+                                ₹{product.price?.toLocaleString()} per guest
+                              </p>
+                              <p className="text-lg text-gray-600">
+                                Total for {eventDetails.guests} guests:{' '}
+                                <span className="font-bold text-red-600">
+                                  ₹{calculateTotalCost(product, category).toLocaleString()}
+                                </span>
+                              </p>
+                            </div>
                           ) : (
                             <p className="text-2xl font-bold text-red-600">
                               ₹{product.price?.toLocaleString()}
-                              {['catering', 'bakers'].includes(category.toLowerCase()) && ' per person'}
                             </p>
                           )}
                         </div>
