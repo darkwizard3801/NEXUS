@@ -33,86 +33,106 @@ const RecommendedEvents = () => {
   // Updated event type categories with two more package types
   const eventTypeCategories = {
     marriage: {
-      categories: ['auditorium', 'catering', 'decorations', 'photo-video', 'event-management', 'audio-visual-it'],
+      categories: ['auditorium', 'catering', 'decorations', 'photo-video', 'event-management', 'audio-visual-it', 'rent', 'bakers'],
+      weights: {
+        auditorium: 0.20,
+        catering: 0.15,
+        decorations: 0.15,
+        'photo-video': 0.15,
+        'event-management': 0.10,
+        'audio-visual-it': 0.10,
+        rent: 0.10,
+        bakers: 0.05
+      }
+    },
+    birthday: {
+      categories: ['auditorium', 'catering', 'decorations', 'audio-visual-it', 'bakers', 'rent', 'photo-video'],
+      weights: {
+        auditorium: 0.20,
+        catering: 0.20,
+        decorations: 0.15,
+        'audio-visual-it': 0.15,
+        bakers: 0.15,
+        rent: 0.10,
+        'photo-video': 0.05
+      }
+    },
+    corporate: {
+      categories: ['auditorium', 'catering', 'audio-visual-it', 'event-management', 'logistics', 'rent', 'photo-video', 'decorations'],
+      weights: {
+        auditorium: 0.25,
+        catering: 0.15,
+        'audio-visual-it': 0.15,
+        'event-management': 0.15,
+        logistics: 0.10,
+        rent: 0.10,
+        'photo-video': 0.05,
+        decorations: 0.05
+      }
+    },
+    social: {
+      categories: ['auditorium', 'catering', 'decorations', 'photo-video', 'social-media', 'rent', 'audio-visual-it', 'event-management'],
+      weights: {
+        auditorium: 0.20,
+        catering: 0.20,
+        decorations: 0.15,
+        'photo-video': 0.15,
+        'social-media': 0.10,
+        rent: 0.10,
+        'audio-visual-it': 0.05,
+        'event-management': 0.05
+      }
+    },
+    cultural: {
+      categories: ['auditorium', 'catering', 'decorations', 'audio-visual-it', 'event-management', 'rent', 'photo-video', 'logistics'],
+      weights: {
+        auditorium: 0.25,
+        catering: 0.15,
+        decorations: 0.15,
+        'audio-visual-it': 0.15,
+        'event-management': 0.10,
+        rent: 0.10,
+        'photo-video': 0.05,
+        logistics: 0.05
+      }
+    },
+    personal: {
+      categories: ['auditorium', 'catering', 'decorations', 'photo-video', 'rent', 'audio-visual-it', 'bakers'],
       weights: {
         auditorium: 0.25,
         catering: 0.20,
         decorations: 0.15,
         'photo-video': 0.15,
-        'event-management': 0.15,
-        'audio-visual-it': 0.10
-      }
-    },
-    birthday: {
-      categories: ['auditorium', 'catering', 'decorations', 'audio-visual-it', 'bakers'],
-      weights: {
-        auditorium: 0.25,
-        catering: 0.20,
-        decorations: 0.20,
-        'audio-visual-it': 0.15,
-        bakers: 0.20
-      }
-    },
-    corporate: {
-      categories: ['auditorium', 'catering', 'audio-visual-it', 'event-management', 'logistics'],
-      weights: {
-        auditorium: 0.30,
-        catering: 0.20,
-        'audio-visual-it': 0.20,
-        'event-management': 0.15,
-        logistics: 0.15
-      }
-    },
-    social: {
-      categories: ['auditorium', 'catering', 'decorations', 'photo-video', 'socia-media'],
-      weights: {
-        auditorium: 0.25,
-        catering: 0.25,
-        decorations: 0.20,
-        'photo-video': 0.15,
-        'socia-media': 0.15
-      }
-    },
-    cultural: {
-      categories: ['auditorium', 'catering', 'decorations', 'audio-visual-it', 'event-management'],
-      weights: {
-        auditorium: 0.30,
-        catering: 0.20,
-        decorations: 0.20,
-        'audio-visual-it': 0.15,
-        'event-management': 0.15
-      }
-    },
-    personal: {
-      categories: ['auditorium', 'catering', 'decorations', 'photo-video'],
-      weights: {
-        auditorium: 0.30,
-        catering: 0.25,
-        decorations: 0.25,
-        'photo-video': 0.20
+        rent: 0.10,
+        'audio-visual-it': 0.10,
+        bakers: 0.05
       }
     },
     // Adding two new package types
     festival: {
-      categories: ['auditorium', 'catering', 'decorations', 'audio-visual-it', 'event-management', 'logistics'],
+      categories: ['auditorium', 'catering', 'decorations', 'audio-visual-it', 'event-management', 'logistics', 'rent', 'photo-video'],
       weights: {
-        auditorium: 0.25,
-        catering: 0.20,
-        decorations: 0.20,
+        auditorium: 0.20,
+        catering: 0.15,
+        decorations: 0.15,
         'audio-visual-it': 0.15,
         'event-management': 0.10,
-        logistics: 0.10
+        logistics: 0.10,
+        rent: 0.10,
+        'photo-video': 0.05
       }
     },
     conference: {
-      categories: ['auditorium', 'catering', 'audio-visual-it', 'event-management', 'logistics', 'socia-media'],
+      categories: ['auditorium', 'catering', 'audio-visual-it', 'event-management', 'logistics', 'social-media', 'rent', 'photo-video'],
       weights: {
-        auditorium: 0.25,
+        auditorium: 0.20,
         catering: 0.15,
-        'audio-visual-it': 0.20,
+        'audio-visual-it': 0.15,
         'event-management': 0.15,
-        logistics: 0.15,
-        'socia-media': 0.10
+        logistics: 0.10,
+        'social-media': 0.10,
+        rent: 0.10,
+        'photo-video': 0.05
       }
     }
   };
