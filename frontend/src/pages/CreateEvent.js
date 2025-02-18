@@ -207,7 +207,7 @@ const CreateEvent = () => {
           toast.error(`Error: ${error.response.data.message || 'Failed to fetch place name'}`);
         } else if (error.request) {
           // Request was made but no response received
-          toast.error('Network error: Please check your internet connection.');
+          // toast.error('Network error: Please check your internet connection.');
         } else {
           // Something happened in setting up the request
           toast.error(`Error: ${error.message}`);

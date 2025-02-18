@@ -11,6 +11,9 @@ import { FiShoppingCart, FiSettings } from 'react-icons/fi';
 import { BsCalendarCheck } from 'react-icons/bs';
 import { FaStore } from 'react-icons/fa';
 import { MdRestaurantMenu } from 'react-icons/md';
+import { format } from 'date-fns';
+import { FaThumbsUp } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
 
 const ProductDetails = () => {
   const [data, setData] = useState({
@@ -39,6 +42,7 @@ const ProductDetails = () => {
   const [ratingStats, setRatingStats] = useState({
     5: 0, 4: 0, 3: 0, 2: 0, 1: 0
   });
+  const [allUsers, setAllUsers] = useState([]);
 
   const { fetchUserAddToCart } = useContext(Context);
   const navigate = useNavigate();
@@ -96,7 +100,7 @@ const ProductDetails = () => {
         });
         setRatingStats(stats);
 
-        // Calculate average rating (keep your existing calculation)
+        // Calculate average rating
         const totalRatings = productRatings.length;
         const avgRating = totalRatings > 0 
           ? productRatings.reduce((sum, rating) => sum + rating.rating, 0) / totalRatings 
@@ -106,6 +110,23 @@ const ProductDetails = () => {
           avgRating: Math.round(avgRating * 2) / 2,
           totalRatings
         });
+
+        // Set reviews data with all details
+        const reviewsWithDetails = productRatings.map(rating => ({
+          rating: rating.rating,
+          review: rating.review,
+          userEmail: rating.userEmail,
+          createdAt: rating.createdAt,
+          orderId: rating.orderId
+        }));
+
+        // Update the data state with reviews
+        setData(prevData => ({
+          ...prevData,
+          reviews: reviewsWithDetails
+        }));
+
+        console.log('Reviews data set:', reviewsWithDetails);
       }
     } catch (error) {
       console.error('Error fetching ratings:', error);
@@ -116,6 +137,7 @@ const ProductDetails = () => {
     fetchProductDetails();
     if (params.id) {
       fetchProductRating();
+      fetchAllUsers(); // Fetch users data as well
     }
   }, [params]);
 
@@ -340,35 +362,196 @@ const ProductDetails = () => {
     setActiveImageIndex(0); // Reset to first image when variant changes
   };
 
-  const renderRatingStars = () => {
-    const fullStars = Math.floor(productRating.avgRating);
-    const hasHalfStar = productRating.avgRating % 1 !== 0;
-
-    return (
-      <div className='flex items-center gap-2 mb-6'>
-        <div className='flex items-center gap-1 text-yellow-400'>
-          {[...Array(5)].map((_, index) => {
-            if (index < fullStars) {
-              return <FaStar key={index} className="w-5 h-5" />;
-            } else if (index === fullStars && hasHalfStar) {
-              return <FaStarHalf key={index} className="w-5 h-5" />;
-            } else {
-              return <FaStar key={index} className="w-5 h-5 text-gray-300" />;
-            }
-          })}
-        </div>
-        <span className="text-sm text-gray-600">
-          ({productRating.totalRatings} {productRating.totalRatings === 1 ? 'review' : 'reviews'})
-        </span>
-      </div>
-    );
-  };
+  const renderStars = (rating) => (
+    <div className="flex items-center gap-0.5">
+      {[...Array(5)].map((_, index) => (
+        <FaStar
+          key={index}
+          className={`w-4 h-4 ${
+            index < rating
+              ? 'text-yellow-400 drop-shadow-sm filter-none transition-colors duration-150'
+              : 'text-gray-200'
+          }`}
+        />
+      ))}
+    </div>
+  );
 
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.pageX - left) / width) * 100;
     const y = ((e.pageY - top) / height) * 100;
     setMagnifierPosition({ x, y });
+  };
+
+  const renderReviewSection = () => {
+    // Helper function to get user details from allUsers with proper name formatting
+    const getUserDetails = (userEmail) => {
+      if (!userEmail) return {
+        name: 'Anonymous User',
+        profilePic: null,
+        initial: 'A'
+      };
+
+      const user = allUsers.find(user => user.email === userEmail);
+      
+      // Format name properly
+      const formatName = (user) => {
+        if (!user) return userEmail;
+        
+        // If user has a name field, use it directly
+        if (user?.name) {
+          return user.name.split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          ).join(' ');
+        }
+        
+        // Fallback to email if no name is found
+        return userEmail;
+      };
+
+      // Safe access to user data
+      const userName = formatName(user);
+      const initial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
+
+      return {
+        name: userName,
+        profilePic: user?.profilePic || null,
+        initial: initial
+      };
+    };
+
+    console.log('All Users:', allUsers); // Debug log
+    console.log('Reviews Data:', data?.reviews); // Debug log
+
+    return (
+      <div className="mt-12 border-t border-gray-100 pt-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">Ratings & Reviews</h2>
+        
+        {/* Rating Summary */}
+        <div className="flex items-center gap-8 mb-8 p-6 bg-gray-50 rounded-xl shadow-sm">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900 mb-2">
+              {productRating.avgRating.toFixed(1)}
+            </div>
+            <div className="flex items-center gap-1 justify-center mb-1">
+              {renderStars(productRating.avgRating)}
+            </div>
+            <p className="text-sm text-gray-600">
+              {productRating.totalRatings} {productRating.totalRatings === 1 ? 'review' : 'reviews'}
+            </p>
+          </div>
+
+          {/* Rating Distribution */}
+          <div className="flex-1">
+            {[5, 4, 3, 2, 1].map((star) => (
+              <div key={star} className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-medium text-gray-600 w-8">{star} ★</span>
+                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-yellow-400 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(ratingStats[star] / productRating.totalRatings) * 100 || 0}%`
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-gray-500 w-10">{ratingStats[star] || 0}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Reviews List */}
+        <div className="space-y-8">
+          {data?.reviews?.map((review, index) => {
+            const userDetails = getUserDetails(review.userEmail);
+            
+            return (
+              <div key={index} className="flex gap-6 pb-8 border-b border-gray-100 last:border-0">
+                {/* User Profile Section */}
+                <div className="flex-shrink-0 w-12">
+                  {userDetails.profilePic ? (
+                    <img 
+                      src={userDetails.profilePic} 
+                      alt={userDetails.name} 
+                      className="w-12 h-12 rounded-full object-cover border-2 border-gray-100 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 flex items-center justify-center shadow-sm">
+                      <span className="text-blue-600 font-semibold text-lg">
+                        {userDetails.initial}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Review Content */}
+                <div className="flex-1 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <h4 className="font-medium text-gray-900">
+                        {userDetails.name}
+                      </h4>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="inline-flex items-center gap-1">
+                          <FaCheckCircle className="w-3.5 h-3.5 text-green-500" />
+                          Verified Purchase
+                        </span>
+                        <span>•</span>
+                        <span>{format(new Date(review.createdAt), 'MMM dd, yyyy')}</span>
+                      </div>
+                    </div>
+                    {renderStars(review.rating)}
+                  </div>
+
+                  {/* Review Text */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-700 leading-relaxed">
+                      {review.review}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* No Reviews Message */}
+        {(!data?.reviews || data.reviews.length === 0) && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-lg">No reviews yet</p>
+            <p className="text-gray-400 mt-2">Be the first to review this product</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Add useEffect to fetch users when component mounts
+  useEffect(() => {
+    fetchAllUsers();
+  }, []);
+
+  const fetchAllUsers = async () => {
+    try {
+      const fetchData = await fetch(SummaryApi.allUser.url, {
+        method: SummaryApi.allUser.method,
+        credentials: 'include'
+      });
+
+      const dataResponse = await fetchData.json();
+
+      if (dataResponse.success) {
+        setAllUsers(dataResponse.data);
+      }
+
+      if (dataResponse.error) {
+        toast.error(dataResponse.message);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch user details');
+    }
   };
 
   return (
@@ -521,10 +704,13 @@ const ProductDetails = () => {
 
               {/* Product Name and Category */}
               <h2 className='text-3xl font-bold text-gray-900 mb-2'>{data?.productName}</h2>
+              <div className="flex items-center gap-2 mb-4">
+                {renderStars(productRating.avgRating)}
+                <span className="text-sm text-gray-600">
+                  ({productRating.totalRatings} {productRating.totalRatings === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
               <p className='capitalize text-gray-500 mb-4'>{data?.category}</p>
-
-              {/* Rating Stars */}
-              {renderRatingStars()}
 
               {/* Rental Variants Section */}
               {data?.category === "rent" && data?.rentalVariants && (
@@ -658,105 +844,8 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Reviews and Ratings Section */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 mt-10">
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">Ratings & Reviews</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-              {/* Left: Overall Rating */}
-              <div className="md:col-span-3 flex flex-col items-center justify-center border-r border-gray-100">
-                <div className="text-5xl font-bold text-gray-900 mb-2">
-                  {productRating.avgRating.toFixed(1)}
-                </div>
-                <div className="flex items-center gap-1 text-yellow-400 mb-2">
-                  {[...Array(5)].map((_, index) => (
-                    <FaStar key={index} className={`w-5 h-5 ${
-                      index < Math.floor(productRating.avgRating) 
-                        ? 'text-yellow-400' 
-                        : index === Math.floor(productRating.avgRating) && productRating.avgRating % 1 !== 0
-                        ? 'text-yellow-400' 
-                        : 'text-gray-300'
-                    }`} />
-                  ))}
-                </div>
-                <div className="text-sm text-gray-500">
-                  Based on {productRating.totalRatings} reviews
-                </div>
-              </div>
-
-              {/* Right: Rating Distribution */}
-              <div className="md:col-span-9">
-                <div className="space-y-4">
-                  {[5, 4, 3, 2, 1].map((stars) => {
-                    const count = ratingStats[stars] || 0;
-                    const percentage = productRating.totalRatings 
-                      ? (count / productRating.totalRatings) * 100 
-                      : 0;
-                    
-                    return (
-                      <div key={stars} className="flex items-center gap-4">
-                        <div className="flex items-center gap-1 w-24">
-                          <span className="text-sm font-medium text-gray-700">
-                            {stars}
-                          </span>
-                          <FaStar className="w-4 h-4 text-yellow-400" />
-                        </div>
-                        
-                        <div className="flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden">
-                          <div 
-                            className="h-full bg-yellow-400 rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        
-                        <div className="w-16 text-sm text-gray-500">
-                          {count}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Reviews List */}
-            <div className="mt-12 border-t border-gray-100 pt-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Customer Reviews</h3>
-                <button 
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 
-                    text-white rounded-lg hover:from-blue-700 hover:to-blue-800 
-                    transition-colors shadow-sm hover:shadow-md"
-                >
-                  Write a Review
-                </button>
-              </div>
-              
-              {/* Individual Reviews */}
-              <div className="space-y-6">
-                {data?.data?.map((review, index) => (
-                  <div key={index} className="border-b border-gray-100 pb-6 last:border-0">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="flex items-center gap-1 text-yellow-400">
-                        {[...Array(5)].map((_, i) => (
-                          <FaStar 
-                            key={i} 
-                            className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                          />
-                        ))}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(review.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <p className="text-gray-700">{review.comment}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Single Rating & Review Section */}
+        {renderReviewSection()}
 
         {/* Catering Configuration Modal */}
         {isConfigModalOpen && (

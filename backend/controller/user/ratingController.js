@@ -4,7 +4,7 @@ const Order = require('../../models/orderModel'); // Replace with your actual or
 // Add rating and review for an order
 const addRatingReview = async (req, res) => {
   try {
-    const { orderId,productId, rating, comment } = req.body;
+    const { orderId, productId, rating, comment, userEmail } = req.body;
 
     // Check if the order exists
     const order = await Order.findById(orderId);
@@ -21,6 +21,7 @@ const addRatingReview = async (req, res) => {
       productId,
       rating,
       review: comment,
+      userEmail,
     });
 
     // Save the rating to the database

@@ -11,6 +11,11 @@ const ratingSchema = new mongoose.Schema({
     ref: 'product', // Assuming you have a Product model
     required: true, // Make it required if necessary
   },
+  userEmail: {  // Added userEmail field
+    type: String,
+    required: true,
+    trim: true,
+  },
   rating: {
     type: Number,
     required: true,

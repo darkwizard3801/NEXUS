@@ -361,7 +361,8 @@ const MyOrders = () => {
           orderId,
           productId,
           rating,
-          comment: ratingComment
+          comment: ratingComment,
+          userEmail: currentUserEmail
         }),
       });
 
