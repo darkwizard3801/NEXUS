@@ -34,6 +34,30 @@ const RecommendedEvents = () => {
   const [configuredMenus, setConfiguredMenus] = useState({});
   const [ratingStats, setRatingStats] = useState({});
 
+  // Define occasion mappings
+  const occasionMappings = {
+    'wedding': ['wedding', 'marriage', 'matrimony', 'shaadi', 'vivah', 'nikah', 'engagement', 'reception'],
+    'birthday': ['birthday', 'birth day', 'bday', 'anniversary', 'cake cutting', 'birth anniversary'],
+    'corporate': ['corporate', 'business', 'company', 'office', 'professional', 'work', 'team building', 'product launch', 'annual meeting'],
+    'social': ['social', 'gathering', 'get-together', 'party', 'reunion', 'meet up', 'social event', 'cocktail', 'dinner party'],
+    'cultural': ['cultural', 'festival', 'traditional', 'heritage', 'folk', 'ethnic', 'cultural show', 'art exhibition'],
+    'personal': ['personal', 'private', 'individual', 'family', 'intimate', 'house warming', 'baby shower', 'naming ceremony'],
+    'festival': ['festival', 'celebration', 'festive', 'carnival', 'fair', 'mela', 'diwali', 'christmas', 'eid', 'holi', 'navratri', 'pongal'],
+    'conference': ['conference', 'seminar', 'meeting', 'convention', 'symposium', 'workshop', 'training', 'summit'],
+    'religious': ['religious', 'spiritual', 'prayer', 'pooja', 'ceremony', 'ritual', 'temple', 'church', 'mosque'],
+    'academic': ['academic', 'graduation', 'convocation', 'school', 'college', 'university', 'farewell', 'alumni'],
+    'sports': ['sports', 'tournament', 'championship', 'game', 'match', 'athletic', 'competition', 'awards', 'sports day', 'sports meet'],
+    'entertainment': ['entertainment', 'concert', 'show', 'performance', 'music', 'dance', 'theater', 'film', 'screening'],
+    'charity': ['charity', 'fundraiser', 'donation', 'ngo', 'social cause', 'awareness', 'benefit'],
+    'fashion': ['fashion', 'show', 'runway', 'exhibition', 'launch', 'collection', 'lifestyle'],
+    'food': ['food', 'culinary', 'cooking', 'tasting', 'food festival', 'chef', 'cuisine'],
+    'tech': ['technology', 'tech', 'digital', 'startup', 'hackathon', 'innovation', 'launch'],
+    'award': ['award', 'ceremony', 'recognition', 'achievement', 'felicitation', 'honors'],
+    'promotional': ['promotional', 'marketing', 'brand', 'launch', 'showcase', 'preview', 'presentation'],
+    'seasonal': ['seasonal', 'summer', 'winter', 'spring', 'autumn', 'new year', 'holiday'],
+    'milestone': ['milestone', 'achievement', 'success', 'completion', 'inauguration', 'anniversary']
+  };
+
   // Updated event type categories with two more package types
   const eventTypeCategories = {
     marriage: {
@@ -138,7 +162,17 @@ const RecommendedEvents = () => {
         rent: 0.10,
         'photo-video': 0.05
       }
-    }
+    },
+    sports: {
+      categories: ['catering', 'audio-visual-it', 'event-management', 'rent', 'logistics'],
+      weights: {
+        catering: 0.30,        // Food and refreshments for athletes and spectators
+        'audio-visual-it': 0.25, // Sound system, scoreboards, announcement systems
+        'event-management': 0.20, // Event coordination and management
+        rent: 0.15,            // Sports equipment, temporary seating, tents
+        logistics: 0.10        // Transportation, setup, safety equipment
+      }
+    },
   };
 
   // Move generatePackages outside useEffect and make it async
@@ -147,6 +181,29 @@ const RecommendedEvents = () => {
 
     try {
       setLoading(true);
+      
+      // Get the normalized occasion
+      const normalizedOccasion = editedDetails.occasion.toLowerCase();
+      
+      // Find matching event type from occasion mappings
+      let eventType = 'marriage'; // default fallback
+      for (const [key, mappedOccasions] of Object.entries(occasionMappings)) {
+        if (mappedOccasions.some(mapped => normalizedOccasion.includes(mapped))) {
+          eventType = key;
+          break;
+        }
+      }
+      
+      // Log the event type for debugging
+      console.log('Current event type:', eventType);
+      console.log('Original occasion:', editedDetails.occasion);
+      
+      // Ensure we're using the correct event configuration
+      if (!eventTypeCategories[eventType]) {
+        console.error('No configuration found for event type:', eventType);
+        return;
+      }
+
       // Fetch all products if not already fetched
       if (allProducts.length === 0) {
         const response = await fetch(SummaryApi.allProduct.url);
@@ -158,17 +215,21 @@ const RecommendedEvents = () => {
 
         const products = dataResponse.data;
         setAllProducts(products);
+
+        // Generate packages after products are fetched
+        const eventConfig = eventTypeCategories[eventType];
+        console.log('Using event config:', eventConfig); // Debug log
+        const generatedPackages = createPackages(products, editedDetails, eventConfig);
+        console.log('Generated packages:', generatedPackages);
+        setPackages(generatedPackages);
+      } else {
+        // If products already exist, generate packages with existing products
+        const eventConfig = eventTypeCategories[eventType];
+        console.log('Using event config:', eventConfig); // Debug log
+        const generatedPackages = createPackages(allProducts, editedDetails, eventConfig);
+        console.log('Generated packages:', generatedPackages);
+        setPackages(generatedPackages);
       }
-
-      // Get event type configuration
-      const eventType = editedDetails.eventType.toLowerCase();
-      const eventConfig = eventTypeCategories[eventType] || eventTypeCategories.marriage;
-
-      // Generate packages based on products and event details
-      const generatedPackages = createPackages(allProducts, editedDetails, eventConfig);
-      console.log('Generated packages:', generatedPackages);
-      setPackages(generatedPackages);
-
     } catch (error) {
       console.error('Error generating packages:', error);
       toast.error("Error generating recommendations");
@@ -185,15 +246,17 @@ const RecommendedEvents = () => {
 
   // Initial package generation
   useEffect(() => {
-    generatePackages();
-  }, []);  // Empty dependency array for initial load only
+    if (eventDetails) {
+      generatePackages();
+    }
+  }, [eventDetails]);  // Add eventDetails as dependency
 
   useEffect(() => {
     fetchRatings();
   }, []);
 
   const createPackages = (products, eventDetails, eventConfig) => {
-    const { budget, guests } = eventDetails;
+    const { budget, guests, occasion } = eventDetails;
     const minBudget = budget[0];
     const maxBudget = budget[1];
 
@@ -229,8 +292,44 @@ const RecommendedEvents = () => {
     // Keep track of used products
     let usedProducts = new Set();
 
+    // Filter products based on occasion with more flexible matching
+    const occasionFilteredProducts = products.filter(product => {
+      if (!product.occasions || !Array.isArray(product.occasions)) {
+        // If no occasions specified, include the product
+        return true;
+      }
+
+      const normalizedOccasion = occasion.toLowerCase().trim();
+      
+      // Check if the product's occasions match any mapped occasions
+      for (const [key, mappedOccasions] of Object.entries(occasionMappings)) {
+        if (mappedOccasions.some(mapped => normalizedOccasion.includes(mapped))) {
+          // If the occasion matches any mapping, check if product supports it
+          return product.occasions.some(productOccasion => 
+            mappedOccasions.some(mapped => 
+              productOccasion.toLowerCase().includes(mapped)
+            )
+          );
+        }
+      }
+
+      // If no mapping found, include products that have the exact occasion
+      return product.occasions.some(productOccasion => 
+        productOccasion.toLowerCase().includes(normalizedOccasion)
+      );
+    });
+
+    // Log the filtering results for debugging
+    console.log('Total products:', products.length);
+    console.log('Filtered products:', occasionFilteredProducts.length);
+    console.log('Current occasion:', occasion);
+    console.log('Filtered products sample:', occasionFilteredProducts.slice(0, 3));
+
+    // If no products match the occasion, use all products
+    const productsToUse = occasionFilteredProducts.length > 0 ? occasionFilteredProducts : products;
+
     return budgetRanges.map(budgetRange => {
-      return createPackageForBudgetRange(products, budgetRange, eventDetails, eventConfig, usedProducts);
+      return createPackageForBudgetRange(productsToUse, budgetRange, eventDetails, eventConfig, usedProducts);
     }).filter(pkg => pkg !== null);
   };
 
@@ -240,40 +339,50 @@ const RecommendedEvents = () => {
       return null;
     }
 
+    // Log the event configuration being used
+    console.log('Event config in createPackageForBudgetRange:', eventConfig);
+
     const { categories, weights } = eventConfig;
     let packageProducts = {};
     let totalCost = 0;
 
-    // Select products for each required category
+    // Filter products to only include those in the allowed categories for this event type
+    const filteredProducts = products.filter(product => 
+      categories.includes(product.category)
+    );
+
+    console.log('Filtered products by event categories:', 
+      filteredProducts.map(p => p.category),
+      'Allowed categories:', categories
+    );
+
+    // Only use the categories specified in the event config
     categories.forEach(category => {
-      // Ensure products is an array before filtering
-      if (!Array.isArray(products)) {
-        console.error('Products is not an array:', products);
+      if (!Array.isArray(filteredProducts)) {
+        console.error('Products is not an array:', filteredProducts);
         return;
       }
 
       // Filter products by category, budget, and exclude used products
-      const availableProducts = products.filter(product => 
+      const availableProducts = filteredProducts.filter(product => 
         product && 
-        product.category === category && 
+        product.category === category && // Ensure category matches exactly
         product.price && 
         product.price <= (budgetRange.max - totalCost) &&
         !usedProducts.has(product._id)
       );
 
-      console.log(`Available products for ${category}:`, availableProducts);
+      console.log(`Available products for ${category}:`, availableProducts.length);
 
       if (availableProducts && availableProducts.length > 0) {
-        // Score and sort products
         const scoredProducts = availableProducts.map(product => ({
           ...product,
-          totalPrice: ['catering', 'rent', 'bakers'].includes(category.toLowerCase()) 
+          totalPrice: ['catering', 'rent'].includes(category.toLowerCase()) 
             ? (product.price * eventDetails.guests)
             : product.price,
           score: calculateProductScore(product, eventDetails, weights[category], budgetRange)
         })).sort((a, b) => b.score - a.score);
 
-        // Select the best product for this category
         const selectedProduct = scoredProducts[0];
         if (selectedProduct) {
           packageProducts[category] = [selectedProduct];
@@ -290,20 +399,17 @@ const RecommendedEvents = () => {
     console.log('Package coverage:', {
       required: requiredCategories,
       covered: coveredCategories,
-      packageProducts
+      categories: Object.keys(packageProducts)
     });
 
     if (coveredCategories < requiredCategories) {
       return null;
     }
 
-    // Calculate match score
-    const matchScore = calculateMatchScore(packageProducts, eventDetails, eventConfig);
-
     return {
       name: `${budgetRange.label} ${eventDetails.eventType} Package`,
       price: totalCost,
-      matchScore: Math.round(matchScore),
+      matchScore: Math.round(calculateMatchScore(packageProducts, eventDetails, eventConfig)),
       categories: packageProducts,
       features: generatePackageFeatures(packageProducts, eventDetails),
       image: Object.values(packageProducts)[0]?.[0]?.productImage?.[0] || 'default-package-image.jpg'
